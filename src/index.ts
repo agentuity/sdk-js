@@ -1,16 +1,16 @@
-export * from "./server";
-export * from "./logger";
-export * from "./types";
+export * from './server';
+export * from './logger';
+export * from './types';
 
 export async function runner() {
 	if (
-		process.env.AGENTUITY_SDK_AUTORUN === "true" &&
+		process.env.AGENTUITY_SDK_AUTORUN === 'true' &&
 		!!process.env.AGENTUITY_SDK_DIR
 	) {
-		const runner = await import("./autostart");
+		const runner = await import('./autostart');
 		await runner.run(
 			process.env.AGENTUITY_SDK_DIR,
-			process.env.AGENTUITY_SDK_DIST_DIR,
+			process.env.AGENTUITY_SDK_DIST_DIR
 		);
 	}
 }

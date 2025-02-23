@@ -3,9 +3,9 @@ import type {
 	VectorUpsertParams,
 	VectorSearchParams,
 	VectorSearchResult,
-} from "../types";
-import { DELETE, POST, PUT } from "./api";
-import { getTracer, recordException } from "../router/router";
+} from '../types';
+import { DELETE, POST, PUT } from './api';
+import { getTracer, recordException } from '../router/router';
 
 interface VectorUpsertSuccessResponse {
 	success: true;
@@ -63,12 +63,12 @@ export default class VectorAPI implements VectorStorage {
 	): Promise<string[]> {
 		const tracer = getTracer();
 		return new Promise<string[]>((resolve, reject) => {
-			tracer.startActiveSpan("agentuity.vector.upsert", async (span) => {
+			tracer.startActiveSpan('agentuity.vector.upsert', async (span) => {
 				try {
-					span.setAttribute("name", name);
+					span.setAttribute('name', name);
 					const resp = await PUT<VectorUpsertResponse>(
 						`/sdk/vector/${encodeURIComponent(name)}`,
-						JSON.stringify(documents),
+						JSON.stringify(documents)
 					);
 					if (resp.status === 200) {
 						if (resp.json?.success) {
@@ -80,7 +80,7 @@ export default class VectorAPI implements VectorStorage {
 					if (!resp.json?.success && resp.json?.error) {
 						throw new Error(resp.json.error);
 					}
-					throw new Error("unknown error");
+					throw new Error('unknown error');
 				} catch (ex) {
 					recordException(span, ex);
 					reject(ex);
@@ -100,25 +100,25 @@ export default class VectorAPI implements VectorStorage {
 	 */
 	async search(
 		name: string,
-		params: VectorSearchParams,
+		params: VectorSearchParams
 	): Promise<VectorSearchResult[]> {
 		const tracer = getTracer();
 		return new Promise<VectorSearchResult[]>((resolve, reject) => {
-			tracer.startActiveSpan("agentuity.vector.search", async (span) => {
-				span.setAttribute("name", name);
+			tracer.startActiveSpan('agentuity.vector.search', async (span) => {
+				span.setAttribute('name', name);
 				try {
 					const resp = await POST<VectorSearchResponse>(
 						`/sdk/vector/search/${encodeURIComponent(name)}`,
-						JSON.stringify(params),
+						JSON.stringify(params)
 					);
 					if (resp.status === 404) {
-						span.addEvent("miss");
+						span.addEvent('miss');
 						resolve([]);
 						return;
 					}
 					if (resp.status === 200) {
 						if (resp.json?.success) {
-							span.addEvent("hit");
+							span.addEvent('hit');
 							resolve(resp.json.data);
 							return;
 						}
@@ -126,7 +126,7 @@ export default class VectorAPI implements VectorStorage {
 					if (!resp.json?.success && resp.json?.error) {
 						throw new Error(resp.json.error);
 					}
-					throw new Error("unknown error");
+					throw new Error('unknown error');
 				} catch (ex) {
 					recordException(span, ex);
 					reject(ex);
@@ -147,12 +147,12 @@ export default class VectorAPI implements VectorStorage {
 	async delete(name: string, ...ids: string[]): Promise<number> {
 		const tracer = getTracer();
 		return new Promise<number>((resolve, reject) => {
-			tracer.startActiveSpan("agentuity.vector.delete", async (span) => {
-				span.setAttribute("name", name);
+			tracer.startActiveSpan('agentuity.vector.delete', async (span) => {
+				span.setAttribute('name', name);
 				try {
 					const resp = await DELETE<VectorDeleteResponse>(
 						`/sdk/vector/${encodeURIComponent(name)}`,
-						JSON.stringify(ids),
+						JSON.stringify(ids)
 					);
 					if (resp.status === 200) {
 						if (resp.json?.success) {
@@ -163,7 +163,7 @@ export default class VectorAPI implements VectorStorage {
 					if (!resp.json?.success && resp.json?.error) {
 						throw new Error(resp.json.error);
 					}
-					throw new Error("unknown error");
+					throw new Error('unknown error');
 				} catch (ex) {
 					recordException(span, ex);
 					reject(ex);

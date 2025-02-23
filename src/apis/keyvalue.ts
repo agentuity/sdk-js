@@ -1,6 +1,6 @@
-import type { Json, KeyValueStorage } from "../types";
-import { DELETE, GET, PUT, type Body } from "./api";
-import { getTracer, recordException } from "../router/router";
+import type { Json, KeyValueStorage } from '../types';
+import { DELETE, GET, PUT, type Body } from './api';
+import { getTracer, recordException } from '../router/router';
 
 export default class KeyValueAPI implements KeyValueStorage {
 	/**
@@ -13,26 +13,26 @@ export default class KeyValueAPI implements KeyValueStorage {
 	async get(name: string, key: string): Promise<ArrayBuffer | null> {
 		const tracer = getTracer();
 		return new Promise<ArrayBuffer | null>((resolve, reject) => {
-			tracer.startActiveSpan("agentuity.keyvalue.get", async (span) => {
+			tracer.startActiveSpan('agentuity.keyvalue.get', async (span) => {
 				try {
-					span.setAttribute("name", name);
-					span.setAttribute("key", key);
+					span.setAttribute('name', name);
+					span.setAttribute('key', key);
 					const resp = await GET(
 						`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
-						true,
+						true
 					);
 					if (resp.status === 404) {
-						span.addEvent("miss");
+						span.addEvent('miss');
 						resolve(null);
 						return;
 					}
 					if (resp.status === 200) {
-						span.addEvent("hit");
+						span.addEvent('hit');
 						resolve(resp.response.arrayBuffer());
 						return;
 					}
 					throw new Error(
-						`error getting keyvalue: ${resp.response.statusText} (${resp.response.status})`,
+						`error getting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				} catch (ex) {
 					recordException(span, ex);
@@ -56,39 +56,39 @@ export default class KeyValueAPI implements KeyValueStorage {
 		name: string,
 		key: string,
 		value: ArrayBuffer | string | Json,
-		ttl?: number,
+		ttl?: number
 	): Promise<void> {
 		const tracer = getTracer();
-		tracer.startActiveSpan("agentuity.keyvalue.set", async (span) => {
-			span.setAttribute("name", name);
-			span.setAttribute("key", key);
+		tracer.startActiveSpan('agentuity.keyvalue.set', async (span) => {
+			span.setAttribute('name', name);
+			span.setAttribute('key', key);
 			if (ttl) {
-				span.setAttribute("ttl", ttl);
+				span.setAttribute('ttl', ttl);
 			}
 			try {
 				let body: Body | undefined;
 				let contentType: string;
-				if (typeof value === "string") {
+				if (typeof value === 'string') {
 					body = value;
-					contentType = "text/plain";
-				} else if (typeof value === "object") {
+					contentType = 'text/plain';
+				} else if (typeof value === 'object') {
 					if (value instanceof ArrayBuffer) {
 						body = value;
-						contentType = "application/octet-stream";
+						contentType = 'application/octet-stream';
 					} else {
 						body = JSON.stringify(value);
-						contentType = "application/json";
+						contentType = 'application/json';
 					}
 				} else {
 					throw new Error(
-						"Invalid value type. Expected either string, ArrayBuffer or object",
+						'Invalid value type. Expected either string, ArrayBuffer or object'
 					);
 				}
-				let ttlstr = "";
+				let ttlstr = '';
 				if (ttl) {
 					if (ttl < 60) {
 						throw new Error(
-							`ttl for keyvalue set must be at least 60 seconds, got ${ttl}`,
+							`ttl for keyvalue set must be at least 60 seconds, got ${ttl}`
 						);
 					}
 					ttlstr = `/${ttl}`;
@@ -97,12 +97,12 @@ export default class KeyValueAPI implements KeyValueStorage {
 					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
 					body,
 					{
-						"Content-Type": contentType,
-					},
+						'Content-Type': contentType,
+					}
 				);
 				if (resp.status !== 201) {
 					throw new Error(
-						`error setting keyvalue: ${resp.response.statusText} (${resp.response.status})`,
+						`error setting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				}
 			} catch (ex) {
@@ -122,16 +122,16 @@ export default class KeyValueAPI implements KeyValueStorage {
 	 */
 	async delete(name: string, key: string): Promise<void> {
 		const tracer = getTracer();
-		tracer.startActiveSpan("agentuity.keyvalue.delete", async (span) => {
-			span.setAttribute("name", name);
-			span.setAttribute("key", key);
+		tracer.startActiveSpan('agentuity.keyvalue.delete', async (span) => {
+			span.setAttribute('name', name);
+			span.setAttribute('key', key);
 			try {
 				const resp = await DELETE(
-					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status !== 200) {
 					throw new Error(
-						`error deleting keyvalue: ${resp.response.statusText} (${resp.response.status})`,
+						`error deleting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				}
 			} catch (ex) {

@@ -1,24 +1,24 @@
-import type { Logger } from "../logger";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
-import { Resource } from "@opentelemetry/resources";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-grpc";
+import type { Logger } from '../logger';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { Resource } from '@opentelemetry/resources';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import {
 	ATTR_SERVICE_NAME,
 	ATTR_SERVICE_VERSION,
-} from "@opentelemetry/semantic-conventions";
-import opentelemetry, { type Tracer } from "@opentelemetry/api";
-import * as LogsAPI from "@opentelemetry/api-logs";
+} from '@opentelemetry/semantic-conventions';
+import opentelemetry, { type Tracer } from '@opentelemetry/api';
+import * as LogsAPI from '@opentelemetry/api-logs';
 import {
 	LoggerProvider,
 	SimpleLogRecordProcessor,
 	type LogRecordProcessor,
-} from "@opentelemetry/sdk-logs";
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-grpc";
-import { createLogger } from "./logger";
-import { ConsoleLogRecordExporter } from "./console";
+} from '@opentelemetry/sdk-logs';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { createLogger } from './logger';
+import { ConsoleLogRecordExporter } from './console';
 
 interface OtelConfig {
 	url?: string;
@@ -50,7 +50,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		logRecordProcessor = new SimpleLogRecordProcessor(otlpLogExporter);
 	} else {
 		logRecordProcessor = new SimpleLogRecordProcessor(
-			new ConsoleLogRecordExporter(),
+			new ConsoleLogRecordExporter()
 		);
 	}
 
@@ -95,10 +95,10 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	const shutdown = async () => {
 		if (running) {
 			running = false;
-			logger.debug("shutting down OpenTelemetry");
+			logger.debug('shutting down OpenTelemetry');
 			await instrumentationSDK.shutdown();
 			await otlpLogExporter?.shutdown();
-			logger.debug("shut down OpenTelemetry");
+			logger.debug('shut down OpenTelemetry');
 		}
 	};
 

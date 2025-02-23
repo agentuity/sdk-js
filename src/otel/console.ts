@@ -1,10 +1,10 @@
-import { ExportResultCode, type ExportResult } from "@opentelemetry/core";
+import { ExportResultCode, type ExportResult } from '@opentelemetry/core';
 import type {
 	LogRecordExporter,
 	ReadableLogRecord,
-} from "@opentelemetry/sdk-logs";
-import ConsoleLogger from "../logger/console";
-import { SeverityNumber } from "@opentelemetry/api-logs";
+} from '@opentelemetry/sdk-logs';
+import ConsoleLogger from '../logger/console';
+import { SeverityNumber } from '@opentelemetry/api-logs';
 
 export class ConsoleLogRecordExporter implements LogRecordExporter {
 	private readonly logger: ConsoleLogger;
@@ -15,7 +15,7 @@ export class ConsoleLogRecordExporter implements LogRecordExporter {
 
 	export(
 		logs: ReadableLogRecord[],
-		resultCallback: (result: ExportResult) => void,
+		resultCallback: (result: ExportResult) => void
 	): void {
 		for (const log of logs) {
 			switch (log.severityNumber) {

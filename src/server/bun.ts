@@ -1,5 +1,5 @@
-import type { Server, UnifiedServerConfig, ServerRoute } from "./types";
-import type { AgentRequestType } from "../types";
+import type { Server, UnifiedServerConfig, ServerRoute } from './types';
+import type { AgentRequestType } from '../types';
 export class BunServer implements Server {
 	private server: ReturnType<typeof Bun.serve> | null = null;
 	private config: UnifiedServerConfig;
@@ -10,7 +10,7 @@ export class BunServer implements Server {
 
 	async start(): Promise<void> {
 		if (this.server) {
-			throw new Error("Server is already running");
+			throw new Error('Server is already running');
 		}
 
 		const routeMap = new Map<string, ServerRoute>();
@@ -30,12 +30,12 @@ export class BunServer implements Server {
 				const method = req.method;
 				const routeKey = `${method}:${url.pathname}`;
 
-				logger.debug("request: %s %s", method, url.pathname);
+				logger.debug('request: %s %s', method, url.pathname);
 
 				const route = routeMap.get(routeKey);
 
 				if (!route) {
-					return new Response("Not Found", { status: 404 });
+					return new Response('Not Found', { status: 404 });
 				}
 
 				try {
@@ -46,27 +46,27 @@ export class BunServer implements Server {
 					});
 					return new Response(JSON.stringify(resp), {
 						headers: {
-							"Content-Type": "application/json",
+							'Content-Type': 'application/json',
 						},
 					});
 				} catch (error) {
-					logger.error("Error handling request:", error);
-					return new Response("Internal Server Error", { status: 500 });
+					logger.error('Error handling request:', error);
+					return new Response('Internal Server Error', { status: 500 });
 				}
 			},
 		});
 
-		this.config.logger.info("Bun server started on port %d", this.config.port);
+		this.config.logger.info('Bun server started on port %d', this.config.port);
 	}
 
 	async stop(): Promise<void> {
 		if (!this.server) {
 			return;
 		}
-		this.config.logger.debug("server stopping");
+		this.config.logger.debug('server stopping');
 
 		await this.server.stop();
 		this.server = null;
-		this.config.logger.info("server stopped");
+		this.config.logger.info('server stopped');
 	}
 }

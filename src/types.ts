@@ -1,17 +1,17 @@
-import type { Tracer } from "@opentelemetry/api";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { Logger } from "./logger";
+import type { Tracer } from '@opentelemetry/api';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+import type { Logger } from './logger';
 
 export type TriggerType =
-	| "webhook"
-	| "cron"
-	| "manual"
-	| "agent"
-	| "sms"
-	| "queue"
-	| "voice"
-	| "email"
-	| "agent";
+	| 'webhook'
+	| 'cron'
+	| 'manual'
+	| 'agent'
+	| 'sms'
+	| 'queue'
+	| 'voice'
+	| 'email'
+	| 'agent';
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonArray = Json[];
@@ -25,46 +25,46 @@ interface NoContent {
 }
 
 interface JSONContent {
-	contentType: "application/json";
+	contentType: 'application/json';
 	payload: Json;
 	metadata?: Record<string, Json>;
 }
 
 interface TextContent {
-	contentType: "text/plain";
+	contentType: 'text/plain';
 	payload: string;
 	metadata?: Record<string, Json>;
 }
 
 interface MarkdownContent {
-	contentType: "text/markdown";
+	contentType: 'text/markdown';
 	payload: string;
 	metadata?: Record<string, Json>;
 }
 
 interface HTMLContent {
-	contentType: "text/html";
+	contentType: 'text/html';
 	payload: string;
 	metadata?: Record<string, Json>;
 }
 
 interface BinaryContent {
 	contentType:
-		| "application/octet-stream"
-		| "application/pdf"
-		| "image/png"
-		| "image/jpeg"
-		| "image/gif"
-		| "image/webp"
-		| "audio/mpeg"
-		| "audio/mp3"
-		| "audio/wav"
-		| "audio/ogg"
-		| "audio/m4a"
-		| "audio/aac"
-		| "audio/mp4"
-		| "audio/m4p"
-		| "audio/webm";
+		| 'application/octet-stream'
+		| 'application/pdf'
+		| 'image/png'
+		| 'image/jpeg'
+		| 'image/gif'
+		| 'image/webp'
+		| 'audio/mpeg'
+		| 'audio/mp3'
+		| 'audio/wav'
+		| 'audio/ogg'
+		| 'audio/m4a'
+		| 'audio/aac'
+		| 'audio/mp4'
+		| 'audio/m4p'
+		| 'audio/webm';
 	payload: ArrayBuffer;
 	metadata?: Record<string, Json>;
 }
@@ -121,7 +121,7 @@ export interface KeyValueStorage {
 		name: string,
 		key: string,
 		value: ArrayBuffer | string | Json,
-		ttl?: number,
+		ttl?: number
 	): Promise<void>;
 
 	/**
@@ -216,7 +216,7 @@ export interface VectorStorage {
 	 */
 	search(
 		name: string,
-		params: VectorSearchParams,
+		params: VectorSearchParams
 	): Promise<VectorSearchResult[]>;
 
 	/**
@@ -481,7 +481,7 @@ export interface IOSchema {
 export type AgentHandler = (
 	request: AgentRequest,
 	response: AgentResponse,
-	context: AgentContext,
+	context: AgentContext
 ) => Promise<AgentResponseType>;
 
 /**

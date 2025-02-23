@@ -1,5 +1,5 @@
 interface BaseApiRequest {
-	method: "POST" | "GET" | "PUT" | "DELETE";
+	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
 	path: string;
 	timeout?: number;
 	headers?: Record<string, string>;
@@ -8,22 +8,22 @@ interface BaseApiRequest {
 export type Body = string | ArrayBuffer | ReadableStream | Blob | FormData;
 
 interface GetApiRequest extends BaseApiRequest {
-	method: "GET";
+	method: 'GET';
 	body: never;
 }
 
 interface PostApiRequest extends BaseApiRequest {
-	method: "POST";
+	method: 'POST';
 	body: Body;
 }
 
 interface PutApiRequest extends BaseApiRequest {
-	method: "PUT";
+	method: 'PUT';
 	body: Body;
 }
 
 interface DeleteApiRequest extends BaseApiRequest {
-	method: "DELETE";
+	method: 'DELETE';
 	body?: Body;
 }
 
@@ -35,7 +35,7 @@ type ApiRequest =
 
 interface APIResponse<T> {
 	json: T | null;
-	headers: Response["headers"];
+	headers: Response['headers'];
 	status: number;
 	response: Response;
 }
@@ -45,20 +45,20 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export async function send<K>(
 	request: ApiRequest,
 	forceBuffer = false,
-	attempt = 1,
+	attempt = 1
 ): Promise<APIResponse<K>> {
 	const apiKey = process.env.AGENTUITY_API_KEY;
 	if (!apiKey) {
-		throw new Error("AGENTUITY_API_KEY is not set");
+		throw new Error('AGENTUITY_API_KEY is not set');
 	}
 	const url = new URL(
 		request.path,
-		process.env.AGENTUITY_URL || "https://api.agentuity.com",
+		process.env.AGENTUITY_URL || 'https://api.agentuity.com'
 	);
 	const headers: Record<string, string> = {
-		Accept: "application/json",
-		"Content-Type": "application/json",
-		"User-Agent": "@agentuity/sdk",
+		Accept: 'application/json',
+		'Content-Type': 'application/json',
+		'User-Agent': '@agentuity/sdk',
 	};
 	// allow headers to be overridden
 	for (const key in request.headers) {
@@ -87,8 +87,8 @@ export async function send<K>(
 		case 201:
 		case 202: {
 			if (!forceBuffer) {
-				const contentType = resp.headers.get("content-type");
-				if (contentType?.includes("/json")) {
+				const contentType = resp.headers.get('content-type');
+				if (contentType?.includes('/json')) {
 					json = (await resp.json()) as K;
 				}
 			}
@@ -109,16 +109,16 @@ export async function GET<K>(
 	path: string,
 	forceBuffer?: boolean,
 	headers?: Record<string, string>,
-	timeout?: number,
+	timeout?: number
 ) {
 	return send<K>(
 		{
-			method: "GET",
+			method: 'GET',
 			path,
 			headers,
 			timeout,
 		} as GetApiRequest,
-		forceBuffer,
+		forceBuffer
 	);
 }
 
@@ -126,10 +126,10 @@ export async function POST<K>(
 	path: string,
 	body: Body,
 	headers?: Record<string, string>,
-	timeout?: number,
+	timeout?: number
 ) {
 	return send<K>({
-		method: "POST",
+		method: 'POST',
 		path,
 		body,
 		headers,
@@ -141,10 +141,10 @@ export async function PUT<K>(
 	path: string,
 	body: Body,
 	headers?: Record<string, string>,
-	timeout?: number,
+	timeout?: number
 ) {
 	return send<K>({
-		method: "PUT",
+		method: 'PUT',
 		path,
 		body,
 		timeout,
@@ -156,10 +156,10 @@ export async function DELETE<K>(
 	path: string,
 	body?: Body,
 	headers?: Record<string, string>,
-	timeout?: number,
+	timeout?: number
 ) {
 	return send<K>({
-		method: "DELETE",
+		method: 'DELETE',
 		path,
 		body,
 		timeout,

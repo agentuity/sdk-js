@@ -1,8 +1,8 @@
-import { format } from "node:util";
-import * as LogsAPI from "@opentelemetry/api-logs";
-import type { Logger } from "../logger";
-import type { Json } from "../types";
-import ConsoleLogger from "../logger/console";
+import { format } from 'node:util';
+import * as LogsAPI from '@opentelemetry/api-logs';
+import type { Logger } from '../logger';
+import type { Json } from '../types';
+import ConsoleLogger from '../logger/console';
 
 class OtelLogger implements Logger {
 	private readonly delegate: LogsAPI.Logger;
@@ -12,7 +12,7 @@ class OtelLogger implements Logger {
 	constructor(
 		useConsole: boolean,
 		delegate: LogsAPI.Logger,
-		context?: Record<string, Json> | undefined,
+		context?: Record<string, Json> | undefined
 	) {
 		this.delegate = delegate;
 		this.context = context;
@@ -24,7 +24,7 @@ class OtelLogger implements Logger {
 		const body = format(message, ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.DEBUG,
-			severityText: "DEBUG",
+			severityText: 'DEBUG',
 			body,
 			attributes: this.context,
 		});
@@ -34,7 +34,7 @@ class OtelLogger implements Logger {
 		const body = format(message, ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.INFO,
-			severityText: "INFO",
+			severityText: 'INFO',
 			body,
 			attributes: this.context,
 		});
@@ -44,7 +44,7 @@ class OtelLogger implements Logger {
 		const body = format(message, ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.WARN,
-			severityText: "WARN",
+			severityText: 'WARN',
 			body,
 			attributes: this.context,
 		});
@@ -54,7 +54,7 @@ class OtelLogger implements Logger {
 		const body = format(message, ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.ERROR,
-			severityText: "ERROR",
+			severityText: 'ERROR',
 			body,
 			attributes: this.context,
 		});
@@ -68,6 +68,6 @@ class OtelLogger implements Logger {
 }
 
 export function createLogger(useConsole: boolean): Logger {
-	const delegate = LogsAPI.logs.getLogger("default");
+	const delegate = LogsAPI.logs.getLogger('default');
 	return new OtelLogger(useConsole, delegate);
 }

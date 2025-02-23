@@ -1,12 +1,12 @@
-import type { Logger } from "./logger";
-import type { Json } from "../types";
-import { format } from "node:util";
+import { format } from 'node:util';
+import type { Logger } from './logger';
+import type { Json } from '../types';
 
-const yellow = "\x1b[33m";
-const green = "\x1b[32m";
-const red = "\x1b[31m";
-const black = "\x1b[30m";
-const reset = "\x1b[0m";
+const yellow = '\x1b[33m';
+const green = '\x1b[32m';
+const red = '\x1b[31m';
+const black = '\x1b[30m';
+const reset = '\x1b[0m';
 
 export default class ConsoleLogger implements Logger {
 	private context: Record<string, Json>;
@@ -19,28 +19,28 @@ export default class ConsoleLogger implements Logger {
 		const contextStr = this.context
 			? Object.entries(this.context)
 					.map(([key, value]) => `${key}=${value}`)
-					.join(" ")
-			: "";
+					.join(' ')
+			: '';
 
 		const m = format(message, ...args);
-		return `${m}${contextStr ? ` [${contextStr}]` : ""}`;
+		return `${m}${contextStr ? ` [${contextStr}]` : ''}`;
 	}
 
 	debug(message: string, ...args: unknown[]): void {
 		console.debug(
-			`${black}[DEBUG]${reset} ${this.formatMessage(message, args)}`,
+			`${black}[DEBUG]${reset} ${this.formatMessage(message, args)}`
 		);
 	}
 
 	info(message: string, ...args: unknown[]): void {
 		console.info(
-			`${green}[INFO]${reset}  ${this.formatMessage(message, args)}`,
+			`${green}[INFO]${reset}  ${this.formatMessage(message, args)}`
 		);
 	}
 
 	warn(message: string, ...args: unknown[]): void {
 		console.warn(
-			`${yellow}[WARN]${reset}  ${this.formatMessage(message, args)}`,
+			`${yellow}[WARN]${reset}  ${this.formatMessage(message, args)}`
 		);
 	}
 

@@ -1,4 +1,4 @@
-import type { AgentResponse, AgentResponseType, Json } from "../types";
+import type { AgentResponse, AgentResponseType, Json } from '../types';
 
 /**
  * The AgentResponse class implements the AgentResponseHandler interface.
@@ -19,7 +19,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	json(data: Json, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "application/json",
+			contentType: 'application/json',
 			payload: data,
 			metadata,
 		};
@@ -30,7 +30,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	text(data: string, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "text/plain",
+			contentType: 'text/plain',
 			payload: data,
 			metadata,
 		};
@@ -41,10 +41,10 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	binary(
 		data: ArrayBuffer,
-		metadata?: Record<string, Json>,
+		metadata?: Record<string, Json>
 	): AgentResponseType {
 		return {
-			contentType: "application/octet-stream",
+			contentType: 'application/octet-stream',
 			payload: data,
 			metadata,
 		};
@@ -55,7 +55,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	pdf(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "application/pdf",
+			contentType: 'application/pdf',
 			payload: data,
 			metadata,
 		};
@@ -66,7 +66,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	png(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "image/png",
+			contentType: 'image/png',
 			payload: data,
 			metadata,
 		};
@@ -77,7 +77,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	jpeg(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "image/jpeg",
+			contentType: 'image/jpeg',
 			payload: data,
 			metadata,
 		};
@@ -88,7 +88,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	gif(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "image/gif",
+			contentType: 'image/gif',
 			payload: data,
 			metadata,
 		};
@@ -99,7 +99,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	webp(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "image/webp",
+			contentType: 'image/webp',
 			payload: data,
 			metadata,
 		};
@@ -110,7 +110,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	mp3(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/mpeg",
+			contentType: 'audio/mpeg',
 			payload: data,
 			metadata,
 		};
@@ -121,7 +121,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	mp4(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/mp4",
+			contentType: 'audio/mp4',
 			payload: data,
 			metadata,
 		};
@@ -132,7 +132,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	m4a(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/m4a",
+			contentType: 'audio/m4a',
 			payload: data,
 			metadata,
 		};
@@ -143,7 +143,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	m4p(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/m4p",
+			contentType: 'audio/m4p',
 			payload: data,
 			metadata,
 		};
@@ -154,7 +154,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	webm(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/webm",
+			contentType: 'audio/webm',
 			payload: data,
 			metadata,
 		};
@@ -165,7 +165,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	html(data: string, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "text/html",
+			contentType: 'text/html',
 			payload: data,
 			metadata,
 		};
@@ -176,7 +176,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	wav(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/wav",
+			contentType: 'audio/wav',
 			payload: data,
 			metadata,
 		};
@@ -187,7 +187,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	ogg(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType {
 		return {
-			contentType: "audio/ogg",
+			contentType: 'audio/ogg',
 			payload: data,
 			metadata,
 		};
