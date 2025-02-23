@@ -14,7 +14,6 @@ import * as LogsAPI from '@opentelemetry/api-logs';
 import {
 	LoggerProvider,
 	SimpleLogRecordProcessor,
-	type LogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
 import { createLogger } from './logger';
@@ -41,6 +40,19 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	} = config;
 
 	const headers: Record<string, string> = {};
+	if (process.env.AGENTUITY_OTLP_BEARER_TOKEN) {
+		headers['authorization'] =
+			`Bearer ${process.env.AGENTUITY_OTLP_BEARER_TOKEN}`;
+	}
+
+	const resource = new Resource({
+		[ATTR_SERVICE_NAME]: name,
+		[ATTR_SERVICE_VERSION]: version,
+		'@agentuity/orgId': process.env.AGENTUITY_CLOUD_ORG_ID,
+		'@agentuity/projectId': process.env.AGENTUITY_CLOUD_PROJECT_ID,
+		'@agentuity/deploymentId': process.env.AGENTUITY_CLOUD_DEPLOYMENT_ID,
+		'@agentuity/runId': process.env.AGENTUITY_CLOUD_RUN_ID,
+	});
 
 	let otlpLogExporter: OTLPLogExporter | undefined;
 	let logRecordProcessor: SimpleLogRecordProcessor | undefined;
@@ -54,7 +66,9 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		);
 	}
 
-	const loggerProvider = new LoggerProvider();
+	const loggerProvider = new LoggerProvider({
+		resource,
+	});
 	loggerProvider.addLogRecordProcessor(logRecordProcessor);
 	LogsAPI.logs.setGlobalLoggerProvider(loggerProvider);
 
@@ -77,10 +91,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 				})
 			: undefined,
 		instrumentations: [getNodeAutoInstrumentations()],
-		resource: new Resource({
-			[ATTR_SERVICE_NAME]: name,
-			[ATTR_SERVICE_VERSION]: version,
-		}),
+		resource,
 	});
 
 	let running = false;

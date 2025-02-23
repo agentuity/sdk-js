@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.53
+
+### Patch Changes
+
+- Adds support for bearer authorization and adds additional resource information
+
 ## 0.0.52
 
 ### Patch Changes
