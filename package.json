@@ -1,13 +1,17 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.47",
+	"version": "0.0.48",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
+	"public": true,
 	"sideEffects": false,
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"type": "module",
-	"files": ["dist/**/*", "LICENSE.md"],
+	"files": [
+		"dist/**/*",
+		"LICENSE.md"
+	],
 	"engines": {
 		"node": ">=22"
 	},
@@ -20,13 +24,21 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": ["ai", "agents", "agenuity", "ai agent", "agent"],
+	"keywords": [
+		"ai",
+		"agents",
+		"agenuity",
+		"ai agent",
+		"agent"
+	],
 	"scripts": {
 		"build": "rm -rf dist && tsup",
 		"bun:start": "bun run build && bun run ./dist/index.js",
 		"node:start": "bun run build && node ./dist/index.js",
-		"publish:next": "rm -rf dist && npm run build && npm publish --tag next",
-		"format": "npx @biomejs/biome format --write"
+		"format": "npx @biomejs/biome format --write",
+		"changeset": "npx @changesets/cli",
+		"version": "npx @changesets/cli version",
+		"publish": "rm -rf dist && npm run build && npx @changesets/cli publish"
 	},
 	"exports": {
 		"./package.json": "./package.json",
