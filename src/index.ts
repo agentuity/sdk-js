@@ -2,7 +2,7 @@ export * from "./server";
 export * from "./logger";
 export * from "./types";
 
-async function main() {
+export async function runner() {
 	if (
 		process.env.AGENTUITY_SDK_AUTORUN === "true" &&
 		!!process.env.AGENTUITY_SDK_DIR
@@ -14,5 +14,3 @@ async function main() {
 		);
 	}
 }
-
-main();

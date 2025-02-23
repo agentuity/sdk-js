@@ -1,10 +1,10 @@
-import type { AgentResponseHandler, AgentResponseType, Json } from "../types";
+import type { AgentResponse, AgentResponseType, Json } from "../types";
 
 /**
  * The AgentResponse class implements the AgentResponseHandler interface.
  * It is used to create and return responses from an agent.
  */
-export default class AgentResponse implements AgentResponseHandler {
+export default class AgentResponseHandler implements AgentResponse {
 	/**
 	 * return an empty response with optional metadata
 	 */

@@ -5,6 +5,8 @@ import type {
 	VectorSearchResult,
 } from "../types";
 import { DELETE, POST, PUT } from "./api";
+import { getTracer } from "../router/router";
+import type { Exception } from "@opentelemetry/api";
 
 interface VectorUpsertSuccessResponse {
 	success: true;
@@ -60,19 +62,34 @@ export default class VectorAPI implements VectorStorage {
 		name: string,
 		...documents: VectorUpsertParams[]
 	): Promise<string[]> {
-		const resp = await PUT<VectorUpsertParams[], VectorUpsertResponse>(
-			`/sdk/vector/${encodeURIComponent(name)}`,
-			documents,
-		);
-		if (resp.status === 200) {
-			if (resp.json?.success) {
-				return resp.json.ids;
-			}
-		}
-		if (!resp.json?.success && resp.json?.error) {
-			throw new Error(resp.json.error);
-		}
-		throw new Error("unknown error");
+		const tracer = getTracer();
+		return new Promise<string[]>((resolve, reject) => {
+			tracer.startActiveSpan("agentuity.vector.upsert", async (span) => {
+				try {
+					span.setAttribute("name", name);
+					const resp = await PUT<VectorUpsertResponse>(
+						`/sdk/vector/${encodeURIComponent(name)}`,
+						JSON.stringify(documents),
+					);
+					if (resp.status === 200) {
+						if (resp.json?.success) {
+							const json = resp.json as unknown as { data: { id: string }[] };
+							resolve(json.data.map((o) => o.id));
+							return;
+						}
+					}
+					if (!resp.json?.success && resp.json?.error) {
+						throw new Error(resp.json.error);
+					}
+					throw new Error("unknown error");
+				} catch (ex) {
+					span.recordException(ex as Exception);
+					reject(ex);
+				} finally {
+					span.end();
+				}
+			});
+		});
 	}
 
 	/**
@@ -86,22 +103,37 @@ export default class VectorAPI implements VectorStorage {
 		name: string,
 		params: VectorSearchParams,
 	): Promise<VectorSearchResult[]> {
-		const resp = await POST<VectorSearchParams, VectorSearchResponse>(
-			`/sdk/vector/search/${encodeURIComponent(name)}`,
-			params,
-		);
-		if (resp.status === 404) {
-			return [];
-		}
-		if (resp.status === 200) {
-			if (resp.json?.success) {
-				return resp.json.data;
-			}
-		}
-		if (!resp.json?.success && resp.json?.error) {
-			throw new Error(resp.json.error);
-		}
-		throw new Error("unknown error");
+		const tracer = getTracer();
+		return new Promise<VectorSearchResult[]>((resolve, reject) => {
+			tracer.startActiveSpan("agentuity.vector.search", async (span) => {
+				span.setAttribute("name", name);
+				try {
+					const resp = await POST<VectorSearchResponse>(
+						`/sdk/vector/search/${encodeURIComponent(name)}`,
+						JSON.stringify(params),
+					);
+					if (resp.status === 404) {
+						resolve([]);
+						return;
+					}
+					if (resp.status === 200) {
+						if (resp.json?.success) {
+							resolve(resp.json.data);
+							return;
+						}
+					}
+					if (!resp.json?.success && resp.json?.error) {
+						throw new Error(resp.json.error);
+					}
+					throw new Error("unknown error");
+				} catch (ex) {
+					span.recordException(ex as Exception);
+					reject(ex);
+				} finally {
+					span.end();
+				}
+			});
+		});
 	}
 
 	/**
@@ -112,18 +144,32 @@ export default class VectorAPI implements VectorStorage {
 	 * @returns the number of vector objects that were deleted
 	 */
 	async delete(name: string, ...ids: string[]): Promise<number> {
-		const resp = await DELETE<string[], VectorDeleteResponse>(
-			`/sdk/vector/${encodeURIComponent(name)}`,
-			ids,
-		);
-		if (resp.status === 200) {
-			if (resp.json?.success) {
-				return resp.json.ids.length;
-			}
-		}
-		if (!resp.json?.success && resp.json?.error) {
-			throw new Error(resp.json.error);
-		}
-		throw new Error("unknown error");
+		const tracer = getTracer();
+		return new Promise<number>((resolve, reject) => {
+			tracer.startActiveSpan("agentuity.vector.delete", async (span) => {
+				span.setAttribute("name", name);
+				try {
+					const resp = await DELETE<VectorDeleteResponse>(
+						`/sdk/vector/${encodeURIComponent(name)}`,
+						JSON.stringify(ids),
+					);
+					if (resp.status === 200) {
+						if (resp.json?.success) {
+							resolve(resp.json.ids.length);
+							return;
+						}
+					}
+					if (!resp.json?.success && resp.json?.error) {
+						throw new Error(resp.json.error);
+					}
+					throw new Error("unknown error");
+				} catch (ex) {
+					span.recordException(ex as Exception);
+					reject(ex);
+				} finally {
+					span.end();
+				}
+			});
+		});
 	}
 }

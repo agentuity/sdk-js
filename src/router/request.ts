@@ -1,6 +1,6 @@
-import type { AgentRequestHandler, Json, AgentRequestType } from "../types";
+import type { AgentRequest, Json, AgentRequestType } from "../types";
 
-export default class AgentRequest implements AgentRequestHandler {
+export default class AgentRequestHandler implements AgentRequest {
 	private readonly request: AgentRequestType;
 
 	constructor(request: AgentRequestType) {

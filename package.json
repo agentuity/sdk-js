@@ -15,17 +15,17 @@
 	"homepage": "https://agenuity.com",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/agenuity/sdk.git"
+		"url": "git+https://github.com/agenuity/sdk-js.git"
 	},
 	"bugs": {
-		"url": "https://github.com/agenuity/sdk/issues"
+		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
 	"keywords": ["ai", "agents", "agenuity", "ai agent", "agent"],
 	"scripts": {
-		"build": "tsup",
+		"build": "rm -rf dist && tsup",
 		"bun:start": "bun run build && bun run ./dist/index.js",
 		"node:start": "bun run build && node ./dist/index.js",
-		"publish:next": "npm publish --tag next"
+		"publish:next": "rm -rf dist && npm run build && npm publish --tag next"
 	},
 	"exports": {
 		"./package.json": "./package.json",

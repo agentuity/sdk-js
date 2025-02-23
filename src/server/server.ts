@@ -1,11 +1,11 @@
 import type { Server, UnifiedServerConfig } from "./types";
-import type { AgentContext } from "../types";
+import type { AgentContext, AgentHandler } from "../types";
 import type { Logger } from "../logger";
 import type { ServerRoute } from "./types";
 import type { Tracer } from "@opentelemetry/api";
-import { readdirSync, existsSync } from "node:fs";
+import { readdirSync, existsSync, statSync } from "node:fs";
 import { createRouter } from "../router";
-import { join } from "node:path";
+import { dirname, join, basename } from "node:path";
 import KeyValueAPI from "../apis/keyvalue";
 import VectorAPI from "../apis/vector";
 
@@ -21,15 +21,31 @@ async function createUnifiedServer(
 }
 
 async function createRoute(
+	logger: Logger,
 	filename: string,
 	path: string,
 	context: AgentContext,
 ): Promise<ServerRoute> {
 	const mod = await import(filename);
+	let thehandler: AgentHandler | undefined;
+	if (mod.default) {
+		thehandler = mod.default;
+	} else if (mod.config) {
+		for (const key in mod) {
+			if (key !== "default" && mod[key] instanceof Function) {
+				thehandler = mod[key];
+				break;
+			}
+		}
+	}
+	if (!thehandler) {
+		throw new Error(`No handler found in ${filename}`);
+	}
 	const handler = createRouter({
-		handler: mod.default,
+		handler: thehandler,
 		context: { ...context, agent: mod.config },
 	});
+	logger.info("registering %s for %s", mod.config.name, path);
 	return {
 		path,
 		method: "POST",
@@ -54,12 +70,15 @@ export async function createServer({
 	const routes: ServerRoute[] = [];
 	if (existsSync(join(directory, "index.js"))) {
 		const filename = join(directory, "index.js");
-		routes.push(await createRoute(filename, "/", context));
+		routes.push(await createRoute(logger, filename, "/", context));
 	} else {
 		for (const item of items) {
-			if (item.endsWith(".js")) {
-				const filename = join(directory, item);
-				routes.push(await createRoute(filename, `/${item}`, context));
+			const filepath = join(directory, item);
+			if (statSync(filepath).isDirectory()) {
+				const index = join(filepath, "index.js");
+				if (existsSync(index)) {
+					routes.push(await createRoute(logger, index, `/${item}`, context));
+				}
 			}
 		}
 	}

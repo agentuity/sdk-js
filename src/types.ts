@@ -107,7 +107,7 @@ export interface KeyValueStorage {
 	 * @param key - the key to get the value of
 	 * @returns the value of the key
 	 */
-	get<T = ArrayBuffer>(name: string, key: string): Promise<T | null>;
+	get(name: string, key: string): Promise<ArrayBuffer | null>;
 
 	/**
 	 * set a value in the key value storage
@@ -280,7 +280,7 @@ export interface AgentContext {
 	vector: VectorStorage;
 }
 
-export interface AgentRequestHandler {
+export interface AgentRequest {
 	/**
 	 * get the trigger of the request
 	 */
@@ -367,7 +367,7 @@ export interface AgentRequestHandler {
 	ogg(): ArrayBuffer;
 }
 
-export interface AgentResponseHandler {
+export interface AgentResponse {
 	/**
 	 * return an empty response with optional metadata
 	 */
@@ -479,8 +479,8 @@ export interface IOSchema {
  * the handler for the agent
  */
 export type AgentHandler = (
-	request: AgentRequestHandler,
-	response: AgentResponseHandler,
+	request: AgentRequest,
+	response: AgentResponse,
 	context: AgentContext,
 ) => Promise<AgentResponseType>;
 
