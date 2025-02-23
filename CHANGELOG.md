@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.52
+
+### Patch Changes
+
+- Add support for a health endpoint
+
 ## 0.0.51
 
 ### Patch Changes
