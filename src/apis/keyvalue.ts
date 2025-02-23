@@ -1,7 +1,6 @@
 import type { Json, KeyValueStorage } from "../types";
 import { DELETE, GET, PUT, type Body } from "./api";
-import { getTracer } from "../router/router";
-import type { Exception } from "@opentelemetry/api";
+import { getTracer, recordException } from "../router/router";
 
 export default class KeyValueAPI implements KeyValueStorage {
 	/**
@@ -23,10 +22,12 @@ export default class KeyValueAPI implements KeyValueStorage {
 						true,
 					);
 					if (resp.status === 404) {
+						span.addEvent("miss");
 						resolve(null);
 						return;
 					}
 					if (resp.status === 200) {
+						span.addEvent("hit");
 						resolve(resp.response.arrayBuffer());
 						return;
 					}
@@ -34,7 +35,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 						`error getting keyvalue: ${resp.response.statusText} (${resp.response.status})`,
 					);
 				} catch (ex) {
-					span.recordException(ex as Exception);
+					recordException(span, ex);
 					reject(ex);
 				} finally {
 					span.end();
@@ -105,7 +106,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					);
 				}
 			} catch (ex) {
-				span.recordException(ex as Exception);
+				recordException(span, ex);
 				throw ex;
 			} finally {
 				span.end();
@@ -134,7 +135,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					);
 				}
 			} catch (ex) {
-				span.recordException(ex as Exception);
+				recordException(span, ex);
 				throw ex;
 			} finally {
 				span.end();

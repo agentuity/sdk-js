@@ -5,8 +5,7 @@ import type {
 	VectorSearchResult,
 } from "../types";
 import { DELETE, POST, PUT } from "./api";
-import { getTracer } from "../router/router";
-import type { Exception } from "@opentelemetry/api";
+import { getTracer, recordException } from "../router/router";
 
 interface VectorUpsertSuccessResponse {
 	success: true;
@@ -83,7 +82,7 @@ export default class VectorAPI implements VectorStorage {
 					}
 					throw new Error("unknown error");
 				} catch (ex) {
-					span.recordException(ex as Exception);
+					recordException(span, ex);
 					reject(ex);
 				} finally {
 					span.end();
@@ -113,11 +112,13 @@ export default class VectorAPI implements VectorStorage {
 						JSON.stringify(params),
 					);
 					if (resp.status === 404) {
+						span.addEvent("miss");
 						resolve([]);
 						return;
 					}
 					if (resp.status === 200) {
 						if (resp.json?.success) {
+							span.addEvent("hit");
 							resolve(resp.json.data);
 							return;
 						}
@@ -127,7 +128,7 @@ export default class VectorAPI implements VectorStorage {
 					}
 					throw new Error("unknown error");
 				} catch (ex) {
-					span.recordException(ex as Exception);
+					recordException(span, ex);
 					reject(ex);
 				} finally {
 					span.end();
@@ -164,7 +165,7 @@ export default class VectorAPI implements VectorStorage {
 					}
 					throw new Error("unknown error");
 				} catch (ex) {
-					span.recordException(ex as Exception);
+					recordException(span, ex);
 					reject(ex);
 				} finally {
 					span.end();

@@ -3,7 +3,14 @@ import type { ServerRoute, ServerRequest } from "../server/types";
 import type { AgentHandler, AgentContext, AgentResponseType } from "../types";
 import AgentRequestHandler from "./request";
 import AgentResponseHandler from "./response";
-import { SpanKind, type Exception, type Tracer } from "@opentelemetry/api";
+import {
+	SpanKind,
+	SpanStatusCode,
+	type Exception,
+	type Tracer,
+	type Span,
+} from "@opentelemetry/api";
+import type { Logger } from "..";
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -35,6 +42,18 @@ export function getTracer(): Tracer {
 	}
 	const { tracer } = store as { tracer: Tracer };
 	return tracer;
+}
+
+export function recordException(span: Span, ex: unknown) {
+	const { logger } = asyncStorage.getStore() as { logger: Logger };
+	if (logger) {
+		logger.error("%s", ex);
+	}
+	span.recordException(ex as Exception);
+	span.setStatus({
+		code: SpanStatusCode.ERROR,
+		message: (ex as { message: string }).message,
+	});
 }
 
 export function createRouter(config: RouterConfig): ServerRoute["handler"] {
@@ -82,10 +101,7 @@ export function createRouter(config: RouterConfig): ServerRoute["handler"] {
 								}
 								resolve(data);
 							} catch (err) {
-								config.context.logger.error(
-									(err as { message: string }).message,
-								);
-								span.recordException(err as Exception);
+								recordException(span, err);
 								reject(err);
 							} finally {
 								span.end();
