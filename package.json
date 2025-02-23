@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.48",
+	"version": "0.0.50",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
@@ -37,8 +37,8 @@
 		"node:start": "bun run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
 		"changeset": "npx @changesets/cli",
-		"version": "npx @changesets/cli version && git tag -s -a v$npm_package_version -m 'chore(release): $npm_package_version' && git push --tags",
-		"publish": "rm -rf dist && npm run build && npx @changesets/cli publish"
+		"version": "npx @changesets/cli version",
+		"publish": "rm -rf dist && npm run build && npx @changesets/cli publish && git push --follow-tags"
 	},
 	"exports": {
 		"./package.json": "./package.json",
