@@ -37,7 +37,7 @@
 		"node:start": "bun run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
 		"changeset": "npx @changesets/cli",
-		"version": "npx @changesets/cli version",
+		"version": "npx @changesets/cli version && git tag -s -a v$npm_package_version -m 'chore(release): $npm_package_version' && git push --tags",
 		"publish": "rm -rf dist && npm run build && npx @changesets/cli publish"
 	},
 	"exports": {
