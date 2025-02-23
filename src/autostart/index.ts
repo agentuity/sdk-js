@@ -10,7 +10,12 @@ export async function run(basedir: string, distdir?: string) {
 	}
 	let directory = distdir;
 	if (!directory) {
-		directory = join(basedir, 'dist/src/agents');
+		const insideDist = join(basedir, 'src/agents');
+		if (existsSync(insideDist)) {
+			directory = insideDist;
+		} else {
+			directory = join(basedir, 'dist/src/agents');
+		}
 	}
 	if (!existsSync(directory)) {
 		throw new Error(`${directory} does not exist`);

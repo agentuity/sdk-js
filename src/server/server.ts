@@ -68,19 +68,22 @@ export async function createServer({
 }: ServerConfig) {
 	const items = readdirSync(directory);
 	const routes: ServerRoute[] = [];
-	if (existsSync(join(directory, 'index.js'))) {
-		const filename = join(directory, 'index.js');
-		routes.push(await createRoute(logger, filename, '/', context));
-	} else {
-		for (const item of items) {
-			const filepath = join(directory, item);
-			if (statSync(filepath).isDirectory()) {
-				const index = join(filepath, 'index.js');
-				if (existsSync(index)) {
-					routes.push(await createRoute(logger, index, `/${item}`, context));
-				}
+	for (const item of items) {
+		const filepath = join(directory, item);
+		if (statSync(filepath).isDirectory()) {
+			const index = join(filepath, 'index.js');
+			if (existsSync(index)) {
+				routes.push(await createRoute(logger, index, `/${item}`, context));
 			}
 		}
+	}
+	if (routes.length === 0) {
+		throw new Error(`No routes found in ${directory}`);
+	}
+	if (routes.length === 1) {
+		const defaultRoute = { ...routes[0], path: '/' };
+		routes.push(defaultRoute);
+		logger.info('registering default route at /');
 	}
 	return createUnifiedServer({
 		logger,
