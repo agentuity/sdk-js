@@ -1,0 +1,59 @@
+{
+	"name": "@agentuity/sdk",
+	"version": "0.0.47",
+	"description": "The Agentuity SDK for NodeJS and Bun",
+	"license": "Apache-2.0",
+	"sideEffects": false,
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"type": "module",
+	"files": ["dist/**/*", "LICENSE.md"],
+	"engines": {
+		"node": ">=22"
+	},
+	"author": "Agentuity",
+	"homepage": "https://agenuity.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/agenuity/sdk.git"
+	},
+	"bugs": {
+		"url": "https://github.com/agenuity/sdk/issues"
+	},
+	"keywords": ["ai", "agents", "agenuity", "ai agent", "agent"],
+	"scripts": {
+		"build": "tsup",
+		"bun:start": "bun run build && bun run ./dist/index.js",
+		"node:start": "bun run build && node ./dist/index.js",
+		"publish:next": "npm publish --tag next"
+	},
+	"exports": {
+		"./package.json": "./package.json",
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.js"
+		}
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"tsup": "^8.3.6"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@opentelemetry/api": "^1.9.0",
+		"@opentelemetry/api-logs": "^0.57.2",
+		"@opentelemetry/auto-instrumentations-node": "^0.56.1",
+		"@opentelemetry/exporter-logs-otlp-grpc": "^0.57.2",
+		"@opentelemetry/exporter-metrics-otlp-grpc": "^0.57.2",
+		"@opentelemetry/exporter-trace-otlp-grpc": "^0.57.2",
+		"@opentelemetry/resources": "^1.30.1",
+		"@opentelemetry/sdk-logs": "^0.57.2",
+		"@opentelemetry/sdk-metrics": "^1.30.1",
+		"@opentelemetry/sdk-node": "^0.57.2",
+		"@opentelemetry/semantic-conventions": "^1.30.0",
+		"@standard-schema/spec": "^1.0.0"
+	}
+}
