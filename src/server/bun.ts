@@ -1,4 +1,9 @@
-import type { Server, UnifiedServerConfig, ServerRoute } from './types';
+import type {
+	Server,
+	UnifiedServerConfig,
+	ServerRoute,
+	IncomingRequest,
+} from './types';
 import type { AgentRequestType } from '../types';
 export class BunServer implements Server {
 	private server: ReturnType<typeof Bun.serve> | null = null;
@@ -27,6 +32,9 @@ export class BunServer implements Server {
 			port: this.config.port,
 			async fetch(req) {
 				const url = new URL(req.url);
+				if (url.pathname === '/_health') {
+					return new Response('OK', { status: 200 });
+				}
 				const method = req.method;
 				const routeKey = `${method}:${url.pathname}`;
 
@@ -42,7 +50,7 @@ export class BunServer implements Server {
 					const body = await req.json();
 					const resp = await route.handler({
 						url: req.url,
-						request: body as AgentRequestType,
+						request: body as IncomingRequest,
 					});
 					return new Response(JSON.stringify(resp), {
 						headers: {

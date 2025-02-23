@@ -1,7 +1,7 @@
 import type { Logger } from '../logger';
 import type { AgentRequestType, AgentResponseType } from '../types';
 
-interface IncomingRequest extends AgentRequestType {
+export interface IncomingRequest extends AgentRequestType {
 	runId: string;
 }
 

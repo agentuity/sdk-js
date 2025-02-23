@@ -1,4 +1,9 @@
-import type { Server, ServerRoute, UnifiedServerConfig } from './types';
+import type {
+	IncomingRequest,
+	Server,
+	ServerRoute,
+	UnifiedServerConfig,
+} from './types';
 import type { Logger } from '../logger';
 import { createServer as createHttpServer } from 'node:http';
 import type { AgentRequestType } from '../types';
@@ -33,6 +38,11 @@ export class NodeServer implements Server {
 	async start(): Promise<void> {
 		this.server = createHttpServer(async (req, res) => {
 			try {
+				if (req.url === '/_health') {
+					res.writeHead(200);
+					res.end();
+					return;
+				}
 				const route = this.routes.find((r) => r.path === req.url);
 				if (!route) {
 					res.writeHead(404);
@@ -53,7 +63,7 @@ export class NodeServer implements Server {
 						const body = Buffer.concat(chunks);
 						const payload = JSON.parse(body.toString());
 						const agentReq = {
-							request: payload as AgentRequestType,
+							request: payload as IncomingRequest,
 							url: req.url ?? '',
 						};
 						const response = await route.handler(agentReq);
