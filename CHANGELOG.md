@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.51
+
+### Patch Changes
+
+- Fixing automation around publishing
+
 ## 0.0.50
 
 ### Patch Changes
