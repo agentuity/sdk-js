@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.58
+
+### Patch Changes
+
+- Revert a stupid incorrect change that Cursor made!!!
+
 ## 0.0.57
 
 ### Patch Changes
