@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.59
+
+### Patch Changes
+
+- Improve error logging. Don't log the same error multiple times.
+
 ## 0.0.58
 
 ### Patch Changes

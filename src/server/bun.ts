@@ -59,7 +59,6 @@ export class BunServer implements Server {
 						},
 					});
 				} catch (error) {
-					logger.error('Error handling request:', error);
 					return new Response('Internal Server Error', { status: 500 });
 				}
 			},

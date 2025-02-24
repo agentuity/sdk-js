@@ -122,7 +122,6 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 										}
 										resolve(data);
 									} catch (err) {
-										logger.error('error: %s', err);
 										recordException(span, err);
 										reject(err);
 									} finally {
