@@ -6,7 +6,6 @@ import type {
 } from './types';
 import type { Logger } from '../logger';
 import { createServer as createHttpServer } from 'node:http';
-import type { AgentRequestType } from '../types';
 
 export class NodeServer implements Server {
 	private readonly logger: Logger;
