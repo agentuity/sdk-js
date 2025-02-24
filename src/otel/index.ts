@@ -3,8 +3,8 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import {
 	ATTR_SERVICE_NAME,
 	ATTR_SERVICE_VERSION,
@@ -15,7 +15,7 @@ import {
 	LoggerProvider,
 	SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { createLogger } from './logger';
 import { ConsoleLogRecordExporter } from './console';
 import * as grpc from '@grpc/grpc-js';
@@ -51,11 +51,11 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		runId,
 	} = config;
 
-	let metadata: grpc.Metadata | undefined;
+	let headers: Record<string, string> | undefined;
 
 	if (bearerToken) {
-		metadata = new grpc.Metadata();
-		metadata.set('authorization', `Bearer ${bearerToken}`);
+		headers = {};
+		headers.Authorization = `Bearer ${bearerToken}`;
 	}
 
 	const resource = new Resource({
@@ -72,7 +72,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	let logRecordProcessor: SimpleLogRecordProcessor | undefined;
 
 	if (url) {
-		otlpLogExporter = new OTLPLogExporter({ url: `${url}/v1/logs`, metadata });
+		otlpLogExporter = new OTLPLogExporter({ url: `${url}/v1/logs`, headers });
 		logRecordProcessor = new SimpleLogRecordProcessor(otlpLogExporter);
 	} else {
 		logRecordProcessor = new SimpleLogRecordProcessor(
@@ -93,14 +93,14 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		traceExporter: url
 			? new OTLPTraceExporter({
 					url: `${url}/v1/traces`,
-					metadata,
+					headers,
 				})
 			: undefined,
 		metricReader: url
 			? new PeriodicExportingMetricReader({
 					exporter: new OTLPMetricExporter({
 						url: `${url}/v1/metrics`,
-						metadata,
+						headers,
 					}),
 				})
 			: undefined,

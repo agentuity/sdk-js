@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.55
+
+### Patch Changes
+
+- Switch to use HTTP for otel
+
 ## 0.0.54
 
 ### Patch Changes
