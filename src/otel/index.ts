@@ -29,6 +29,7 @@ interface OtelConfig {
 	deploymentId?: string;
 	runId?: string;
 	environment?: string;
+	sdkVersion?: string;
 }
 
 interface OtelResponse {
@@ -44,6 +45,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		version,
 		bearerToken,
 		environment = 'development',
+		sdkVersion,
 		orgId,
 		projectId,
 		deploymentId,
@@ -65,6 +67,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/deploymentId': deploymentId ?? 'unknown',
 		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
+		'@agentuity/sdkVersion': sdkVersion ?? 'unknown',
 	});
 
 	let otlpLogExporter: OTLPLogExporter | undefined;

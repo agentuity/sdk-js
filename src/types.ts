@@ -231,6 +231,10 @@ export interface VectorStorage {
 
 export interface AgentContext {
 	/**
+	 * the version of the Agentuity SDK
+	 */
+	sdkVersion: string;
+	/**
 	 * returns true if the agent is running in devmode
 	 */
 	devmode: boolean;

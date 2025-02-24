@@ -8,6 +8,7 @@ export interface IncomingRequest extends AgentRequestType {
 export interface ServerRequest {
 	url: string;
 	request: IncomingRequest;
+	headers: Record<string, string>;
 }
 
 export interface ServerRoute {
@@ -20,6 +21,7 @@ export interface UnifiedServerConfig {
 	port: number;
 	routes: ServerRoute[];
 	logger: Logger;
+	sdkVersion: string;
 }
 
 export interface Server {

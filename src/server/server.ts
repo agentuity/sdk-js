@@ -89,6 +89,7 @@ export async function createServer({
 		logger,
 		port,
 		routes,
+		sdkVersion: context.sdkVersion,
 	});
 }
 
@@ -100,6 +101,7 @@ interface ServerContextRequest {
 	deploymentId?: string;
 	runId?: string;
 	devmode?: boolean;
+	sdkVersion: string;
 }
 
 const kv = new KeyValueAPI();
@@ -116,5 +118,6 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		tracer: req.tracer,
 		kv,
 		vector,
+		sdkVersion: req.sdkVersion,
 	} as AgentContext;
 }

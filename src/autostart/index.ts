@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
+import packageInfo from '../../package.json' assert { type: 'json' };
 
 interface AutostartConfig {
 	basedir: string;
@@ -37,10 +38,12 @@ export async function run(config: AutostartConfig) {
 	if (!existsSync(directory)) {
 		throw new Error(`${directory} does not exist`);
 	}
+	const sdkVersion = packageInfo.version;
 	const { name, version } = JSON.parse(readFileSync(pkg, 'utf8'));
 	const otel = registerOtel({
 		name,
 		version,
+		sdkVersion,
 		orgId: config.orgId,
 		projectId: config.projectId,
 		deploymentId: config.deploymentId,
@@ -58,6 +61,7 @@ export async function run(config: AutostartConfig) {
 			orgId: config.orgId,
 			logger: otel.logger,
 			tracer: otel.tracer,
+			sdkVersion,
 		}),
 		directory,
 		port,
