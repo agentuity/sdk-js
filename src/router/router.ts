@@ -17,17 +17,24 @@ interface RouterConfig {
 	context: AgentContext;
 }
 
-const toResponseJSON = (data: AgentResponseType) => {
+const isCURLUserAgent = (req: ServerRequest) => {
+	const ua = req.headers['user-agent'];
+	return ua?.includes('curl');
+};
+
+const toResponseJSON = (req: ServerRequest, data: AgentResponseType) => {
 	const resp = { ...data };
 	if (resp.payload) {
+		const isCURL = isCURLUserAgent(req);
+		const encoding = isCURL ? 'utf-8' : 'base64';
 		if (resp.payload instanceof ArrayBuffer) {
-			resp.payload = Buffer.from(resp.payload).toString('base64');
+			resp.payload = Buffer.from(resp.payload).toString(encoding);
 		} else if (resp.payload instanceof Object) {
 			resp.payload = Buffer.from(JSON.stringify(resp.payload)).toString(
-				'base64'
+				encoding
 			);
 		} else if (typeof resp.payload === 'string') {
-			resp.payload = Buffer.from(resp.payload).toString('base64');
+			resp.payload = Buffer.from(resp.payload).toString(encoding);
 		}
 	}
 	return resp;
@@ -42,6 +49,18 @@ export function getTracer(): Tracer {
 	}
 	const { tracer } = store as { tracer: Tracer };
 	return tracer;
+}
+
+/**
+ * get the version of the Agentuity SDK
+ */
+export function getSDKVersion(): string {
+	const store = asyncStorage.getStore();
+	if (!store) {
+		throw new Error('no store');
+	}
+	const { sdkVersion } = store as { sdkVersion: string };
+	return sdkVersion;
 }
 
 export function recordException(span: Span, ex: unknown) {
@@ -98,6 +117,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 									agentId,
 									logger,
 									tracer: config.context.tracer,
+									sdkVersion: config.context.sdkVersion,
 								},
 								async () => {
 									const request = new AgentRequestHandler(req.request);
@@ -112,7 +132,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											response,
 											context
 										);
-										const data = toResponseJSON(handlerResponse);
+										const data = toResponseJSON(req, handlerResponse);
 										if (config.context.devmode) {
 											logger.info(
 												`${config.context.agent.name} returned: ${JSON.stringify(

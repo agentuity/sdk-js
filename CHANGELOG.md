@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.60
+
+### Patch Changes
+
+- Add SDK version to various places and improve local dev
+
 ## 0.0.59
 
 ### Patch Changes

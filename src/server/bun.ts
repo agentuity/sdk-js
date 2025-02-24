@@ -26,7 +26,7 @@ export class BunServer implements Server {
 			routeMap.set(key, route);
 		}
 
-		const logger = this.config.logger;
+		const { sdkVersion, logger } = this.config;
 
 		this.server = Bun.serve({
 			port: this.config.port,
@@ -51,11 +51,13 @@ export class BunServer implements Server {
 
 					const resp = await route.handler({
 						url: req.url,
+						headers: req.headers.toJSON(),
 						request: body as IncomingRequest,
 					});
 					return new Response(JSON.stringify(resp), {
 						headers: {
 							'Content-Type': 'application/json',
+							Server: `Agentuity Bun/${sdkVersion}`,
 						},
 					});
 				} catch (error) {

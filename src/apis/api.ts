@@ -1,3 +1,5 @@
+import { getSDKVersion } from '../router/router';
+
 interface BaseApiRequest {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
 	path: string;
@@ -55,10 +57,11 @@ export async function send<K>(
 		request.path,
 		process.env.AGENTUITY_URL || 'https://api.agentuity.com'
 	);
+	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
 		'Content-Type': 'application/json',
-		'User-Agent': '@agentuity/sdk',
+		'User-Agent': `@agentuity/sdk (${sdkVersion})`,
 	};
 	// allow headers to be overridden
 	for (const key in request.headers) {

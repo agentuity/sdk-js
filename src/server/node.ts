@@ -12,11 +12,13 @@ export class NodeServer implements Server {
 	private readonly port: number;
 	private readonly routes: ServerRoute[];
 	private server: ReturnType<typeof createHttpServer> | null = null;
+	private readonly sdkVersion: string;
 
-	constructor({ logger, port, routes }: UnifiedServerConfig) {
+	constructor({ logger, port, routes, sdkVersion }: UnifiedServerConfig) {
 		this.logger = logger;
 		this.port = port;
 		this.routes = routes;
+		this.sdkVersion = sdkVersion;
 	}
 
 	async stop(): Promise<void> {
@@ -35,6 +37,7 @@ export class NodeServer implements Server {
 	}
 
 	async start(): Promise<void> {
+		const { sdkVersion } = this;
 		this.server = createHttpServer(async (req, res) => {
 			try {
 				if (req.url === '/_health') {
@@ -64,10 +67,17 @@ export class NodeServer implements Server {
 						const agentReq = {
 							request: payload as IncomingRequest,
 							url: req.url ?? '',
+							headers: Object.fromEntries(
+								Object.entries(req.headers).map(([k, v]) => [
+									k,
+									Array.isArray(v) ? v.join(', ') : (v ?? ''),
+								])
+							),
 						};
 						const response = await route.handler(agentReq);
 						res.writeHead(200, {
 							'Content-Type': 'application/json',
+							Server: `Agentuity NodeJS/${sdkVersion}`,
 						});
 						res.end(JSON.stringify(response));
 					} catch (err) {
