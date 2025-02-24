@@ -4,7 +4,7 @@ import type {
 	ServerRoute,
 	IncomingRequest,
 } from './types';
-import type { AgentRequestType } from '../types';
+
 export class BunServer implements Server {
 	private server: ReturnType<typeof Bun.serve> | null = null;
 	private config: UnifiedServerConfig;

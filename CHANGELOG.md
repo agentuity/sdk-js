@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.56
+
+### Patch Changes
+
+- Fixed issue with request payload not getting base64 decoded
+
 ## 0.0.55
 
 ### Patch Changes

@@ -25,11 +25,35 @@ export default class AgentRequestHandler implements AgentRequest {
 			if (!matched) {
 				throw new Error(`Expected content type ${type}, got ${contentType}`);
 			}
-			return;
 		}
 		throw new Error(
 			`Expected content type ${type}, but no contentType provided`
 		);
+	}
+
+	private toJSON() {
+		if (this.request.payload) {
+			return JSON.parse(
+				Buffer.from(this.request.payload as string, 'base64').toString('utf-8')
+			);
+		}
+		return null;
+	}
+
+	private toText() {
+		if (this.request.payload) {
+			return Buffer.from(this.request.payload as string, 'base64').toString(
+				'utf-8'
+			);
+		}
+		return '';
+	}
+
+	private toBinary(): ArrayBuffer {
+		if (this.request.payload) {
+			return Buffer.from(this.request.payload as string, 'base64').buffer;
+		}
+		return new ArrayBuffer();
 	}
 
 	metadata(key: string, defaultValue?: Json): Json {
@@ -41,86 +65,86 @@ export default class AgentRequestHandler implements AgentRequest {
 
 	object<T>(): T {
 		this.assertType('application/json');
-		return this.request.payload as T;
+		return this.toJSON() as T;
 	}
 
 	json(): Json {
 		this.assertType('application/json');
-		return this.request.payload as Json;
+		return this.toJSON() as Json;
 	}
 
 	text(): string {
 		this.assertType('text/plain', '');
-		return this.request.payload as string;
+		return this.toText();
 	}
 
 	binary(): ArrayBuffer {
 		this.assertType('application/octet-stream');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	pdf(): ArrayBuffer {
 		this.assertType('application/pdf');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	png(): ArrayBuffer {
 		this.assertType('image/png');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	jpeg(): ArrayBuffer {
 		this.assertType('image/jpeg', 'image/jpg');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	gif(): ArrayBuffer {
 		this.assertType('image/gif');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	webp(): ArrayBuffer {
 		this.assertType('image/webp');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	mp3(): ArrayBuffer {
 		this.assertType('audio/mpeg', 'audio/mp3');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	mp4(): ArrayBuffer {
 		this.assertType('audio/mp4', 'audio/mpeg4');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	m4a(): ArrayBuffer {
 		this.assertType('audio/m4a');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	m4p(): ArrayBuffer {
 		this.assertType('audio/m4p', 'audio/mpeg4');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	webm(): ArrayBuffer {
 		this.assertType('audio/webm');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	html(): string {
 		this.assertType('text/html', 'application/html');
-		return this.request.payload as string;
+		return this.toText();
 	}
 
 	wav(): ArrayBuffer {
 		this.assertType('audio/wav');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 
 	ogg(): ArrayBuffer {
 		this.assertType('audio/ogg');
-		return this.request.payload as ArrayBuffer;
+		return this.toBinary();
 	}
 }
