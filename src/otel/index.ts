@@ -18,11 +18,18 @@ import {
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
 import { createLogger } from './logger';
 import { ConsoleLogRecordExporter } from './console';
+import * as grpc from '@grpc/grpc-js';
 
 interface OtelConfig {
 	url?: string;
 	name: string;
 	version: string;
+	bearerToken?: string;
+	orgId?: string;
+	projectId?: string;
+	deploymentId?: string;
+	runId?: string;
+	environment?: string;
 }
 
 interface OtelResponse {
@@ -33,32 +40,39 @@ interface OtelResponse {
 
 export function registerOtel(config: OtelConfig): OtelResponse {
 	const {
-		url = process.env.AGENTUITY_OTLP_URL ||
-			process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+		url,
 		name,
 		version,
+		bearerToken,
+		environment = 'development',
+		orgId,
+		projectId,
+		deploymentId,
+		runId,
 	} = config;
 
-	const headers: Record<string, string> = {};
-	if (process.env.AGENTUITY_OTLP_BEARER_TOKEN) {
-		headers['authorization'] =
-			`Bearer ${process.env.AGENTUITY_OTLP_BEARER_TOKEN}`;
+	let metadata: grpc.Metadata | undefined;
+
+	if (bearerToken) {
+		metadata = new grpc.Metadata();
+		metadata.set('authorization', `Bearer ${bearerToken}`);
 	}
 
 	const resource = new Resource({
 		[ATTR_SERVICE_NAME]: name,
 		[ATTR_SERVICE_VERSION]: version,
-		'@agentuity/orgId': process.env.AGENTUITY_CLOUD_ORG_ID,
-		'@agentuity/projectId': process.env.AGENTUITY_CLOUD_PROJECT_ID,
-		'@agentuity/deploymentId': process.env.AGENTUITY_CLOUD_DEPLOYMENT_ID,
-		'@agentuity/runId': process.env.AGENTUITY_CLOUD_RUN_ID,
+		'@agentuity/orgId': orgId ?? 'unknown',
+		'@agentuity/projectId': projectId ?? 'unknown',
+		'@agentuity/deploymentId': deploymentId ?? 'unknown',
+		'@agentuity/runId': runId ?? 'unknown',
+		'@agentuity/env': environment,
 	});
 
 	let otlpLogExporter: OTLPLogExporter | undefined;
 	let logRecordProcessor: SimpleLogRecordProcessor | undefined;
 
 	if (url) {
-		otlpLogExporter = new OTLPLogExporter({ url: `${url}/v1/logs`, headers });
+		otlpLogExporter = new OTLPLogExporter({ url: `${url}/v1/logs`, metadata });
 		logRecordProcessor = new SimpleLogRecordProcessor(otlpLogExporter);
 	} else {
 		logRecordProcessor = new SimpleLogRecordProcessor(
@@ -79,14 +93,14 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		traceExporter: url
 			? new OTLPTraceExporter({
 					url: `${url}/v1/traces`,
-					headers,
+					metadata,
 				})
 			: undefined,
 		metricReader: url
 			? new PeriodicExportingMetricReader({
 					exporter: new OTLPMetricExporter({
 						url: `${url}/v1/metrics`,
-						headers,
+						metadata,
 					}),
 				})
 			: undefined,

@@ -5,7 +5,7 @@ import type { ServerRoute } from './types';
 import type { Tracer } from '@opentelemetry/api';
 import { readdirSync, existsSync, statSync } from 'node:fs';
 import { createRouter } from '../router';
-import { dirname, join, basename } from 'node:path';
+import { join } from 'node:path';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 
@@ -95,6 +95,11 @@ export async function createServer({
 interface ServerContextRequest {
 	tracer: Tracer;
 	logger: Logger;
+	orgId?: string;
+	projectId?: string;
+	deploymentId?: string;
+	runId?: string;
+	devmode?: boolean;
 }
 
 const kv = new KeyValueAPI();
@@ -102,11 +107,11 @@ const vector = new VectorAPI();
 
 export function createServerContext(req: ServerContextRequest): AgentContext {
 	return {
-		devmode: process.env.AGENTUITY_SDK_DEV_MODE === 'true',
-		runId: '',
-		deploymentId: process.env.AGENTUITY_CLOUD_DEPLOYMENT_ID,
-		projectId: process.env.AGENTUITY_CLOUD_PROJECT_ID,
-		orgId: process.env.AGENTUITY_CLOUD_ORG_ID,
+		devmode: req.devmode,
+		runId: req.runId,
+		deploymentId: req.deploymentId,
+		projectId: req.projectId,
+		orgId: req.orgId,
 		logger: req.logger,
 		tracer: req.tracer,
 		kv,

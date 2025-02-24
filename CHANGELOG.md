@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.54
+
+### Patch Changes
+
+- Expose auth header for OTLP and set more attributes
+
 ## 0.0.53
 
 ### Patch Changes

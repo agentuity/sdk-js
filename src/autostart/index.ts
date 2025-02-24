@@ -3,7 +3,24 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
 
-export async function run(basedir: string, distdir?: string) {
+interface AutostartConfig {
+	basedir: string;
+	distdir?: string;
+	orgId?: string;
+	projectId?: string;
+	deploymentId?: string;
+	runId?: string;
+	port?: number;
+	devmode?: boolean;
+	environment?: string;
+	otlp?: {
+		url?: string;
+		bearerToken?: string;
+	};
+}
+
+export async function run(config: AutostartConfig) {
+	const { basedir, distdir, port = 3000 } = config;
 	const pkg = join(basedir, 'package.json');
 	if (!existsSync(pkg)) {
 		throw new Error(`${pkg} does not exist`);
@@ -24,11 +41,26 @@ export async function run(basedir: string, distdir?: string) {
 	const otel = registerOtel({
 		name,
 		version,
+		orgId: config.orgId,
+		projectId: config.projectId,
+		deploymentId: config.deploymentId,
+		runId: config.runId,
+		bearerToken: config?.otlp?.bearerToken,
+		url: config?.otlp?.url,
+		environment: config.devmode ? 'development' : config.environment,
 	});
 	const server = await createServer({
-		context: createServerContext(otel),
+		context: createServerContext({
+			devmode: config.devmode,
+			runId: config.runId,
+			deploymentId: config.deploymentId,
+			projectId: config.projectId,
+			orgId: config.orgId,
+			logger: otel.logger,
+			tracer: otel.tracer,
+		}),
 		directory,
-		port: Number.parseInt(process.env.PORT ?? '3000'),
+		port,
 		logger: otel.logger,
 	});
 	await server.start();
