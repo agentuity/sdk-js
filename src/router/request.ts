@@ -23,11 +23,19 @@ export default class AgentRequestHandler implements AgentRequest {
 				}
 			}
 			if (!matched) {
-				throw new Error(`Expected content type ${type}, got ${contentType}`);
+				if (type.length === 1) {
+					throw new Error(
+						`Expected content type ${type[0]}, received ${contentType}`
+					);
+				}
+				throw new Error(
+					`Expected content type to be one of:${type.join(', ')}, received ${contentType}`
+				);
 			}
+			return; // return when matched
 		}
 		throw new Error(
-			`Expected content type ${type}, but no contentType provided`
+			`Expected content type ${type}, but no contentType property was provided in the request payload`
 		);
 	}
 

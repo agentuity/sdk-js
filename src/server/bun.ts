@@ -48,9 +48,30 @@ export class BunServer implements Server {
 
 				try {
 					const body = await req.json();
+					const { projectId, agentName } = body;
+
+					if (!projectId || !agentName) {
+						return new Response('Bad Request: Missing projectId or agentName', {
+							status: 400,
+						});
+					}
+
+					// Create SHA256 hash using Web Crypto API
+					const hashInput = `${projectId}:${agentName}`;
+					const encoder = new TextEncoder();
+					const data = encoder.encode(hashInput);
+					const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+					const hashArray = Array.from(new Uint8Array(hashBuffer));
+					const runId = hashArray
+						.map((b) => b.toString(16).padStart(2, '0'))
+						.join('');
+
 					const resp = await route.handler({
 						url: req.url,
-						request: body as IncomingRequest,
+						request: {
+							...body,
+							runId,
+						} as IncomingRequest,
 					});
 					return new Response(JSON.stringify(resp), {
 						headers: {

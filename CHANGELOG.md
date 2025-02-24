@@ -1,5 +1,13 @@
 # @agentuity/sdk
 
+## 0.0.57
+
+### Patch Changes
+
+- - Fixed issue where the contentType wasnt correctly returning on the assertion
+  - Tighten up tsconfig unused import rule and remove unused import
+  - Add unique agentId calculation and put in context and trace attributes for better linkage
+
 ## 0.0.56
 
 ### Patch Changes

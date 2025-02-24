@@ -18,7 +18,6 @@ import {
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { createLogger } from './logger';
 import { ConsoleLogRecordExporter } from './console';
-import * as grpc from '@grpc/grpc-js';
 
 interface OtelConfig {
 	url?: string;

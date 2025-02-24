@@ -56,60 +56,84 @@ export function recordException(span: Span, ex: unknown) {
 	});
 }
 
+// for a given project id and agent name, create a unique agent id
+export async function createAgentId(
+	projectId: string,
+	agentName: string
+): Promise<string> {
+	const hashInput = `${projectId}:${agentName}`;
+	const encoder = new TextEncoder();
+	const data = encoder.encode(hashInput);
+	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
 		return new Promise((resolve, reject) => {
-			config.context.tracer.startActiveSpan(
-				config.context.agent.name,
-				{
-					kind: SpanKind.SERVER,
-					attributes: {
-						agent: config.context.agent.name,
-						runId: req.request.runId,
-						deploymentId: config.context.deploymentId,
-						projectId: config.context.projectId,
-						orgId: config.context.orgId,
-					},
-				},
-				async (span) => {
-					asyncStorage.run(
+			return createAgentId(config.context.projectId, config.context.agent.name)
+				.then((agentId) => {
+					return config.context.tracer.startActiveSpan(
+						config.context.agent.name,
 						{
-							span,
-							logger: config.context.logger,
-							tracer: config.context.tracer,
-						},
-						async () => {
-							const request = new AgentRequestHandler(req.request);
-							const response = new AgentResponseHandler();
-							const context = {
-								...config.context,
+							kind: SpanKind.SERVER,
+							attributes: {
+								agent: config.context.agent.name,
+								agentId,
 								runId: req.request.runId,
-							} as AgentContext;
-							try {
-								const handlerResponse = await config.handler(
-									request,
-									response,
-									context
-								);
-								const data = toResponseJSON(handlerResponse);
-								if (config.context.devmode) {
-									config.context.logger.info(
-										`${config.context.agent.name} returned: ${JSON.stringify(
-											data
-										)}`
-									);
+								deploymentId: config.context.deploymentId,
+								projectId: config.context.projectId,
+								orgId: config.context.orgId,
+							},
+						},
+						async (span) => {
+							const logger = config.context.logger.child({
+								runId: req.request.runId,
+							});
+							asyncStorage.run(
+								{
+									span,
+									runId: req.request.runId,
+									agentId,
+									logger,
+									tracer: config.context.tracer,
+								},
+								async () => {
+									const request = new AgentRequestHandler(req.request);
+									const response = new AgentResponseHandler();
+									const context = {
+										...config.context,
+										runId: req.request.runId,
+									} as AgentContext;
+									try {
+										const handlerResponse = await config.handler(
+											request,
+											response,
+											context
+										);
+										const data = toResponseJSON(handlerResponse);
+										if (config.context.devmode) {
+											logger.info(
+												`${config.context.agent.name} returned: ${JSON.stringify(
+													data
+												)}`
+											);
+										}
+										resolve(data);
+									} catch (err) {
+										logger.error('error: %s', err);
+										recordException(span, err);
+										reject(err);
+									} finally {
+										span.end();
+									}
 								}
-								resolve(data);
-							} catch (err) {
-								recordException(span, err);
-								reject(err);
-							} finally {
-								span.end();
-							}
+							);
 						}
 					);
-				}
-			);
+				})
+				.catch(reject);
 		});
 	};
 }
