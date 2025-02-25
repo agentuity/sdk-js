@@ -38,6 +38,22 @@ export async function run(config: AutostartConfig) {
 	if (!existsSync(directory)) {
 		throw new Error(`${directory} does not exist`);
 	}
+	if (!config.projectId) {
+		// this path only works in local dev mode
+		const yml = join(basedir, '..', 'agentuity.yaml');
+		if (existsSync(yml)) {
+			const ymlData = readFileSync(yml, 'utf8').toString();
+			const match = ymlData.match(/project_id: (\w+)/);
+			if (match?.length) {
+				config.projectId = match[1];
+			}
+		}
+	}
+	if (!config.projectId) {
+		throw new Error(
+			'projectId is required and not found either in agentuity.yaml or in the environment'
+		);
+	}
 	const sdkVersion = packageInfo.version;
 	const { name, version } = JSON.parse(readFileSync(pkg, 'utf8'));
 	const otel = registerOtel({

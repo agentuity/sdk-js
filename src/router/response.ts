@@ -1,10 +1,32 @@
-import type { AgentResponse, AgentResponseType, Json } from '../types';
+import type {
+	AgentResponse,
+	AgentResponseType,
+	GetAgentRequestParams,
+	Json,
+	AgentRedirectResponse,
+} from '../types';
 
 /**
  * The AgentResponse class implements the AgentResponseHandler interface.
  * It is used to create and return responses from an agent.
  */
 export default class AgentResponseHandler implements AgentResponse {
+	/**
+	 * return a redirect response with optional metadata
+	 */
+	redirect(
+		agent: GetAgentRequestParams,
+		payload?: Json | ArrayBuffer | string,
+		metadata?: Record<string, Json>
+	) {
+		return {
+			redirect: true,
+			agent,
+			payload,
+			metadata,
+		} as AgentRedirectResponse;
+	}
+
 	/**
 	 * return an empty response with optional metadata
 	 */

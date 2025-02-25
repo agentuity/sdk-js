@@ -16,7 +16,7 @@ export async function runner(
 			projectId: process.env.AGENTUITY_CLOUD_PROJECT_ID,
 			deploymentId: process.env.AGENTUITY_CLOUD_DEPLOYMENT_ID,
 			runId: process.env.AGENTUITY_CLOUD_RUN_ID,
-			port: parseInt(process.env.AGENTUITY_PORT ?? '3000'),
+			port: parseInt(process.env.PORT ?? '3000'),
 			devmode: process.env.AGENTUITY_SDK_DEV_MODE === 'true',
 			environment:
 				process.env.AGENTUITY_ENVIRONMENT ??
