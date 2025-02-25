@@ -188,8 +188,8 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 												handlerResponse.agent
 											);
 											const val = await resp.run(
-												req.request.payload,
-												req.request.contentType,
+												handlerResponse.payload ?? req.request.payload,
+												handlerResponse.contentType ?? req.request.contentType,
 												handlerResponse.metadata ?? req.request.metadata
 											);
 											logger.debug(

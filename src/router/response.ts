@@ -17,12 +17,14 @@ export default class AgentResponseHandler implements AgentResponse {
 	redirect(
 		agent: GetAgentRequestParams,
 		payload?: Json | ArrayBuffer | string,
+		contentType?: string,
 		metadata?: Record<string, Json>
 	) {
 		return {
 			redirect: true,
 			agent,
 			payload,
+			contentType,
 			metadata,
 		} as AgentRedirectResponse;
 	}

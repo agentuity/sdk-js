@@ -102,6 +102,7 @@ export interface AgentRedirectResponse extends AgentAgentResponse {
 	redirect: true;
 	agent: GetAgentRequestParams;
 	payload?: Json | ArrayBuffer | string;
+	contentType?: string;
 	metadata?: Record<string, Json>;
 }
 
@@ -464,6 +465,7 @@ export interface AgentResponse {
 	redirect(
 		agent: GetAgentRequestParams,
 		payload?: Json | ArrayBuffer | string,
+		contentType?: string,
 		metadata?: Record<string, Json>
 	): AgentRedirectResponse;
 

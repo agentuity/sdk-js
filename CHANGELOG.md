@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.62
+
+### Patch Changes
+
+- Allow the content type to be set on redirect and make sure we prefer the overriden payload
+
 ## 0.0.61
 
 ### Patch Changes
