@@ -7,14 +7,22 @@ import {
 	type Span,
 } from '@opentelemetry/api';
 import type { ServerRoute, ServerRequest } from '../server/types';
-import type { AgentHandler, AgentContext, AgentResponseType } from '../types';
+import type {
+	AgentHandler,
+	AgentContext,
+	AgentResponseType,
+	Json,
+	GetAgentRequestParams,
+} from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
 import type { Logger } from '../logger';
+import AgentResolver from '../server/agents';
 
 interface RouterConfig {
 	handler: AgentHandler;
 	context: AgentContext;
+	port: number;
 }
 
 const isCURLUserAgent = (req: ServerRequest) => {
@@ -22,22 +30,52 @@ const isCURLUserAgent = (req: ServerRequest) => {
 	return ua?.includes('curl');
 };
 
-const toResponseJSON = (req: ServerRequest, data: AgentResponseType) => {
-	const resp = { ...data };
-	if (resp.payload) {
-		const isCURL = isCURLUserAgent(req);
-		const encoding = isCURL ? 'utf-8' : 'base64';
-		if (resp.payload instanceof ArrayBuffer) {
-			resp.payload = Buffer.from(resp.payload).toString(encoding);
-		} else if (resp.payload instanceof Object) {
-			resp.payload = Buffer.from(JSON.stringify(resp.payload)).toString(
-				encoding
-			);
-		} else if (typeof resp.payload === 'string') {
-			resp.payload = Buffer.from(resp.payload).toString(encoding);
+export const toAgentResponseJSON = (
+	trigger: string,
+	payload: Json | ArrayBuffer | string | undefined,
+	encoding: 'base64' | 'utf-8',
+	contentType?: string,
+	metadata?: Record<string, Json>
+): AgentResponseType => {
+	const resp: {
+		trigger: string;
+		payload: string;
+		contentType: string;
+		metadata?: Record<string, Json>;
+	} = {
+		trigger,
+		payload: '',
+		contentType: contentType ?? 'text/plain',
+		metadata,
+	};
+	if (payload) {
+		if (payload instanceof ArrayBuffer) {
+			resp.contentType = contentType ?? 'application/octet-stream';
+			resp.payload = Buffer.from(payload).toString(encoding);
+		} else if (payload instanceof Object) {
+			resp.contentType = contentType ?? 'application/json';
+			resp.payload = Buffer.from(JSON.stringify(payload)).toString(encoding);
+		} else if (typeof payload === 'string') {
+			resp.contentType = contentType ?? 'text/plain';
+			resp.payload = Buffer.from(payload).toString(encoding);
 		}
 	}
-	return resp;
+	return resp as AgentResponseType;
+};
+
+const toServerResponseJSON = (req: ServerRequest, data: AgentResponseType) => {
+	if ('payload' in data) {
+		const isCURL = isCURLUserAgent(req);
+		const encoding = isCURL ? 'utf-8' : 'base64';
+		return toAgentResponseJSON(
+			req.request.trigger,
+			data.payload,
+			encoding,
+			'contentType' in data ? data.contentType : undefined,
+			data.metadata
+		);
+	}
+	return data;
 };
 
 export const asyncStorage = new AsyncLocalStorage();
@@ -76,7 +114,7 @@ export function recordException(span: Span, ex: unknown) {
 }
 
 // for a given project id and agent name, create a unique agent id
-export async function createAgentId(
+export async function getAgentId(
 	projectId: string,
 	agentName: string
 ): Promise<string> {
@@ -91,19 +129,22 @@ export async function createAgentId(
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
 		return new Promise((resolve, reject) => {
-			return createAgentId(config.context.projectId, config.context.agent.name)
+			return getAgentId(config.context.projectId, config.context.agent.name)
 				.then((agentId) => {
+					const resolver = new AgentResolver(
+						config.context.agents,
+						config.port,
+						config.context.projectId,
+						agentId
+					);
 					return config.context.tracer.startActiveSpan(
 						config.context.agent.name,
 						{
 							kind: SpanKind.SERVER,
 							attributes: {
+								action: 'agent.run',
 								agent: config.context.agent.name,
 								agentId,
-								runId: req.request.runId,
-								deploymentId: config.context.deploymentId,
-								projectId: config.context.projectId,
-								orgId: config.context.orgId,
 							},
 						},
 						async (span) => {
@@ -125,14 +166,50 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 									const context = {
 										...config.context,
 										runId: req.request.runId,
+										getAgent: (params: GetAgentRequestParams) =>
+											resolver.getAgent(params),
 									} as AgentContext;
 									try {
-										const handlerResponse = await config.handler(
+										let handlerResponse = await config.handler(
 											request,
 											response,
 											context
 										);
-										const data = toResponseJSON(req, handlerResponse);
+										// handle local redirect
+										if (
+											'redirect' in handlerResponse &&
+											handlerResponse.redirect
+										) {
+											const resp = await context.getAgent(
+												handlerResponse.agent
+											);
+											logger.info(
+												'sending redirect to %s',
+												handlerResponse.agent
+											);
+											const val = await resp.run(
+												req.request.payload,
+												req.request.contentType,
+												handlerResponse.metadata ?? req.request.metadata
+											);
+											logger.debug(
+												'redirect response: %s',
+												JSON.stringify(val)
+											);
+											if (
+												isCURLUserAgent(req) &&
+												'payload' in val &&
+												val.payload
+											) {
+												val.payload = Buffer.from(
+													val.payload as string,
+													'base64'
+												).toString('utf-8');
+											}
+											resolve(val);
+											return;
+										}
+										const data = toServerResponseJSON(req, handlerResponse);
 										if (config.context.devmode) {
 											logger.info(
 												`${config.context.agent.name} returned: ${JSON.stringify(

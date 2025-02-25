@@ -1,6 +1,7 @@
 import type { Tracer } from '@opentelemetry/api';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Logger } from './logger';
+import type { ServerAgent } from './server/types';
 
 export type TriggerType =
 	| 'webhook'
@@ -91,13 +92,28 @@ interface AgentHTMLResponse extends HTMLContent {}
 
 interface AgentBinaryResponse extends BinaryContent {}
 
+interface AgentAgentResponse {
+	trigger: 'agent';
+	agentId: string;
+	payload?: Json | ArrayBuffer | string;
+	metadata?: Record<string, Json>;
+}
+export interface AgentRedirectResponse extends AgentAgentResponse {
+	redirect: true;
+	agent: GetAgentRequestParams;
+	payload?: Json | ArrayBuffer | string;
+	metadata?: Record<string, Json>;
+}
+
 export type AgentResponseType =
 	| AgentNoContentResponse
 	| AgentJSONResponse
 	| AgentTextResponse
 	| AgentMarkdownResponse
 	| AgentHTMLResponse
-	| AgentBinaryResponse;
+	| AgentBinaryResponse
+	| AgentRedirectResponse
+	| AgentAgentResponse;
 
 export interface KeyValueStorage {
 	/**
@@ -229,15 +245,75 @@ export interface VectorStorage {
 	delete(name: string, ...ids: string[]): Promise<number>;
 }
 
+export interface RemoteAgent {
+	/**
+	 * the unique id for the agent
+	 */
+	id: string;
+
+	/**
+	 * the name of the agent
+	 */
+	name: string;
+
+	/**
+	 * the description of the agent
+	 */
+	description?: string;
+
+	/**
+	 * the project id of the agent
+	 */
+	projectId: string;
+
+	/**
+	 * invoke the agent with data and get a response
+	 *
+	 * @param data - the payload for the request
+	 * @param contentType - the content type of the payload (if not provided, the agent will try to infer it)
+	 * @param metadata - the metadata for the request
+	 * @returns the response from the agent
+	 */
+	run(
+		data?: Json | ArrayBuffer | string,
+		contentType?: string,
+		metadata?: Record<string, Json>
+	): Promise<AgentResponseType>;
+}
+
+interface GetAgentRequestParamsById {
+	/**
+	 * the unique agent id
+	 */
+	id: string;
+}
+
+interface GetAgentRequestParamsByName {
+	/**
+	 * the agent name in the project
+	 */
+	name: string;
+	/**
+	 * the project id
+	 */
+	projectId?: string;
+}
+
+export type GetAgentRequestParams =
+	| GetAgentRequestParamsById
+	| GetAgentRequestParamsByName;
+
 export interface AgentContext {
 	/**
 	 * the version of the Agentuity SDK
 	 */
 	sdkVersion: string;
+
 	/**
 	 * returns true if the agent is running in devmode
 	 */
 	devmode: boolean;
+
 	/**
 	 * the run id
 	 */
@@ -272,6 +348,16 @@ export interface AgentContext {
 	 * the tracer
 	 */
 	tracer: Tracer;
+
+	/**
+	 * return a list of all the agents in the project
+	 */
+	agents: ServerAgent[];
+
+	/**
+	 * get a handle to a remote agent that you can invoke
+	 */
+	getAgent(params: GetAgentRequestParams): Promise<RemoteAgent>;
 
 	/**
 	 * the key value storage
@@ -372,6 +458,15 @@ export interface AgentRequest {
 }
 
 export interface AgentResponse {
+	/**
+	 * redirect the current request another agent within the same project
+	 */
+	redirect(
+		agent: GetAgentRequestParams,
+		payload?: Json | ArrayBuffer | string,
+		metadata?: Record<string, Json>
+	): AgentRedirectResponse;
+
 	/**
 	 * return an empty response with optional metadata
 	 */
@@ -492,9 +587,14 @@ export type AgentHandler = (
  * the config for the agent
  */
 export interface AgentConfig {
+	/**
+	 * the name of the agent
+	 */
 	name: string;
+	/**
+	 * the description of the agent
+	 */
 	description?: string;
-	io?: IOSchema;
 }
 
 export interface Session {

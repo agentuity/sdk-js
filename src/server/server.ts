@@ -1,10 +1,10 @@
-import type { Server, UnifiedServerConfig } from './types';
+import type { Server, ServerAgent, UnifiedServerConfig } from './types';
 import type { AgentContext, AgentHandler } from '../types';
 import type { Logger } from '../logger';
 import type { ServerRoute } from './types';
 import type { Tracer } from '@opentelemetry/api';
 import { readdirSync, existsSync, statSync } from 'node:fs';
-import { createRouter } from '../router';
+import { createRouter, getAgentId } from '../router';
 import { join } from 'node:path';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
@@ -21,10 +21,11 @@ async function createUnifiedServer(
 }
 
 async function createRoute(
-	logger: Logger,
 	filename: string,
 	path: string,
-	context: AgentContext
+	context: AgentContext,
+	agents: ServerAgent[],
+	port: number
 ): Promise<ServerRoute> {
 	const mod = await import(filename);
 	let thehandler: AgentHandler | undefined;
@@ -43,13 +44,20 @@ async function createRoute(
 	}
 	const handler = createRouter({
 		handler: thehandler,
-		context: { ...context, agent: mod.config },
+		context: { ...context, agent: mod.config, agents } as AgentContext,
+		port,
 	});
-	logger.info('registering %s for %s', mod.config.name, path);
+	const agentId = await getAgentId(context.projectId, mod.config.name);
 	return {
 		path,
 		method: 'POST',
 		handler,
+		agent: {
+			id: agentId,
+			path: path.substring(1),
+			name: mod.config.name,
+			description: mod.config.description,
+		},
 	};
 }
 
@@ -68,19 +76,36 @@ export async function createServer({
 }: ServerConfig) {
 	const items = readdirSync(directory);
 	const routes: ServerRoute[] = [];
+	const agents: ServerAgent[] = [];
 	for (const item of items) {
 		const filepath = join(directory, item);
 		if (statSync(filepath).isDirectory()) {
 			const index = join(filepath, 'index.js');
 			if (existsSync(index)) {
-				routes.push(await createRoute(logger, index, `/${item}`, context));
+				const route = await createRoute(
+					index,
+					`/${item}`,
+					context,
+					agents,
+					port
+				);
+				agents.push(route.agent);
+				routes.push(route);
+				// create another route by id
+				routes.push({
+					...route,
+					path: `/${route.agent.id}`,
+				});
+				logger.info('registering %s at %s', route.agent.name, route.path);
+				logger.info('registering %s at /%s', route.agent.name, route.agent.id);
 			}
 		}
 	}
 	if (routes.length === 0) {
 		throw new Error(`No routes found in ${directory}`);
 	}
-	if (routes.length === 1) {
+	if (routes.length === 2) {
+		// TODO: need to find the default route
 		const defaultRoute = { ...routes[0], path: '/' };
 		routes.push(defaultRoute);
 		logger.info('registering default route at /');

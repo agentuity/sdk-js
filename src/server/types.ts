@@ -11,10 +11,18 @@ export interface ServerRequest {
 	headers: Record<string, string>;
 }
 
+export interface ServerAgent {
+	id: string;
+	path: string;
+	name: string;
+	description?: string;
+}
+
 export interface ServerRoute {
 	path: string;
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE';
 	handler: (req: ServerRequest) => Promise<AgentResponseType>;
+	agent: ServerAgent;
 }
 
 export interface UnifiedServerConfig {
