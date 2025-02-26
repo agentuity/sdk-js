@@ -31,6 +31,19 @@ const isCURLUserAgent = (req: ServerRequest) => {
 	return ua?.includes('curl');
 };
 
+function toBase64(payload: Json | ArrayBuffer | string | undefined) {
+	if (payload instanceof ArrayBuffer) {
+		return Buffer.from(payload).toString('base64');
+	}
+	if (typeof payload === 'string') {
+		return Buffer.from(payload).toString('base64');
+	}
+	if (payload instanceof Object) {
+		return Buffer.from(JSON.stringify(payload)).toString('base64');
+	}
+	return payload;
+}
+
 export const fromAgentResponseJSON = (
 	trigger: string,
 	payload: Json | ArrayBuffer | string | undefined,
@@ -291,8 +304,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 												handlerResponse.agent
 											);
 											logger.info(
-												'sending redirect to %s',
-												handlerResponse.agent
+												'sending redirect to %s with payload %s',
+												handlerResponse.agent,
+												handlerResponse.payload
 											);
 											const val = await agentRedirectRun(
 												logger,
@@ -300,7 +314,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 												req.request.runId,
 												agent,
 												[
-													handlerResponse.payload ?? req.request.payload,
+													handlerResponse.payload
+														? toBase64(handlerResponse.payload)
+														: req.request.payload,
 													handlerResponse.contentType ??
 														req.request.contentType,
 													handlerResponse.metadata ?? req.request.metadata,

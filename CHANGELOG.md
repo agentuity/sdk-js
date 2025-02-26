@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.7
+
+### Patch Changes
+
+- if using original payload on redirect, make sure the encoding is correct
+
 ## 0.0.64-next.6
 
 ### Patch Changes
