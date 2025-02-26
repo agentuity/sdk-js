@@ -1,7 +1,11 @@
 import type { Logger } from '../logger';
 import { NodeSDK } from '@opentelemetry/sdk-node';
+import { HostMetrics } from '@opentelemetry/host-metrics';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import {
+	PeriodicExportingMetricReader,
+	MeterProvider,
+} from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
@@ -90,30 +94,60 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 
 	const logger = createLogger(!!url);
 
-	const instrumentationSDK = new NodeSDK({
-		logRecordProcessor,
-		traceExporter: url
-			? new OTLPTraceExporter({
-					url: `${url}/v1/traces`,
-					headers,
-				})
-			: undefined,
-		metricReader: url
+	const traceExporter = url
+		? new OTLPTraceExporter({
+				url: `${url}/v1/traces`,
+				headers,
+			})
+		: undefined;
+
+	const metricExporter = url
+		? new OTLPMetricExporter({
+				url: `${url}/v1/metrics`,
+				headers,
+			})
+		: undefined;
+
+	// Create a separate metric reader for the NodeSDK
+	const sdkMetricReader =
+		url && metricExporter
 			? new PeriodicExportingMetricReader({
-					exporter: new OTLPMetricExporter({
-						url: `${url}/v1/metrics`,
-						headers,
-					}),
+					exporter: metricExporter,
 				})
-			: undefined,
-		instrumentations: [getNodeAutoInstrumentations()],
-		resource,
-	});
+			: undefined;
+
+	// Create a separate metric reader for the MeterProvider
+	const hostMetricReader =
+		url && metricExporter
+			? new PeriodicExportingMetricReader({
+					exporter: metricExporter,
+				})
+			: undefined;
+
+	const meterProvider = hostMetricReader
+		? new MeterProvider({
+				resource,
+				readers: [hostMetricReader],
+			})
+		: undefined;
+
+	const hostMetrics = meterProvider
+		? new HostMetrics({ meterProvider })
+		: undefined;
 
 	let running = false;
+	let instrumentationSDK: NodeSDK | undefined;
 
 	if (url) {
+		instrumentationSDK = new NodeSDK({
+			logRecordProcessor,
+			traceExporter,
+			metricReader: sdkMetricReader,
+			instrumentations: [getNodeAutoInstrumentations()],
+			resource,
+		});
 		instrumentationSDK.start();
+		hostMetrics?.start();
 		running = true;
 	}
 
@@ -123,7 +157,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		if (running) {
 			running = false;
 			logger.debug('shutting down OpenTelemetry');
-			await instrumentationSDK.shutdown();
+			await instrumentationSDK?.shutdown();
 			await otlpLogExporter?.shutdown();
 			logger.debug('shut down OpenTelemetry');
 		}
