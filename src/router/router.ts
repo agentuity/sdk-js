@@ -51,6 +51,7 @@ export const fromAgentResponseJSON = (
 	contentType?: string,
 	metadata?: Record<string, Json>
 ): AgentResponseType => {
+	console.log('fromAgentResponseJSON: %s', payload);
 	const resp: {
 		trigger: string;
 		payload: string;
@@ -63,7 +64,10 @@ export const fromAgentResponseJSON = (
 		metadata,
 	};
 	if (payload) {
-		if (payload instanceof ArrayBuffer) {
+		if (typeof payload === 'string') {
+			resp.contentType = contentType ?? 'text/plain';
+			resp.payload = Buffer.from(payload, encoding).toString('utf-8');
+		} else if (payload instanceof ArrayBuffer) {
 			resp.contentType = contentType ?? 'application/octet-stream';
 			resp.payload = Buffer.from(payload).toString('utf-8');
 		} else if (payload instanceof Object) {
@@ -71,9 +75,8 @@ export const fromAgentResponseJSON = (
 			resp.payload = Buffer.from(JSON.stringify(payload), encoding).toString(
 				'utf-8'
 			);
-		} else if (typeof payload === 'string') {
-			resp.contentType = contentType ?? 'text/plain';
-			resp.payload = Buffer.from(payload, encoding).toString('utf-8');
+		} else {
+			throw new Error('invalid payload type: ' + typeof payload);
 		}
 	}
 	return resp as AgentResponseType;
@@ -98,7 +101,10 @@ export const toAgentResponseJSON = (
 		metadata,
 	};
 	if (payload) {
-		if (payload instanceof ArrayBuffer) {
+		if (typeof payload === 'string') {
+			resp.contentType = contentType ?? 'text/plain';
+			resp.payload = Buffer.from(payload, 'utf-8').toString(encoding);
+		} else if (payload instanceof ArrayBuffer) {
 			resp.contentType = contentType ?? 'application/octet-stream';
 			resp.payload = Buffer.from(payload).toString(encoding);
 		} else if (payload instanceof Object) {
@@ -106,9 +112,8 @@ export const toAgentResponseJSON = (
 			resp.payload = Buffer.from(JSON.stringify(payload), 'utf-8').toString(
 				encoding
 			);
-		} else if (typeof payload === 'string') {
-			resp.contentType = contentType ?? 'text/plain';
-			resp.payload = Buffer.from(payload, 'utf-8').toString(encoding);
+		} else {
+			throw new Error('invalid payload type: ' + typeof payload);
 		}
 	}
 	return resp as AgentResponseType;
@@ -281,6 +286,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											response,
 											context
 										);
+										console.log(req.request);
 										console.log(handlerResponse);
 										if (handlerResponse === undefined) {
 											throw new Error(

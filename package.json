@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.64-next.8",
+	"version": "0.0.64-next.9",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
