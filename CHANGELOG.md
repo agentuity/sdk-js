@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.5
+
+### Patch Changes
+
+- use utf-8 before redirect
+
 ## 0.0.64-next.4
 
 ### Patch Changes

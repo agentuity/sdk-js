@@ -46,7 +46,7 @@ class LocalAgentInvoker implements RemoteAgent {
 		const payload = toAgentResponseJSON(
 			'agent',
 			data,
-			'base64',
+			'utf-8',
 			contentType,
 			metadata
 		);
