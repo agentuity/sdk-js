@@ -1,123 +1,17 @@
 # @agentuity/sdk
 
-## 0.0.64-next.18
+## 0.0.64
 
 ### Patch Changes
 
-- fix fetch
-
-## 0.0.64-next.17
-
-### Patch Changes
-
-- instrument fetch and add propagators
-
-## 0.0.64-next.16
-
-### Patch Changes
-
-- last test before release
-
-## 0.0.64-next.15
-
-### Patch Changes
-
-- more changes
-
-## 0.0.64-next.14
-
-### Patch Changes
-
-- More debug
-
-## 0.0.64-next.13
-
-### Patch Changes
-
-- more debug
-
-## 0.0.64-next.12
-
-### Patch Changes
-
-- More encoding fixes
-
-## 0.0.64-next.11
-
-### Patch Changes
-
-- more encoding issues
-
-## 0.0.64-next.10
-
-### Patch Changes
-
-- debug
-
-## 0.0.64-next.9
-
-### Patch Changes
-
-- more debuging
-
-## 0.0.64-next.8
-
-### Patch Changes
-
-- more debug
-
-## 0.0.64-next.7
-
-### Patch Changes
-
-- if using original payload on redirect, make sure the encoding is correct
-
-## 0.0.64-next.6
-
-### Patch Changes
-
-- decode from base64
-
-## 0.0.64-next.5
-
-### Patch Changes
-
-- use utf-8 before redirect
-
-## 0.0.64-next.4
-
-### Patch Changes
-
-- Add debugging
-
-## 0.0.64-next.3
-
-### Patch Changes
-
-- Fix formatting of request with a plain object and temp fix default route name
-
-## 0.0.64-next.2
-
-### Patch Changes
-
-- Run an agent redirect in its own span and manually hack default route for now
-
-## 0.0.64-next.1
-
-### Patch Changes
-
-- Added logging when the server receives an error
-
-## 0.0.64-next.0
-
-### Patch Changes
-
+- Add fetch instrumentation
+- Add otel trace propagation
 - Monkey patch console to redirect into otel logger
-  More improvements on bundling JS
-  Handle direct return from agent run in case you don't return correct signature
-  Set the span status on completion for agent run
-  Add cli version to trace context
-  More work on agent-to-agent remote comms
+- More improvements on bundling JS
+- Handle direct return from agent run in case you don't return correct signature
+- Set the span status on completion for agent run
+- Add cli version to trace context
+- More work on agent-to-agent remote comms
 
 ## 0.0.63
 
