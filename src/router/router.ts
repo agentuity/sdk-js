@@ -210,6 +210,10 @@ async function agentRedirectRun(
 					},
 					async () => {
 						try {
+							console.log(
+								'calling remote agent with: %s',
+								JSON.stringify(params)
+							);
 							resolve(await remoteAgent.run(...params));
 						} catch (err) {
 							recordException(span, err);
@@ -277,6 +281,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											response,
 											context
 										);
+										console.log(handlerResponse);
 										if (handlerResponse === undefined) {
 											throw new Error(
 												'handler returned undefined instead of a response'
