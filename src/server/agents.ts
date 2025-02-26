@@ -37,6 +37,12 @@ class LocalAgentInvoker implements RemoteAgent {
 		contentType?: string,
 		metadata?: Record<string, Json>
 	): Promise<AgentResponseType> {
+		console.log(
+			'agent redirect run. data=%s, contentType=%s, metadata=%s',
+			data,
+			contentType,
+			metadata
+		);
 		const payload = toAgentResponseJSON(
 			'agent',
 			data,
@@ -44,6 +50,7 @@ class LocalAgentInvoker implements RemoteAgent {
 			contentType,
 			metadata
 		);
+		console.log('agent redirect run after payload: %s', payload);
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 			method: 'POST',
 			body: JSON.stringify(payload),

@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.4
+
+### Patch Changes
+
+- Add debugging
+
 ## 0.0.64-next.3
 
 ### Patch Changes

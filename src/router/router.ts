@@ -55,10 +55,12 @@ export const toAgentResponseJSON = (
 			resp.payload = Buffer.from(payload).toString(encoding);
 		} else if (payload instanceof Object) {
 			resp.contentType = contentType ?? 'application/json';
-			resp.payload = Buffer.from(JSON.stringify(payload)).toString(encoding);
+			resp.payload = Buffer.from(JSON.stringify(payload), 'utf-8').toString(
+				encoding
+			);
 		} else if (typeof payload === 'string') {
 			resp.contentType = contentType ?? 'text/plain';
-			resp.payload = Buffer.from(payload).toString(encoding);
+			resp.payload = Buffer.from(payload, 'utf-8').toString(encoding);
 		}
 	}
 	return resp as AgentResponseType;
