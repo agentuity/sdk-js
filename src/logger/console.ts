@@ -1,6 +1,7 @@
 import { format } from 'node:util';
 import type { Logger } from './logger';
 import type { Json } from '../types';
+import { __originalConsole } from '../otel/logger';
 
 const yellow = '\x1b[33m';
 const green = '\x1b[32m';
@@ -27,25 +28,27 @@ export default class ConsoleLogger implements Logger {
 	}
 
 	debug(message: string, ...args: unknown[]): void {
-		console.debug(
+		__originalConsole.debug(
 			`${black}[DEBUG]${reset} ${this.formatMessage(message, args)}`
 		);
 	}
 
 	info(message: string, ...args: unknown[]): void {
-		console.info(
+		__originalConsole.info(
 			`${green}[INFO]${reset}  ${this.formatMessage(message, args)}`
 		);
 	}
 
 	warn(message: string, ...args: unknown[]): void {
-		console.warn(
+		__originalConsole.warn(
 			`${yellow}[WARN]${reset}  ${this.formatMessage(message, args)}`
 		);
 	}
 
 	error(message: string, ...args: unknown[]): void {
-		console.error(`${red}[ERROR]${reset} ${this.formatMessage(message, args)}`);
+		__originalConsole.error(
+			`${red}[ERROR]${reset} ${this.formatMessage(message, args)}`
+		);
 	}
 
 	child(opts: Record<string, Json>): Logger {

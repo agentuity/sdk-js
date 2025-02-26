@@ -2,7 +2,6 @@ import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
-import packageInfo from '../../package.json' assert { type: 'json' };
 
 interface AutostartConfig {
 	basedir: string;
@@ -14,6 +13,7 @@ interface AutostartConfig {
 	port?: number;
 	devmode?: boolean;
 	environment?: string;
+	cliVersion?: string;
 	otlp?: {
 		url?: string;
 		bearerToken?: string;
@@ -22,10 +22,6 @@ interface AutostartConfig {
 
 export async function run(config: AutostartConfig) {
 	const { basedir, distdir, port = 3000 } = config;
-	const pkg = join(basedir, 'package.json');
-	if (!existsSync(pkg)) {
-		throw new Error(`${pkg} does not exist`);
-	}
 	let directory = distdir;
 	if (!directory) {
 		const insideDist = join(basedir, 'src/agents');
@@ -38,7 +34,7 @@ export async function run(config: AutostartConfig) {
 	if (!existsSync(directory)) {
 		throw new Error(`${directory} does not exist`);
 	}
-	if (!config.projectId) {
+	if (process.env.AGENTUITY_ENVIRONMENT !== 'production' && !config.projectId) {
 		// this path only works in local dev mode
 		const yml = join(basedir, '..', 'agentuity.yaml');
 		if (existsSync(yml)) {
@@ -54,12 +50,14 @@ export async function run(config: AutostartConfig) {
 			'projectId is required and not found either in agentuity.yaml or in the environment'
 		);
 	}
-	const sdkVersion = packageInfo.version;
-	const { name, version } = JSON.parse(readFileSync(pkg, 'utf8'));
+	const name = process.env.AGENTUITY_SDK_APP_NAME ?? 'unknown';
+	const version = process.env.AGENTUITY_SDK_APP_VERSION ?? 'unknown';
+	const sdkVersion = process.env.AGENTUITY_SDK_VERSION ?? 'unknown';
 	const otel = registerOtel({
 		name,
 		version,
 		sdkVersion,
+		cliVersion: config.cliVersion,
 		orgId: config.orgId,
 		projectId: config.projectId,
 		deploymentId: config.deploymentId,

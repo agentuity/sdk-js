@@ -1,18 +1,18 @@
+import { join } from 'node:path';
+import { readdirSync, existsSync, statSync } from 'node:fs';
+import type { Tracer } from '@opentelemetry/api';
 import type { Server, ServerAgent, UnifiedServerConfig } from './types';
 import type { AgentContext, AgentHandler } from '../types';
 import type { Logger } from '../logger';
 import type { ServerRoute } from './types';
-import type { Tracer } from '@opentelemetry/api';
-import { readdirSync, existsSync, statSync } from 'node:fs';
 import { createRouter, getAgentId } from '../router';
-import { join } from 'node:path';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 
 async function createUnifiedServer(
 	config: UnifiedServerConfig
 ): Promise<Server> {
-	if (process.isBun) {
+	if (process.env.AGENTUITY_BUNDLER_RUNTIME === 'bunjs') {
 		const server = await import('./bun');
 		return new server.BunServer(config);
 	}
@@ -104,12 +104,14 @@ export async function createServer({
 	if (routes.length === 0) {
 		throw new Error(`No routes found in ${directory}`);
 	}
-	if (routes.length === 2) {
-		// TODO: need to find the default route
-		const defaultRoute = { ...routes[0], path: '/' };
-		routes.push(defaultRoute);
-		logger.info('registering default route at /');
-	}
+	// FIXME: need to correctly handle the default route
+	const first = routes.find((r) => r.path === '/myfirstagent')!;
+	const defaultRoute = { ...first, path: '/' };
+	routes.push(defaultRoute);
+	logger.info(
+		'registering default route at / using agent %s',
+		defaultRoute.agent.name
+	);
 	return createUnifiedServer({
 		logger,
 		port,

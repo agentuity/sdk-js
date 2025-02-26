@@ -7,6 +7,9 @@ import type {
 import { toAgentResponseJSON } from '../router';
 import { POST } from '../apis/api';
 import type { ServerAgent } from './types';
+import type { Logger } from '../logger';
+
+// FIXME: add spans for these
 
 class LocalAgentInvoker implements RemoteAgent {
 	private readonly port: number;
@@ -34,13 +37,14 @@ class LocalAgentInvoker implements RemoteAgent {
 		contentType?: string,
 		metadata?: Record<string, Json>
 	): Promise<AgentResponseType> {
-		const payload = toAgentResponseJSON(
-			'agent',
-			data,
-			'base64',
-			contentType,
-			metadata
-		);
+		// NOTE: even though the signature says it can be stuff other than a string,
+		// the router will only pass strings to the agent to this local agent via redirect
+		const payload = {
+			trigger: 'agent',
+			payload: data as string,
+			contentType: contentType as string,
+			metadata,
+		};
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 			method: 'POST',
 			body: JSON.stringify(payload),
@@ -57,21 +61,26 @@ class LocalAgentInvoker implements RemoteAgent {
 }
 
 class RemoteAgentInvoker implements RemoteAgent {
+	private readonly logger: Logger;
 	public readonly id: string;
 	public readonly name: string;
 	public readonly description?: string;
 	public readonly projectId: string;
+	private readonly replyId: string;
 
 	constructor(
+		logger: Logger,
 		id: string,
 		name: string,
 		projectId: string,
 		description?: string
 	) {
+		this.logger = logger;
 		this.id = id;
 		this.name = name;
 		this.projectId = projectId;
 		this.description = description;
+		this.replyId = crypto.randomUUID();
 	}
 
 	async run(
@@ -87,47 +96,73 @@ class RemoteAgentInvoker implements RemoteAgent {
 			metadata
 		);
 		const resp = await POST(
-			`/sdk/agent/${this.id}/run`,
+			`/sdk/agent/${this.id}/run/${this.replyId}`,
 			JSON.stringify(payload),
 			{
 				'Content-Type': 'application/json',
-			},
-			300_000 // 5 minutes
+			}
 		);
 		if (resp.status !== 200) {
 			throw new Error(await resp.response.text());
 		}
 		const respPayload = resp.json as {
 			success: boolean;
-			data: AgentResponseType;
 			message?: string;
 		};
 		if (respPayload.success) {
-			const data = { ...respPayload.data };
-			if ('payload' in respPayload.data && respPayload.data.payload) {
+			const started = Date.now();
+			this.logger.debug(
+				'waiting for remote agent response using reply id: %s',
+				this.replyId
+			);
+			const handler = {
+				resolve: (_value: AgentResponseType) => {
+					return;
+				},
+				reject: (_reason?: any) => {
+					return;
+				},
+			};
+			const promise = new Promise<AgentResponseType>((resolve, reject) => {
+				handler.resolve = resolve;
+				handler.reject = reject;
+			});
+			callbackAgentHandler.register(this.replyId, handler);
+			const respPayload = await promise;
+			this.logger.debug(
+				'received remote agent reply with id: %s after %s ms',
+				this.replyId,
+				Date.now() - started
+			);
+			if ('payload' in respPayload && respPayload.payload) {
+				const data = { ...respPayload };
 				data.payload = Buffer.from(
-					respPayload.data.payload as string,
+					respPayload.payload as string,
 					'base64'
 				).toString('utf-8');
+				return data;
 			}
-			return data;
+			return respPayload;
 		}
 		throw new Error(respPayload.message);
 	}
 }
 
 export default class AgentResolver {
+	private readonly logger: Logger;
 	private readonly agents: ServerAgent[];
 	private readonly port: number;
 	private readonly projectId: string;
 	private readonly currentAgentId: string;
 
 	constructor(
+		logger: Logger,
 		agents: ServerAgent[],
 		port: number,
 		projectId: string,
 		currentAgentId: string
 	) {
+		this.logger = logger;
 		this.agents = agents;
 		this.port = port;
 		this.projectId = projectId;
@@ -191,6 +226,7 @@ export default class AgentResolver {
 			throw new Error(payload.message);
 		}
 		return new RemoteAgentInvoker(
+			this.logger,
 			payload.data.id,
 			payload.data.name,
 			payload.data.projectId,
@@ -198,3 +234,38 @@ export default class AgentResolver {
 		);
 	}
 }
+
+interface PromiseWithResolver<T> {
+	resolve: (value: T) => void;
+	reject: (reason?: any) => void;
+}
+
+export class CallbackAgentHandler {
+	private pending: Map<string, PromiseWithResolver<AgentResponseType>>;
+
+	constructor() {
+		this.pending = new Map();
+	}
+
+	/**
+	 * register is called to register a promise callback handler for a pending
+	 * remote agent response.
+	 */
+	register(id: string, promise: PromiseWithResolver<AgentResponseType>) {
+		this.pending.set(id, promise);
+	}
+
+	/**
+	 * received is called when a remote agent response is received to forward to the
+	 * promise callback handler.
+	 */
+	received(id: string, response: AgentResponseType) {
+		const promise = this.pending.get(id);
+		if (promise) {
+			this.pending.delete(id);
+			promise.resolve(response);
+		}
+	}
+}
+
+export const callbackAgentHandler = new CallbackAgentHandler();

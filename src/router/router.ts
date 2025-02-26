@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import {
-	SpanKind,
 	SpanStatusCode,
 	type Exception,
 	type Tracer,
@@ -13,6 +12,8 @@ import type {
 	AgentResponseType,
 	Json,
 	GetAgentRequestParams,
+	RemoteAgent,
+	AgentConfig,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
@@ -29,6 +30,19 @@ const isCURLUserAgent = (req: ServerRequest) => {
 	const ua = req.headers['user-agent'];
 	return ua?.includes('curl');
 };
+
+function toBase64(payload: Json | ArrayBuffer | string | undefined) {
+	if (payload instanceof ArrayBuffer) {
+		return Buffer.from(payload).toString('base64');
+	}
+	if (typeof payload === 'string') {
+		return Buffer.from(payload).toString('base64');
+	}
+	if (payload instanceof Object) {
+		return Buffer.from(JSON.stringify(payload)).toString('base64');
+	}
+	return payload;
+}
 
 export const toAgentResponseJSON = (
 	trigger: string,
@@ -49,15 +63,19 @@ export const toAgentResponseJSON = (
 		metadata,
 	};
 	if (payload) {
-		if (payload instanceof ArrayBuffer) {
+		if (typeof payload === 'string') {
+			resp.contentType = contentType ?? 'text/plain';
+			resp.payload = Buffer.from(payload, 'utf-8').toString(encoding);
+		} else if (payload instanceof ArrayBuffer) {
 			resp.contentType = contentType ?? 'application/octet-stream';
 			resp.payload = Buffer.from(payload).toString(encoding);
 		} else if (payload instanceof Object) {
 			resp.contentType = contentType ?? 'application/json';
-			resp.payload = Buffer.from(JSON.stringify(payload)).toString(encoding);
-		} else if (typeof payload === 'string') {
-			resp.contentType = contentType ?? 'text/plain';
-			resp.payload = Buffer.from(payload).toString(encoding);
+			resp.payload = Buffer.from(JSON.stringify(payload), 'utf-8').toString(
+				encoding
+			);
+		} else {
+			throw new Error('invalid payload type: ' + typeof payload);
 		}
 	}
 	return resp as AgentResponseType;
@@ -126,35 +144,85 @@ export async function getAgentId(
 	return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function agentRedirectRun(
+	logger: Logger,
+	config: RouterConfig,
+	runId: string,
+	fromAgent: AgentConfig & { id: string },
+	remoteAgent: RemoteAgent,
+	params: Parameters<RemoteAgent['run']>
+): Promise<ReturnType<RemoteAgent['run']>> {
+	return new Promise((resolve, reject) => {
+		return config.context.tracer.startActiveSpan(
+			'agent.redirect',
+			{
+				attributes: {
+					fromAgentName: fromAgent.name,
+					fromAgentId: fromAgent.id,
+					toAgentName: remoteAgent.name,
+					toAgentId: remoteAgent.id,
+				},
+			},
+			async (span) => {
+				asyncStorage.run(
+					{
+						span,
+						runId,
+						projectId: config.context.projectId,
+						deploymentId: config.context.deploymentId,
+						orgId: config.context.orgId,
+						agentId: remoteAgent.id,
+						logger,
+						tracer: config.context.tracer,
+						sdkVersion: config.context.sdkVersion,
+					},
+					async () => {
+						try {
+							resolve(await remoteAgent.run(...params));
+						} catch (err) {
+							recordException(span, err);
+							reject(err);
+						} finally {
+							span.end();
+						}
+					}
+				);
+			}
+		);
+	});
+}
+
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
 		return new Promise((resolve, reject) => {
 			return getAgentId(config.context.projectId, config.context.agent.name)
 				.then((agentId) => {
+					const logger = config.context.logger.child({
+						runId: req.request.runId,
+					});
 					const resolver = new AgentResolver(
+						logger,
 						config.context.agents,
 						config.port,
 						config.context.projectId,
 						agentId
 					);
 					return config.context.tracer.startActiveSpan(
-						config.context.agent.name,
+						'agent.run',
 						{
-							kind: SpanKind.SERVER,
 							attributes: {
-								action: 'agent.run',
-								agent: config.context.agent.name,
+								agentName: config.context.agent.name,
 								agentId,
 							},
 						},
 						async (span) => {
-							const logger = config.context.logger.child({
-								runId: req.request.runId,
-							});
 							asyncStorage.run(
 								{
 									span,
 									runId: req.request.runId,
+									projectId: config.context.projectId,
+									deploymentId: config.context.deploymentId,
+									orgId: config.context.orgId,
 									agentId,
 									logger,
 									tracer: config.context.tracer,
@@ -175,22 +243,46 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											response,
 											context
 										);
+										if (handlerResponse === undefined) {
+											throw new Error(
+												'handler returned undefined instead of a response'
+											);
+										}
+										if (handlerResponse === null) {
+											throw new Error(
+												'handler returned null instead of a response'
+											);
+										}
+										if (typeof handlerResponse === 'string') {
+											handlerResponse = response.text(handlerResponse);
+										} else if (
+											typeof handlerResponse === 'object' &&
+											!('contentType' in handlerResponse)
+										) {
+											handlerResponse = response.json(handlerResponse as Json);
+										}
 										// handle local redirect
 										if (
 											'redirect' in handlerResponse &&
 											handlerResponse.redirect
 										) {
-											const resp = await context.getAgent(
+											const agent = await context.getAgent(
 												handlerResponse.agent
 											);
-											logger.info(
-												'sending redirect to %s',
-												handlerResponse.agent
-											);
-											const val = await resp.run(
-												handlerResponse.payload ?? req.request.payload,
-												handlerResponse.contentType ?? req.request.contentType,
-												handlerResponse.metadata ?? req.request.metadata
+											const val = await agentRedirectRun(
+												logger,
+												config,
+												req.request.runId,
+												{ ...config.context.agent, id: agentId },
+												agent,
+												[
+													handlerResponse.payload
+														? toBase64(handlerResponse.payload)
+														: req.request.payload,
+													handlerResponse.contentType ??
+														req.request.contentType,
+													handlerResponse.metadata ?? req.request.metadata,
+												]
 											);
 											logger.debug(
 												'redirect response: %s',
@@ -206,6 +298,10 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 													'base64'
 												).toString('utf-8');
 											}
+											span.setStatus({
+												code: SpanStatusCode.OK,
+												message: JSON.stringify(val),
+											});
 											resolve(val);
 											return;
 										}
@@ -217,6 +313,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 												)}`
 											);
 										}
+										span.setStatus({
+											code: SpanStatusCode.OK,
+										});
 										resolve(data);
 									} catch (err) {
 										recordException(span, err);
