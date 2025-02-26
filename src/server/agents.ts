@@ -4,7 +4,7 @@ import type {
 	Json,
 	RemoteAgent,
 } from '../types';
-import { fromAgentResponseJSON, toAgentResponseJSON } from '../router';
+import { toAgentResponseJSON } from '../router';
 import { POST } from '../apis/api';
 import type { ServerAgent } from './types';
 import type { Logger } from '../logger';
@@ -37,20 +37,14 @@ class LocalAgentInvoker implements RemoteAgent {
 		contentType?: string,
 		metadata?: Record<string, Json>
 	): Promise<AgentResponseType> {
-		console.log(
-			'agent redirect run. data=%s, contentType=%s, metadata=%s',
-			data,
-			contentType,
-			metadata
-		);
-		const payload = fromAgentResponseJSON(
-			'agent',
-			data,
-			'utf-8',
-			contentType,
-			metadata
-		);
-		console.log('agent redirect run after payload: %s', payload);
+		// NOTE: even though the signature says it can be stuff other than a string,
+		// the router will only pass strings to the agent to this local agent via redirect
+		const payload = {
+			trigger: 'agent',
+			payload: data as string,
+			contentType: contentType as string,
+			metadata,
+		};
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 			method: 'POST',
 			body: JSON.stringify(payload),

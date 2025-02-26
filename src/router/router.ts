@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import {
-	SpanKind,
 	SpanStatusCode,
 	type Exception,
 	type Tracer,
@@ -14,6 +13,7 @@ import type {
 	Json,
 	GetAgentRequestParams,
 	RemoteAgent,
+	AgentConfig,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
@@ -43,44 +43,6 @@ function toBase64(payload: Json | ArrayBuffer | string | undefined) {
 	}
 	return payload;
 }
-
-export const fromAgentResponseJSON = (
-	trigger: string,
-	payload: Json | ArrayBuffer | string | undefined,
-	encoding: 'base64' | 'utf-8',
-	contentType?: string,
-	metadata?: Record<string, Json>
-): AgentResponseType => {
-	console.log('fromAgentResponseJSON: %s', payload);
-	const resp: {
-		trigger: string;
-		payload: string;
-		contentType: string;
-		metadata?: Record<string, Json>;
-	} = {
-		trigger,
-		payload: '',
-		contentType: contentType ?? 'text/plain',
-		metadata,
-	};
-	if (payload) {
-		if (typeof payload === 'string') {
-			resp.contentType = contentType ?? 'text/plain';
-			resp.payload = Buffer.from(payload, encoding).toString('utf-8');
-		} else if (payload instanceof ArrayBuffer) {
-			resp.contentType = contentType ?? 'application/octet-stream';
-			resp.payload = Buffer.from(payload).toString('utf-8');
-		} else if (payload instanceof Object) {
-			resp.contentType = contentType ?? 'application/json';
-			resp.payload = Buffer.from(JSON.stringify(payload), encoding).toString(
-				'utf-8'
-			);
-		} else {
-			throw new Error('invalid payload type: ' + typeof payload);
-		}
-	}
-	return resp as AgentResponseType;
-};
 
 export const toAgentResponseJSON = (
 	trigger: string,
@@ -186,18 +148,19 @@ async function agentRedirectRun(
 	logger: Logger,
 	config: RouterConfig,
 	runId: string,
+	fromAgent: AgentConfig & { id: string },
 	remoteAgent: RemoteAgent,
 	params: Parameters<RemoteAgent['run']>
 ): Promise<ReturnType<RemoteAgent['run']>> {
 	return new Promise((resolve, reject) => {
 		return config.context.tracer.startActiveSpan(
-			config.context.agent.name,
+			'agent.redirect',
 			{
-				kind: SpanKind.SERVER,
 				attributes: {
-					action: 'agent.run',
-					agent: remoteAgent.name,
-					agentId: remoteAgent.id,
+					fromAgentName: fromAgent.name,
+					fromAgentId: fromAgent.id,
+					toAgentName: remoteAgent.name,
+					toAgentId: remoteAgent.id,
 				},
 			},
 			async (span) => {
@@ -215,10 +178,6 @@ async function agentRedirectRun(
 					},
 					async () => {
 						try {
-							console.log(
-								'calling remote agent with: %s',
-								JSON.stringify(params)
-							);
 							resolve(await remoteAgent.run(...params));
 						} catch (err) {
 							recordException(span, err);
@@ -249,12 +208,10 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 						agentId
 					);
 					return config.context.tracer.startActiveSpan(
-						config.context.agent.name,
+						'agent.run',
 						{
-							kind: SpanKind.SERVER,
 							attributes: {
-								action: 'agent.run',
-								agent: config.context.agent.name,
+								agentName: config.context.agent.name,
 								agentId,
 							},
 						},
@@ -286,8 +243,6 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											response,
 											context
 										);
-										console.log(req.request);
-										console.log(handlerResponse);
 										if (handlerResponse === undefined) {
 											throw new Error(
 												'handler returned undefined instead of a response'
@@ -314,15 +269,11 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											const agent = await context.getAgent(
 												handlerResponse.agent
 											);
-											logger.info(
-												'sending redirect to %s with payload %s',
-												handlerResponse.agent,
-												handlerResponse.payload
-											);
 											const val = await agentRedirectRun(
 												logger,
 												config,
 												req.request.runId,
+												{ ...config.context.agent, id: agentId },
 												agent,
 												[
 													handlerResponse.payload

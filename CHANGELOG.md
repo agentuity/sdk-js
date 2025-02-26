@@ -1,5 +1,59 @@
 # @agentuity/sdk
 
+## 0.0.64-next.18
+
+### Patch Changes
+
+- fix fetch
+
+## 0.0.64-next.17
+
+### Patch Changes
+
+- instrument fetch and add propagators
+
+## 0.0.64-next.16
+
+### Patch Changes
+
+- last test before release
+
+## 0.0.64-next.15
+
+### Patch Changes
+
+- more changes
+
+## 0.0.64-next.14
+
+### Patch Changes
+
+- More debug
+
+## 0.0.64-next.13
+
+### Patch Changes
+
+- more debug
+
+## 0.0.64-next.12
+
+### Patch Changes
+
+- More encoding fixes
+
+## 0.0.64-next.11
+
+### Patch Changes
+
+- more encoding issues
+
+## 0.0.64-next.10
+
+### Patch Changes
+
+- debug
+
 ## 0.0.64-next.9
 
 ### Patch Changes

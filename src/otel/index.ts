@@ -14,6 +14,11 @@ import {
 	ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
 import opentelemetry, { type Tracer } from '@opentelemetry/api';
+import {
+	W3CTraceContextPropagator,
+	W3CBaggagePropagator,
+	CompositePropagator,
+} from '@opentelemetry/core';
 import * as LogsAPI from '@opentelemetry/api-logs';
 import {
 	LoggerProvider,
@@ -23,6 +28,7 @@ import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { createLogger, patchConsole } from './logger';
 import { ConsoleLogRecordExporter } from './console';
+import { instrumentFetch } from './fetch';
 
 interface OtelConfig {
 	url?: string;
@@ -157,12 +163,19 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	let instrumentationSDK: NodeSDK | undefined;
 
 	if (url) {
+		instrumentFetch();
 		instrumentationSDK = new NodeSDK({
 			logRecordProcessor,
 			traceExporter,
 			metricReader: sdkMetricReader,
 			instrumentations: [getNodeAutoInstrumentations()],
 			resource,
+			textMapPropagator: new CompositePropagator({
+				propagators: [
+					new W3CTraceContextPropagator(),
+					new W3CBaggagePropagator(),
+				],
+			}),
 		});
 		instrumentationSDK.start();
 		hostMetrics?.start();

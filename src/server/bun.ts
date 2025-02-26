@@ -5,6 +5,13 @@ import type {
 	IncomingRequest,
 } from './types';
 import { callbackAgentHandler } from './agents';
+import {
+	context,
+	propagation,
+	trace,
+	SpanKind,
+	SpanStatusCode,
+} from '@opentelemetry/api';
 
 export class BunServer implements Server {
 	private server: ReturnType<typeof Bun.serve> | null = null;
@@ -32,48 +39,90 @@ export class BunServer implements Server {
 		this.server = Bun.serve({
 			port: this.config.port,
 			async fetch(req) {
-				const url = new URL(req.url);
+				// Extract trace context from headers
+				const extractedContext = extractTraceContext(req);
 
-				if (req.method === 'GET' && url.pathname === '/_health') {
-					return new Response('OK', { status: 200 });
-				}
+				// Execute the request handler within the extracted context
+				return context.with(extractedContext, async () => {
+					const url = new URL(req.url);
+					const method = req.method;
 
-				if (req.method === 'POST' && url.pathname.startsWith('/_reply/')) {
-					const id = url.pathname.slice(8);
-					const body = await req.json();
-					callbackAgentHandler.received(id, body);
-					return new Response('OK', { status: 202 });
-				}
-
-				const method = req.method;
-				const routeKey = `${method}:${url.pathname}`;
-
-				logger.debug('request: %s %s', method, url.pathname);
-
-				const route = routeMap.get(routeKey);
-
-				if (!route) {
-					logger.error('route not found: %s for: %s', method, url.pathname);
-					return new Response('Not Found', { status: 404 });
-				}
-
-				try {
-					const body = await req.json();
-
-					const resp = await route.handler({
-						url: req.url,
-						headers: req.headers.toJSON(),
-						request: body as IncomingRequest,
-					});
-					return new Response(JSON.stringify(resp), {
-						headers: {
-							'Content-Type': 'application/json',
-							Server: `Agentuity BunJS/${sdkVersion}`,
+					// Create a span for this incoming request
+					return trace.getTracer('http-server').startActiveSpan(
+						`${method} ${url.pathname}`,
+						{
+							kind: SpanKind.SERVER,
+							attributes: {
+								'http.method': method,
+								'http.url': req.url,
+								'http.host': url.host,
+								'http.user_agent': req.headers.get('user-agent') || '',
+								'http.path': url.pathname,
+							},
 						},
-					});
-				} catch (error) {
-					return new Response('Internal Server Error', { status: 500 });
-				}
+						async (span) => {
+							try {
+								if (method === 'GET' && url.pathname === '/_health') {
+									span.setStatus({ code: SpanStatusCode.OK });
+									return new Response('OK', { status: 200 });
+								}
+
+								if (method === 'POST' && url.pathname.startsWith('/_reply/')) {
+									const id = url.pathname.slice(8);
+									const body = await req.json();
+									callbackAgentHandler.received(id, body);
+									span.setStatus({ code: SpanStatusCode.OK });
+									return new Response('OK', { status: 202 });
+								}
+
+								const routeKey = `${method}:${url.pathname}`;
+
+								logger.debug('request: %s %s', method, url.pathname);
+
+								const route = routeMap.get(routeKey);
+
+								if (!route) {
+									logger.error(
+										'route not found: %s for: %s',
+										method,
+										url.pathname
+									);
+									span.setStatus({
+										code: SpanStatusCode.ERROR,
+										message: `Route not found: ${method} ${url.pathname}`,
+									});
+									return new Response('Not Found', { status: 404 });
+								}
+
+								try {
+									const body = await req.json();
+
+									const resp = await route.handler({
+										url: req.url,
+										headers: req.headers.toJSON(),
+										request: body as IncomingRequest,
+									});
+									span.setStatus({ code: SpanStatusCode.OK });
+									return new Response(JSON.stringify(resp), {
+										headers: {
+											'Content-Type': 'application/json',
+											Server: `Agentuity BunJS/${sdkVersion}`,
+										},
+									});
+								} catch (error) {
+									span.recordException(error as Error);
+									span.setStatus({
+										code: SpanStatusCode.ERROR,
+										message: (error as Error).message,
+									});
+									return new Response('Internal Server Error', { status: 500 });
+								}
+							} finally {
+								span.end();
+							}
+						}
+					);
+				});
 			},
 		});
 
@@ -90,4 +139,21 @@ export class BunServer implements Server {
 		await server.stop();
 		this.config.logger.info('server stopped');
 	}
+}
+
+/**
+ * Extract trace context from incoming request headers
+ */
+function extractTraceContext(req: Request) {
+	// Create a carrier object from the headers
+	const carrier: Record<string, string> = {};
+
+	// Convert headers to the format expected by the propagator
+	req.headers.forEach((value, key) => {
+		carrier[key] = value;
+	});
+
+	// Extract the context using the global propagator
+	const activeContext = context.active();
+	return propagation.extract(activeContext, carrier);
 }
