@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.6
+
+### Patch Changes
+
+- decode from base64
+
 ## 0.0.64-next.5
 
 ### Patch Changes

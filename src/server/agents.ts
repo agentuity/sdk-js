@@ -4,7 +4,7 @@ import type {
 	Json,
 	RemoteAgent,
 } from '../types';
-import { toAgentResponseJSON } from '../router';
+import { fromAgentResponseJSON, toAgentResponseJSON } from '../router';
 import { POST } from '../apis/api';
 import type { ServerAgent } from './types';
 import type { Logger } from '../logger';
@@ -43,7 +43,7 @@ class LocalAgentInvoker implements RemoteAgent {
 			contentType,
 			metadata
 		);
-		const payload = toAgentResponseJSON(
+		const payload = fromAgentResponseJSON(
 			'agent',
 			data,
 			'utf-8',

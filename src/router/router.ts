@@ -31,6 +31,41 @@ const isCURLUserAgent = (req: ServerRequest) => {
 	return ua?.includes('curl');
 };
 
+export const fromAgentResponseJSON = (
+	trigger: string,
+	payload: Json | ArrayBuffer | string | undefined,
+	encoding: 'base64' | 'utf-8',
+	contentType?: string,
+	metadata?: Record<string, Json>
+): AgentResponseType => {
+	const resp: {
+		trigger: string;
+		payload: string;
+		contentType: string;
+		metadata?: Record<string, Json>;
+	} = {
+		trigger,
+		payload: '',
+		contentType: contentType ?? 'text/plain',
+		metadata,
+	};
+	if (payload) {
+		if (payload instanceof ArrayBuffer) {
+			resp.contentType = contentType ?? 'application/octet-stream';
+			resp.payload = Buffer.from(payload).toString('utf-8');
+		} else if (payload instanceof Object) {
+			resp.contentType = contentType ?? 'application/json';
+			resp.payload = Buffer.from(JSON.stringify(payload), encoding).toString(
+				'utf-8'
+			);
+		} else if (typeof payload === 'string') {
+			resp.contentType = contentType ?? 'text/plain';
+			resp.payload = Buffer.from(payload, encoding).toString('utf-8');
+		}
+	}
+	return resp as AgentResponseType;
+};
+
 export const toAgentResponseJSON = (
 	trigger: string,
 	payload: Json | ArrayBuffer | string | undefined,
