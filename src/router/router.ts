@@ -230,6 +230,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											}
 											span.setStatus({
 												code: SpanStatusCode.OK,
+												message: JSON.stringify(val),
 											});
 											resolve(val);
 											return;

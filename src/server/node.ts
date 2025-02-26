@@ -82,12 +82,18 @@ export class NodeServer implements Server {
 
 				const route = this.routes.find((r) => r.path === req.url);
 				if (!route) {
+					this.logger.error('route not found: %s for: %s', req.method, req.url);
 					res.writeHead(404);
 					res.end();
 					return;
 				}
 
 				if (req.method !== route.method) {
+					this.logger.error(
+						'unsupported method: %s for: %s',
+						req.method,
+						req.url
+					);
 					res.writeHead(405);
 					res.end();
 					return;

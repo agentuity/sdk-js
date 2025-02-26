@@ -53,6 +53,7 @@ export class BunServer implements Server {
 				const route = routeMap.get(routeKey);
 
 				if (!route) {
+					logger.error('route not found: %s for: %s', method, url.pathname);
 					return new Response('Not Found', { status: 404 });
 				}
 

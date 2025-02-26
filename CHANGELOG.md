@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.1
+
+### Patch Changes
+
+- Added logging when the server receives an error
+
 ## 0.0.64-next.0
 
 ### Patch Changes
