@@ -131,7 +131,11 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		return new Promise((resolve, reject) => {
 			return getAgentId(config.context.projectId, config.context.agent.name)
 				.then((agentId) => {
+					const logger = config.context.logger.child({
+						runId: req.request.runId,
+					});
 					const resolver = new AgentResolver(
+						logger,
 						config.context.agents,
 						config.port,
 						config.context.projectId,
@@ -148,13 +152,13 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							},
 						},
 						async (span) => {
-							const logger = config.context.logger.child({
-								runId: req.request.runId,
-							});
 							asyncStorage.run(
 								{
 									span,
 									runId: req.request.runId,
+									projectId: config.context.projectId,
+									deploymentId: config.context.deploymentId,
+									orgId: config.context.orgId,
 									agentId,
 									logger,
 									tracer: config.context.tracer,
@@ -175,6 +179,24 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											response,
 											context
 										);
+										if (handlerResponse === undefined) {
+											throw new Error(
+												'handler returned undefined instead of a response'
+											);
+										}
+										if (handlerResponse === null) {
+											throw new Error(
+												'handler returned null instead of a response'
+											);
+										}
+										if (typeof handlerResponse === 'string') {
+											handlerResponse = response.text(handlerResponse);
+										} else if (
+											typeof handlerResponse === 'object' &&
+											!('contentType' in handlerResponse)
+										) {
+											handlerResponse = response.json(handlerResponse as Json);
+										}
 										// handle local redirect
 										if (
 											'redirect' in handlerResponse &&
@@ -206,6 +228,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 													'base64'
 												).toString('utf-8');
 											}
+											span.setStatus({
+												code: SpanStatusCode.OK,
+											});
 											resolve(val);
 											return;
 										}
@@ -217,6 +242,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 												)}`
 											);
 										}
+										span.setStatus({
+											code: SpanStatusCode.OK,
+										});
 										resolve(data);
 									} catch (err) {
 										recordException(span, err);

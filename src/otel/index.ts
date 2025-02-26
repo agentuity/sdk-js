@@ -20,7 +20,8 @@ import {
 	SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
-import { createLogger } from './logger';
+import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
+import { createLogger, patchConsole } from './logger';
 import { ConsoleLogRecordExporter } from './console';
 
 interface OtelConfig {
@@ -34,6 +35,7 @@ interface OtelConfig {
 	runId?: string;
 	environment?: string;
 	sdkVersion?: string;
+	cliVersion?: string;
 }
 
 interface OtelResponse {
@@ -50,6 +52,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		bearerToken,
 		environment = 'development',
 		sdkVersion,
+		cliVersion,
 		orgId,
 		projectId,
 		deploymentId,
@@ -72,13 +75,19 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
 		'@agentuity/sdkVersion': sdkVersion ?? 'unknown',
+		'@agentuity/cliVersion': cliVersion ?? 'unknown',
 	});
 
 	let otlpLogExporter: OTLPLogExporter | undefined;
 	let logRecordProcessor: SimpleLogRecordProcessor | undefined;
 
 	if (url) {
-		otlpLogExporter = new OTLPLogExporter({ url: `${url}/v1/logs`, headers });
+		otlpLogExporter = new OTLPLogExporter({
+			url: `${url}/v1/logs`,
+			headers,
+			compression: CompressionAlgorithm.GZIP,
+			timeoutMillis: 10_000,
+		});
 		logRecordProcessor = new SimpleLogRecordProcessor(otlpLogExporter);
 	} else {
 		logRecordProcessor = new SimpleLogRecordProcessor(
@@ -93,6 +102,15 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	LogsAPI.logs.setGlobalLoggerProvider(loggerProvider);
 
 	const logger = createLogger(!!url);
+
+	// must do this after we have created the logger
+	patchConsole({
+		'@agentuity/orgId': orgId ?? 'unknown',
+		'@agentuity/projectId': projectId ?? 'unknown',
+		'@agentuity/deploymentId': deploymentId ?? 'unknown',
+		'@agentuity/runId': runId ?? 'unknown',
+		'@agentuity/env': environment,
+	});
 
 	const traceExporter = url
 		? new OTLPTraceExporter({
@@ -157,8 +175,19 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		if (running) {
 			running = false;
 			logger.debug('shutting down OpenTelemetry');
-			await instrumentationSDK?.shutdown();
-			await otlpLogExporter?.shutdown();
+			await otlpLogExporter
+				?.forceFlush()
+				.catch((e) =>
+					logger.warn('error in forceFlush of otel exporter. %s', e)
+				);
+			await otlpLogExporter
+				?.shutdown()
+				.catch((e) => logger.warn('error in shutdown of otel exporter. %s', e));
+			await instrumentationSDK
+				?.shutdown()
+				.catch((e) =>
+					logger.warn('error in shutdown of otel instrumentation. %s', e)
+				);
 			logger.debug('shut down OpenTelemetry');
 		}
 	};

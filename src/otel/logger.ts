@@ -4,6 +4,8 @@ import type { Logger } from '../logger';
 import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
 
+export const __originalConsole = Object.create(console); // save the original console before we patch it
+
 class OtelLogger implements Logger {
 	private readonly delegate: LogsAPI.Logger;
 	private readonly context: Record<string, Json> | undefined;
@@ -67,7 +69,31 @@ class OtelLogger implements Logger {
 	}
 }
 
-export function createLogger(useConsole: boolean): Logger {
+export function createLogger(
+	useConsole: boolean,
+	context?: Record<string, Json>
+): Logger {
 	const delegate = LogsAPI.logs.getLogger('default');
-	return new OtelLogger(useConsole, delegate);
+	return new OtelLogger(useConsole, delegate, context);
+}
+
+export function patchConsole(attributes: Record<string, Json>) {
+	const delegate = createLogger(true, attributes);
+	const _patch = { ...console };
+	_patch.log = (...args: unknown[]) => {
+		delegate.info(args[0] as string, ...args.slice(1));
+	};
+	_patch.error = (...args: unknown[]) => {
+		delegate.error(args[0] as string, ...args.slice(1));
+	};
+	_patch.warn = (...args: unknown[]) => {
+		delegate.warn(args[0] as string, ...args.slice(1));
+	};
+	_patch.debug = (...args: unknown[]) => {
+		delegate.debug(args[0] as string, ...args.slice(1));
+	};
+	_patch.info = (...args: unknown[]) => {
+		delegate.info(args[0] as string, ...args.slice(1));
+	};
+	console = globalThis.console = _patch;
 }

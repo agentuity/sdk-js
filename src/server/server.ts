@@ -1,18 +1,18 @@
+import { join } from 'node:path';
+import { readdirSync, existsSync, statSync } from 'node:fs';
+import type { Tracer } from '@opentelemetry/api';
 import type { Server, ServerAgent, UnifiedServerConfig } from './types';
 import type { AgentContext, AgentHandler } from '../types';
 import type { Logger } from '../logger';
 import type { ServerRoute } from './types';
-import type { Tracer } from '@opentelemetry/api';
-import { readdirSync, existsSync, statSync } from 'node:fs';
 import { createRouter, getAgentId } from '../router';
-import { join } from 'node:path';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 
 async function createUnifiedServer(
 	config: UnifiedServerConfig
 ): Promise<Server> {
-	if (process.isBun) {
+	if (process.env.AGENTUITY_BUNDLER_RUNTIME === 'bunjs') {
 		const server = await import('./bun');
 		return new server.BunServer(config);
 	}

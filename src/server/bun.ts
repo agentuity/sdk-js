@@ -4,6 +4,7 @@ import type {
 	ServerRoute,
 	IncomingRequest,
 } from './types';
+import { callbackAgentHandler } from './agents';
 
 export class BunServer implements Server {
 	private server: ReturnType<typeof Bun.serve> | null = null;
@@ -32,9 +33,18 @@ export class BunServer implements Server {
 			port: this.config.port,
 			async fetch(req) {
 				const url = new URL(req.url);
-				if (url.pathname === '/_health') {
+
+				if (req.method === 'GET' && url.pathname === '/_health') {
 					return new Response('OK', { status: 200 });
 				}
+
+				if (req.method === 'POST' && url.pathname.startsWith('/_reply/')) {
+					const id = url.pathname.slice(8);
+					const body = await req.json();
+					callbackAgentHandler.received(id, body);
+					return new Response('OK', { status: 202 });
+				}
+
 				const method = req.method;
 				const routeKey = `${method}:${url.pathname}`;
 
@@ -57,7 +67,7 @@ export class BunServer implements Server {
 					return new Response(JSON.stringify(resp), {
 						headers: {
 							'Content-Type': 'application/json',
-							Server: `Agentuity Bun/${sdkVersion}`,
+							Server: `Agentuity BunJS/${sdkVersion}`,
 						},
 					});
 				} catch (error) {
@@ -73,10 +83,10 @@ export class BunServer implements Server {
 		if (!this.server) {
 			return;
 		}
-		this.config.logger.debug('server stopping');
-
-		await this.server.stop();
+		const server = this.server;
 		this.server = null;
+		this.config.logger.debug('server stopping');
+		await server.stop();
 		this.config.logger.info('server stopped');
 	}
 }
