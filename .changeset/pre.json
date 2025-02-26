@@ -4,5 +4,7 @@
   "initialVersions": {
     "@agentuity/sdk": "0.0.63"
   },
-  "changesets": []
+  "changesets": [
+    "petite-pots-hug"
+  ]
 }
