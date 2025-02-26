@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.2
+
+### Patch Changes
+
+- Run an agent redirect in its own span and manually hack default route for now
+
 ## 0.0.64-next.1
 
 ### Patch Changes

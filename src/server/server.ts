@@ -104,12 +104,13 @@ export async function createServer({
 	if (routes.length === 0) {
 		throw new Error(`No routes found in ${directory}`);
 	}
-	if (routes.length === 2) {
-		// TODO: need to find the default route
-		const defaultRoute = { ...routes[0], path: '/' };
-		routes.push(defaultRoute);
-		logger.info('registering default route at /');
-	}
+	// FIXME: need to correctly handle the default route
+	const defaultRoute = { ...routes[0], path: '/' };
+	routes.push(defaultRoute);
+	logger.info(
+		'registering default route at / using agent %s',
+		routes[0].agent.name
+	);
 	return createUnifiedServer({
 		logger,
 		port,

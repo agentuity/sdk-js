@@ -13,6 +13,7 @@ import type {
 	AgentResponseType,
 	Json,
 	GetAgentRequestParams,
+	RemoteAgent,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
@@ -126,6 +127,53 @@ export async function getAgentId(
 	return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function agentRedirectRun(
+	logger: Logger,
+	config: RouterConfig,
+	runId: string,
+	remoteAgent: RemoteAgent,
+	params: Parameters<RemoteAgent['run']>
+): Promise<ReturnType<RemoteAgent['run']>> {
+	return new Promise((resolve, reject) => {
+		return config.context.tracer.startActiveSpan(
+			config.context.agent.name,
+			{
+				kind: SpanKind.SERVER,
+				attributes: {
+					action: 'agent.run',
+					agent: remoteAgent.name,
+					agentId: remoteAgent.id,
+				},
+			},
+			async (span) => {
+				asyncStorage.run(
+					{
+						span,
+						runId,
+						projectId: config.context.projectId,
+						deploymentId: config.context.deploymentId,
+						orgId: config.context.orgId,
+						agentId: remoteAgent.id,
+						logger,
+						tracer: config.context.tracer,
+						sdkVersion: config.context.sdkVersion,
+					},
+					async () => {
+						try {
+							resolve(await remoteAgent.run(...params));
+						} catch (err) {
+							recordException(span, err);
+							reject(err);
+						} finally {
+							span.end();
+						}
+					}
+				);
+			}
+		);
+	});
+}
+
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
 		return new Promise((resolve, reject) => {
@@ -202,17 +250,24 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 											'redirect' in handlerResponse &&
 											handlerResponse.redirect
 										) {
-											const resp = await context.getAgent(
+											const agent = await context.getAgent(
 												handlerResponse.agent
 											);
 											logger.info(
 												'sending redirect to %s',
 												handlerResponse.agent
 											);
-											const val = await resp.run(
-												handlerResponse.payload ?? req.request.payload,
-												handlerResponse.contentType ?? req.request.contentType,
-												handlerResponse.metadata ?? req.request.metadata
+											const val = await agentRedirectRun(
+												logger,
+												config,
+												req.request.runId,
+												agent,
+												[
+													handlerResponse.payload ?? req.request.payload,
+													handlerResponse.contentType ??
+														req.request.contentType,
+													handlerResponse.metadata ?? req.request.metadata,
+												]
 											);
 											logger.debug(
 												'redirect response: %s',
