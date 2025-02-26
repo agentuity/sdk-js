@@ -21,9 +21,16 @@ class OtelLogger implements Logger {
 		this.logger = useConsole ? new ConsoleLogger() : undefined;
 	}
 
+	private formatMessage(message: unknown) {
+		if (typeof message === 'string') {
+			return message;
+		}
+		return JSON.stringify(message);
+	}
+
 	debug(message: string, ...args: unknown[]) {
 		this.logger?.debug(message, ...args);
-		const body = format(message, ...args);
+		const body = format(this.formatMessage(message), ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.DEBUG,
 			severityText: 'DEBUG',
@@ -33,7 +40,7 @@ class OtelLogger implements Logger {
 	}
 	info(message: string, ...args: unknown[]) {
 		this.logger?.info(message, ...args);
-		const body = format(message, ...args);
+		const body = format(this.formatMessage(message), ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.INFO,
 			severityText: 'INFO',
@@ -43,7 +50,7 @@ class OtelLogger implements Logger {
 	}
 	warn(message: string, ...args: unknown[]) {
 		this.logger?.warn(message, ...args);
-		const body = format(message, ...args);
+		const body = format(this.formatMessage(message), ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.WARN,
 			severityText: 'WARN',
@@ -53,7 +60,7 @@ class OtelLogger implements Logger {
 	}
 	error(message: string, ...args: unknown[]) {
 		this.logger?.error(message, ...args);
-		const body = format(message, ...args);
+		const body = format(this.formatMessage(message), ...args);
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.ERROR,
 			severityText: 'ERROR',

@@ -5,6 +5,7 @@
     "@agentuity/sdk": "0.0.63"
   },
   "changesets": [
+    "four-results-heal",
     "hungry-tires-dress",
     "petite-pots-hug",
     "warm-seals-count"

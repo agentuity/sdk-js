@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.64-next.3
+
+### Patch Changes
+
+- Fix formatting of request with a plain object and temp fix default route name
+
 ## 0.0.64-next.2
 
 ### Patch Changes
