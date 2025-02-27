@@ -4,6 +4,13 @@ export * from './types';
 
 import { run } from './autostart';
 
+/**
+ * Runs the Agentuity SDK with the specified configuration
+ *
+ * @param autoStart - Whether to automatically start the SDK
+ * @param dir - The directory where the SDK is located
+ * @returns A Promise that resolves when the SDK has been run
+ */
 export async function runner(
 	autoStart = false,
 	dir = process.env.AGENTUITY_SDK_DIR

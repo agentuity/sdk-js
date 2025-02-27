@@ -9,6 +9,12 @@ import { createRouter, getAgentId } from '../router';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 
+/**
+ * Creates a unified server based on the runtime environment
+ *
+ * @param config - The server configuration
+ * @returns A promise that resolves to a server instance
+ */
 async function createUnifiedServer(
 	config: UnifiedServerConfig
 ): Promise<Server> {
@@ -20,6 +26,17 @@ async function createUnifiedServer(
 	return new server.NodeServer(config);
 }
 
+/**
+ * Creates a server route from a module file
+ *
+ * @param filename - The path to the module file
+ * @param path - The URL path for the route
+ * @param context - The agent context
+ * @param agents - List of available server agents
+ * @param port - The port the server is running on
+ * @returns A promise that resolves to a server route
+ * @throws Error if no handler is found in the module
+ */
 async function createRoute(
 	filename: string,
 	path: string,
@@ -61,6 +78,9 @@ async function createRoute(
 	};
 }
 
+/**
+ * Configuration for creating a server
+ */
 interface ServerConfig {
 	context: AgentContext;
 	directory: string;
@@ -68,6 +88,13 @@ interface ServerConfig {
 	logger: Logger;
 }
 
+/**
+ * Creates a server with routes from agent modules in a directory
+ *
+ * @param config - The server configuration
+ * @returns A promise that resolves to a server instance
+ * @throws Error if no routes are found in the directory
+ */
 export async function createServer({
 	context,
 	directory,
@@ -120,6 +147,9 @@ export async function createServer({
 	});
 }
 
+/**
+ * Request parameters for creating a server context
+ */
 interface ServerContextRequest {
 	tracer: Tracer;
 	logger: Logger;
@@ -134,6 +164,12 @@ interface ServerContextRequest {
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
 
+/**
+ * Creates an agent context for server operations
+ *
+ * @param req - The server context request parameters
+ * @returns An agent context object
+ */
 export function createServerContext(req: ServerContextRequest): AgentContext {
 	return {
 		devmode: req.devmode,

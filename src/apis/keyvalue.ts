@@ -2,6 +2,9 @@ import type { Json, KeyValueStorage } from '../types';
 import { DELETE, GET, PUT, type Body } from './api';
 import { getTracer, recordException } from '../router/router';
 
+/**
+ * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
+ */
 export default class KeyValueAPI implements KeyValueStorage {
 	/**
 	 * get a value from the key value storage
