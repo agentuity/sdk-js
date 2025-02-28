@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
+import type { AgentConfig } from '../types';
 
 /**
  * Configuration for auto-starting the Agentuity SDK
@@ -21,6 +22,7 @@ interface AutostartConfig {
 		url?: string;
 		bearerToken?: string;
 	};
+	agents: AgentConfig[];
 }
 
 /**
@@ -30,20 +32,9 @@ interface AutostartConfig {
  * @throws Error if the project directory does not exist or if projectId is not provided
  */
 export async function run(config: AutostartConfig) {
-	const { basedir, distdir, port = 3000 } = config;
-	let directory = distdir;
-	if (!directory) {
-		const insideDist = join(basedir, 'src/agents');
-		if (existsSync(insideDist)) {
-			directory = insideDist;
-		} else {
-			directory = join(basedir, 'dist/src/agents');
-		}
-	}
-	if (!existsSync(directory)) {
-		throw new Error(`${directory} does not exist`);
-	}
-	if (process.env.AGENTUITY_ENVIRONMENT !== 'production' && !config.projectId) {
+	let { port } = config;
+	const { basedir } = config;
+	if (process.env.AGENTUITY_ENVIRONMENT !== 'production') {
 		// this path only works in local dev mode
 		const yml = join(basedir, '..', 'agentuity.yaml');
 		if (existsSync(yml)) {
@@ -51,6 +42,12 @@ export async function run(config: AutostartConfig) {
 			const match = ymlData.match(/project_id: (\w+)/);
 			if (match?.length) {
 				config.projectId = match[1];
+			}
+			if (!port) {
+				const match = ymlData.match(/port: (\d+)/);
+				if (match?.length) {
+					port = parseInt(match[1]);
+				}
 			}
 		}
 	}
@@ -85,9 +82,10 @@ export async function run(config: AutostartConfig) {
 			logger: otel.logger,
 			tracer: otel.tracer,
 			sdkVersion,
+			agents: config.agents,
 		}),
-		directory,
-		port,
+		directory: basedir,
+		port: port ?? 3500,
 		logger: otel.logger,
 	});
 	await server.start();

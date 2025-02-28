@@ -6,9 +6,8 @@ import type {
 } from '../types';
 import { toAgentResponseJSON } from '../router';
 import { POST } from '../apis/api';
-import type { ServerAgent } from './types';
 import type { Logger } from '../logger';
-
+import type { AgentConfig } from '../types';
 // FIXME: add spans for these
 
 /**
@@ -193,7 +192,7 @@ class RemoteAgentInvoker implements RemoteAgent {
  */
 export default class AgentResolver {
 	private readonly logger: Logger;
-	private readonly agents: ServerAgent[];
+	private readonly agents: AgentConfig[];
 	private readonly port: number;
 	private readonly projectId: string;
 	private readonly currentAgentId: string;
@@ -209,7 +208,7 @@ export default class AgentResolver {
 	 */
 	constructor(
 		logger: Logger,
-		agents: ServerAgent[],
+		agents: AgentConfig[],
 		port: number,
 		projectId: string,
 		currentAgentId: string
@@ -234,9 +233,6 @@ export default class AgentResolver {
 				return a;
 			}
 			if ('name' in params && a.name === params.name) {
-				return a;
-			}
-			if ('name' in params && a.path === params.name) {
 				return a;
 			}
 			return null;

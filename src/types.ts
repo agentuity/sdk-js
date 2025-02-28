@@ -1,7 +1,6 @@
 import type { Tracer } from '@opentelemetry/api';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Logger } from './logger';
-import type { ServerAgent } from './server/types';
 
 /**
  * Types of triggers that can initiate an agent
@@ -414,7 +413,7 @@ export interface AgentContext {
 	/**
 	 * return a list of all the agents in the project
 	 */
-	agents: ServerAgent[];
+	agents: AgentConfig[];
 
 	/**
 	 * get a handle to a remote agent that you can invoke
@@ -662,6 +661,10 @@ export interface AgentConfig {
 	 * the description of the agent
 	 */
 	description?: string;
+	/**
+	 * the file name to the agent relative to the dist directory
+	 */
+	filename: string;
 }
 
 /**
