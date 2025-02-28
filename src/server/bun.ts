@@ -83,13 +83,13 @@ export class BunServer implements Server {
 
 								if (!route) {
 									logger.error(
-										'route not found: %s for: %s',
+										'agent not found: %s for: %s',
 										method,
 										url.pathname
 									);
 									span.setStatus({
 										code: SpanStatusCode.ERROR,
-										message: `Route not found: ${method} ${url.pathname}`,
+										message: `No Agent found at ${url.pathname}`,
 									});
 									return new Response('Not Found', { status: 404 });
 								}

@@ -6,6 +6,7 @@ import type {
 } from '../types';
 import { DELETE, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
+import { context, trace } from '@opentelemetry/api';
 
 interface VectorUpsertSuccessResponse {
 	success: true;
@@ -62,33 +63,44 @@ export default class VectorAPI implements VectorStorage {
 		...documents: VectorUpsertParams[]
 	): Promise<string[]> {
 		const tracer = getTracer();
-		return new Promise<string[]>((resolve, reject) => {
-			tracer.startActiveSpan('agentuity.vector.upsert', async (span) => {
-				try {
-					span.setAttribute('name', name);
-					const resp = await PUT<VectorUpsertResponse>(
-						`/sdk/vector/${encodeURIComponent(name)}`,
-						JSON.stringify(documents)
-					);
-					if (resp.status === 200) {
-						if (resp.json?.success) {
-							const json = resp.json as unknown as { data: { id: string }[] };
-							resolve(json.data.map((o) => o.id));
-							return;
-						}
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan(
+			'agentuity.vector.upsert',
+			{},
+			currentContext
+		);
+
+		try {
+			span.setAttribute('name', name);
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await PUT<VectorUpsertResponse>(
+					`/sdk/vector/${encodeURIComponent(name)}`,
+					JSON.stringify(documents)
+				);
+				if (resp.status === 200) {
+					if (resp.json?.success) {
+						const json = resp.json as unknown as { data: { id: string }[] };
+						return json.data.map((o) => o.id);
 					}
-					if (!resp.json?.success && resp.json?.error) {
-						throw new Error(resp.json.error);
-					}
-					throw new Error('unknown error');
-				} catch (ex) {
-					recordException(span, ex);
-					reject(ex);
-				} finally {
-					span.end();
 				}
+				if (!resp.json?.success && resp.json?.error) {
+					throw new Error(resp.json.error);
+				}
+				throw new Error('unknown error');
 			});
-		});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 
 	/**
@@ -103,38 +115,48 @@ export default class VectorAPI implements VectorStorage {
 		params: VectorSearchParams
 	): Promise<VectorSearchResult[]> {
 		const tracer = getTracer();
-		return new Promise<VectorSearchResult[]>((resolve, reject) => {
-			tracer.startActiveSpan('agentuity.vector.search', async (span) => {
-				span.setAttribute('name', name);
-				try {
-					const resp = await POST<VectorSearchResponse>(
-						`/sdk/vector/search/${encodeURIComponent(name)}`,
-						JSON.stringify(params)
-					);
-					if (resp.status === 404) {
-						span.addEvent('miss');
-						resolve([]);
-						return;
-					}
-					if (resp.status === 200) {
-						if (resp.json?.success) {
-							span.addEvent('hit');
-							resolve(resp.json.data);
-							return;
-						}
-					}
-					if (!resp.json?.success && resp.json?.error) {
-						throw new Error(resp.json.error);
-					}
-					throw new Error('unknown error');
-				} catch (ex) {
-					recordException(span, ex);
-					reject(ex);
-				} finally {
-					span.end();
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan(
+			'agentuity.vector.search',
+			{},
+			currentContext
+		);
+
+		try {
+			span.setAttribute('name', name);
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await POST<VectorSearchResponse>(
+					`/sdk/vector/search/${encodeURIComponent(name)}`,
+					JSON.stringify(params)
+				);
+				if (resp.status === 404) {
+					span.addEvent('miss');
+					return [];
 				}
+				if (resp.status === 200) {
+					if (resp.json?.success) {
+						span.addEvent('hit');
+						return resp.json.data;
+					}
+				}
+				if (!resp.json?.success && resp.json?.error) {
+					throw new Error(resp.json.error);
+				}
+				throw new Error('unknown error');
 			});
-		});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 
 	/**
@@ -146,31 +168,42 @@ export default class VectorAPI implements VectorStorage {
 	 */
 	async delete(name: string, ...ids: string[]): Promise<number> {
 		const tracer = getTracer();
-		return new Promise<number>((resolve, reject) => {
-			tracer.startActiveSpan('agentuity.vector.delete', async (span) => {
-				span.setAttribute('name', name);
-				try {
-					const resp = await DELETE<VectorDeleteResponse>(
-						`/sdk/vector/${encodeURIComponent(name)}`,
-						JSON.stringify(ids)
-					);
-					if (resp.status === 200) {
-						if (resp.json?.success) {
-							resolve(resp.json.ids.length);
-							return;
-						}
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan(
+			'agentuity.vector.delete',
+			{},
+			currentContext
+		);
+
+		try {
+			span.setAttribute('name', name);
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await DELETE<VectorDeleteResponse>(
+					`/sdk/vector/${encodeURIComponent(name)}`,
+					JSON.stringify(ids)
+				);
+				if (resp.status === 200) {
+					if (resp.json?.success) {
+						return resp.json.ids.length;
 					}
-					if (!resp.json?.success && resp.json?.error) {
-						throw new Error(resp.json.error);
-					}
-					throw new Error('unknown error');
-				} catch (ex) {
-					recordException(span, ex);
-					reject(ex);
-				} finally {
-					span.end();
 				}
+				if (!resp.json?.success && resp.json?.error) {
+					throw new Error(resp.json.error);
+				}
+				throw new Error('unknown error');
 			});
-		});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 }
