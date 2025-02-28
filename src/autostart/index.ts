@@ -64,6 +64,7 @@ export async function run(config: AutostartConfig) {
 		version,
 		sdkVersion,
 		cliVersion: config.cliVersion,
+		devmode: config.devmode,
 		orgId: config.orgId,
 		projectId: config.projectId,
 		deploymentId: config.deploymentId,

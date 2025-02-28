@@ -98,13 +98,11 @@ export default class VectorAPI implements VectorStorage {
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.upsert',
-			{},
+			{ attributes: { name } },
 			currentContext
 		);
 
 		try {
-			span.setAttribute('name', name);
-
 			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
 
@@ -150,13 +148,11 @@ export default class VectorAPI implements VectorStorage {
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.search',
-			{},
+			{ attributes: { name } },
 			currentContext
 		);
 
 		try {
-			span.setAttribute('name', name);
-
 			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
 
@@ -203,13 +199,11 @@ export default class VectorAPI implements VectorStorage {
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.delete',
-			{},
+			{ attributes: { name } },
 			currentContext
 		);
 
 		try {
-			span.setAttribute('name', name);
-
 			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
 
