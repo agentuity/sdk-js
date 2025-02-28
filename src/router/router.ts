@@ -158,25 +158,6 @@ export function recordException(span: Span, ex: unknown) {
 	});
 }
 
-/**
- * Generates a unique agent ID based on project ID and agent name
- *
- * @param projectId - The project ID
- * @param agentName - The agent name
- * @returns A unique agent ID
- */
-export async function getAgentId(
-	projectId: string,
-	agentName: string
-): Promise<string> {
-	const hashInput = `${projectId}:${agentName}`;
-	const encoder = new TextEncoder();
-	const data = encoder.encode(hashInput);
-	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-	const hashArray = Array.from(new Uint8Array(hashBuffer));
-	return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 async function agentRedirectRun(
 	logger: Logger,
 	config: RouterConfig,
@@ -243,10 +224,7 @@ async function agentRedirectRun(
  */
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
-		const agentId = await getAgentId(
-			config.context.projectId,
-			config.context.agent.name
-		);
+		const agentId = config.context.agent.id;
 		const logger = config.context.logger.child({
 			runId: req.request.runId,
 		});
