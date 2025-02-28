@@ -3,6 +3,9 @@ import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Logger } from './logger';
 import type { ServerAgent } from './server/types';
 
+/**
+ * Types of triggers that can initiate an agent
+ */
 export type TriggerType =
 	| 'webhook'
 	| 'cron'
@@ -14,41 +17,78 @@ export type TriggerType =
 	| 'email'
 	| 'agent';
 
+/**
+ * Primitive JSON value types
+ */
 export type JsonPrimitive = string | number | boolean | null;
+
+/**
+ * JSON array type
+ */
 export type JsonArray = Json[];
+
+/**
+ * JSON object type
+ */
 export type JsonObject = { [key: string]: Json };
+
+/**
+ * Composite JSON type (array or object)
+ */
 export type JsonComposite = JsonArray | JsonObject;
+
+/**
+ * Any valid JSON value
+ */
 export type Json = JsonPrimitive | JsonComposite;
 
+/**
+ * Content with no payload
+ */
 interface NoContent {
 	payload?: null | undefined;
 	metadata?: Record<string, Json>;
 }
 
+/**
+ * JSON content
+ */
 interface JSONContent {
 	contentType: 'application/json';
 	payload: Json;
 	metadata?: Record<string, Json>;
 }
 
+/**
+ * Plain text content
+ */
 interface TextContent {
 	contentType: 'text/plain';
 	payload: string;
 	metadata?: Record<string, Json>;
 }
 
+/**
+ * Markdown content
+ */
 interface MarkdownContent {
 	contentType: 'text/markdown';
 	payload: string;
 	metadata?: Record<string, Json>;
 }
 
+/**
+ * HTML content
+ */
 interface HTMLContent {
 	contentType: 'text/html';
 	payload: string;
 	metadata?: Record<string, Json>;
 }
 
+/**
+ * Binary content with various media types
+ */
 interface BinaryContent {
 	contentType:
 		| 'application/octet-stream'
@@ -80,18 +120,39 @@ export interface AgentRequestType {
 	payload?: Json | ArrayBuffer | string;
 }
 
+/**
+ * Agent response with no content
+ */
 interface AgentNoContentResponse extends NoContent {}
 
+/**
+ * Agent response with JSON content
+ */
 interface AgentJSONResponse extends JSONContent {}
 
+/**
+ * Agent response with text content
+ */
 interface AgentTextResponse extends TextContent {}
 
+/**
+ * Agent response with markdown content
+ */
 interface AgentMarkdownResponse extends MarkdownContent {}
 
+/**
+ * Agent response with HTML content
+ */
 interface AgentHTMLResponse extends HTMLContent {}
 
+/**
+ * Agent response with binary content
+ */
 interface AgentBinaryResponse extends BinaryContent {}
 
+/**
+ * Agent response that triggers another agent
+ */
 interface AgentAgentResponse {
 	trigger: 'agent';
 	agentId: string;
@@ -603,6 +664,9 @@ export interface AgentConfig {
 	description?: string;
 }
 
+/**
+ * Session information for an agent request
+ */
 export interface Session {
 	request: AgentRequestType;
 	context: AgentContext;

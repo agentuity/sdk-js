@@ -8,48 +8,78 @@ import { DELETE, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace } from '@opentelemetry/api';
 
+/**
+ * Response for a successful vector upsert operation
+ */
 interface VectorUpsertSuccessResponse {
 	success: true;
 	ids: string[];
 }
 
+/**
+ * Response for a failed vector upsert operation
+ */
 interface VectorUpsertErrorResponse {
 	success: false;
 	error: string;
 }
 
+/**
+ * Response for a vector upsert operation
+ */
 type VectorUpsertResponse =
 	| VectorUpsertSuccessResponse
 	| VectorUpsertErrorResponse;
 
+/**
+ * Response for a successful vector search operation
+ */
 interface VectorSearchSuccessResponse {
 	success: true;
 	data: VectorSearchResult[];
 }
 
+/**
+ * Response for a failed vector search operation
+ */
 interface VectorSearchErrorResponse {
 	success: false;
 	error: string;
 }
 
+/**
+ * Response for a vector search operation
+ */
 type VectorSearchResponse =
 	| VectorSearchSuccessResponse
 	| VectorSearchErrorResponse;
 
+/**
+ * Response for a successful vector delete operation
+ */
 interface VectorDeleteSuccessResponse {
 	success: true;
 	ids: string[];
 }
 
+/**
+ * Response for a failed vector delete operation
+ */
 interface VectorDeleteErrorResponse {
 	success: false;
 	error: string;
 }
 
+/**
+ * Response for a vector delete operation
+ */
 type VectorDeleteResponse =
 	| VectorDeleteSuccessResponse
 	| VectorDeleteErrorResponse;
 
+/**
+ * Implementation of the VectorStorage interface for interacting with the vector storage API
+ */
 export default class VectorAPI implements VectorStorage {
 	/**
 	 * upsert a vector into the vector storage

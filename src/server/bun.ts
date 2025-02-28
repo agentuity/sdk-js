@@ -13,14 +13,27 @@ import {
 	SpanStatusCode,
 } from '@opentelemetry/api';
 
+/**
+ * Bun implementation of the Server interface
+ */
 export class BunServer implements Server {
 	private server: ReturnType<typeof Bun.serve> | null = null;
 	private config: UnifiedServerConfig;
 
+	/**
+	 * Creates a new Bun server
+	 *
+	 * @param config - The server configuration
+	 */
 	constructor(config: UnifiedServerConfig) {
 		this.config = config;
 	}
 
+	/**
+	 * Starts the server
+	 *
+	 * @throws Error if the server is already running
+	 */
 	async start(): Promise<void> {
 		if (this.server) {
 			throw new Error('Server is already running');
@@ -129,6 +142,9 @@ export class BunServer implements Server {
 		this.config.logger.info('Bun server started on port %d', this.config.port);
 	}
 
+	/**
+	 * Stops the server
+	 */
 	async stop(): Promise<void> {
 		if (!this.server) {
 			return;

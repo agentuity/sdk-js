@@ -5,9 +5,17 @@ import {
 	SpanStatusCode,
 } from '@opentelemetry/api';
 
+/**
+ * Reference to the original fetch function before instrumentation
+ */
 export const __originalFetch = fetch; // save the original fetch before we patch it
 
-// Helper function to instrument fetch
+/**
+ * Instruments the global fetch function with OpenTelemetry tracing
+ *
+ * Replaces the global fetch with an instrumented version that creates spans
+ * for each HTTP request and propagates trace context in headers
+ */
 export function instrumentFetch() {
 	const patch = async function (
 		input: string | Request | URL,

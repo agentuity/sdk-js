@@ -46,6 +46,16 @@ function toBase64(payload: Json | ArrayBuffer | string | undefined) {
 	return payload;
 }
 
+/**
+ * Converts an agent response to JSON format
+ *
+ * @param trigger - The trigger for the response
+ * @param payload - The payload of the response
+ * @param encoding - The encoding to use for the payload
+ * @param contentType - The content type of the payload
+ * @param metadata - Additional metadata for the response
+ * @returns The formatted agent response
+ */
 export const toAgentResponseJSON = (
 	trigger: string,
 	payload: Json | ArrayBuffer | string | undefined,
@@ -98,8 +108,17 @@ const toServerResponseJSON = (req: ServerRequest, data: AgentResponseType) => {
 	return data;
 };
 
+/**
+ * Storage for async local context
+ */
 export const asyncStorage = new AsyncLocalStorage();
 
+/**
+ * Gets the tracer from the async local storage
+ *
+ * @returns The tracer instance
+ * @throws Error if no store is found
+ */
 export function getTracer(): Tracer {
 	const store = asyncStorage.getStore();
 	if (!store) {
@@ -121,6 +140,12 @@ export function getSDKVersion(): string {
 	return sdkVersion;
 }
 
+/**
+ * Records an exception in the span and logs it
+ *
+ * @param span - The span to record the exception in
+ * @param ex - The exception to record
+ */
 export function recordException(span: Span, ex: unknown) {
 	const { logger } = asyncStorage.getStore() as { logger: Logger };
 	if (logger) {
@@ -133,7 +158,13 @@ export function recordException(span: Span, ex: unknown) {
 	});
 }
 
-// for a given project id and agent name, create a unique agent id
+/**
+ * Generates a unique agent ID based on project ID and agent name
+ *
+ * @param projectId - The project ID
+ * @param agentName - The agent name
+ * @returns A unique agent ID
+ */
 export async function getAgentId(
 	projectId: string,
 	agentName: string
@@ -204,6 +235,12 @@ async function agentRedirectRun(
 	}
 }
 
+/**
+ * Creates a router handler for the specified configuration
+ *
+ * @param config - The router configuration
+ * @returns A handler function for server routes
+ */
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
 		const agentId = await getAgentId(
