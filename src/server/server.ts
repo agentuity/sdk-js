@@ -49,7 +49,7 @@ async function createRoute(
 	let thehandler: AgentHandler | undefined;
 	if (mod.default) {
 		thehandler = mod.default;
-	} else if (mod.config) {
+	} else {
 		for (const key in mod) {
 			if (key !== 'default' && mod[key] instanceof Function) {
 				thehandler = mod[key];
