@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.67
+
+### Patch Changes
+
+- Fix error on otel
+
 ## 0.0.66
 
 ### Patch Changes

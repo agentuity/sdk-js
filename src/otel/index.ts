@@ -158,8 +158,9 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
 					exporter: metricExporter,
-					exportTimeoutMillis:
-						(devmode ? devmodeExportInterval : productionExportInterval) * 2,
+					exportTimeoutMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
 					exportIntervalMillis: devmode
 						? devmodeExportInterval
 						: productionExportInterval,
@@ -171,8 +172,9 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
 					exporter: metricExporter,
-					exportTimeoutMillis:
-						(devmode ? devmodeExportInterval : productionExportInterval) * 2,
+					exportTimeoutMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
 					exportIntervalMillis: devmode
 						? devmodeExportInterval
 						: productionExportInterval,
