@@ -4,6 +4,9 @@ import type { Logger } from '../logger';
 import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
 
+/**
+ * Reference to the original console object before patching
+ */
 export const __originalConsole = Object.create(console); // save the original console before we patch it
 
 class OtelLogger implements Logger {
@@ -76,6 +79,13 @@ class OtelLogger implements Logger {
 	}
 }
 
+/**
+ * Creates a logger that integrates with OpenTelemetry
+ *
+ * @param useConsole - Whether to also log to the console
+ * @param context - Additional context to include with log records
+ * @returns A logger instance
+ */
 export function createLogger(
 	useConsole: boolean,
 	context?: Record<string, Json>
@@ -84,6 +94,11 @@ export function createLogger(
 	return new OtelLogger(useConsole, delegate, context);
 }
 
+/**
+ * Patches the global console object to integrate with OpenTelemetry logging
+ *
+ * @param attributes - Attributes to include with all console log records
+ */
 export function patchConsole(attributes: Record<string, Json>) {
 	const delegate = createLogger(true, attributes);
 	const _patch = { ...console };

@@ -16,6 +16,9 @@ import {
 	SpanStatusCode,
 } from '@opentelemetry/api';
 
+/**
+ * Node.js implementation of the Server interface
+ */
 export class NodeServer implements Server {
 	private readonly logger: Logger;
 	private readonly port: number;
@@ -23,6 +26,11 @@ export class NodeServer implements Server {
 	private server: ReturnType<typeof createHttpServer> | null = null;
 	private readonly sdkVersion: string;
 
+	/**
+	 * Creates a new Node.js server
+	 *
+	 * @param config - The server configuration
+	 */
 	constructor({ logger, port, routes, sdkVersion }: UnifiedServerConfig) {
 		this.logger = logger;
 		this.port = port;
@@ -30,6 +38,9 @@ export class NodeServer implements Server {
 		this.sdkVersion = sdkVersion;
 	}
 
+	/**
+	 * Stops the server
+	 */
 	async stop(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if (this.server) {
@@ -70,6 +81,9 @@ export class NodeServer implements Server {
 		);
 	}
 
+	/**
+	 * Starts the server
+	 */
 	async start(): Promise<void> {
 		const { sdkVersion } = this;
 		this.server = createHttpServer(async (req, res) => {

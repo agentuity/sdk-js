@@ -3,6 +3,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
 
+/**
+ * Configuration for auto-starting the Agentuity SDK
+ */
 interface AutostartConfig {
 	basedir: string;
 	distdir?: string;
@@ -20,6 +23,12 @@ interface AutostartConfig {
 	};
 }
 
+/**
+ * Runs the Agentuity SDK with the specified configuration
+ *
+ * @param config - The configuration for auto-starting the SDK
+ * @throws Error if the project directory does not exist or if projectId is not provided
+ */
 export async function run(config: AutostartConfig) {
 	const { basedir, distdir, port = 3000 } = config;
 	let directory = distdir;

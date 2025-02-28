@@ -11,6 +11,9 @@ import type { Logger } from '../logger';
 
 // FIXME: add spans for these
 
+/**
+ * Invokes local agents within the same server
+ */
 class LocalAgentInvoker implements RemoteAgent {
 	private readonly port: number;
 	public readonly id: string;
@@ -18,6 +21,15 @@ class LocalAgentInvoker implements RemoteAgent {
 	public readonly description?: string;
 	public readonly projectId: string;
 
+	/**
+	 * Creates a new local agent invoker
+	 *
+	 * @param port - The port the agent is running on
+	 * @param id - The agent ID
+	 * @param name - The agent name
+	 * @param projectId - The project ID
+	 * @param description - Optional description of the agent
+	 */
 	constructor(
 		port: number,
 		id: string,
@@ -32,6 +44,14 @@ class LocalAgentInvoker implements RemoteAgent {
 		this.description = description;
 	}
 
+	/**
+	 * Runs the local agent with the provided data
+	 *
+	 * @param data - The data to send to the agent
+	 * @param contentType - The content type of the data
+	 * @param metadata - Additional metadata to include with the request
+	 * @returns A promise that resolves to the agent response
+	 */
 	async run(
 		data: Json | ArrayBuffer | string,
 		contentType?: string,
@@ -60,6 +80,9 @@ class LocalAgentInvoker implements RemoteAgent {
 	}
 }
 
+/**
+ * Invokes remote agents through the API
+ */
 class RemoteAgentInvoker implements RemoteAgent {
 	private readonly logger: Logger;
 	public readonly id: string;
@@ -68,6 +91,15 @@ class RemoteAgentInvoker implements RemoteAgent {
 	public readonly projectId: string;
 	private readonly replyId: string;
 
+	/**
+	 * Creates a new remote agent invoker
+	 *
+	 * @param logger - The logger to use
+	 * @param id - The agent ID
+	 * @param name - The agent name
+	 * @param projectId - The project ID
+	 * @param description - Optional description of the agent
+	 */
 	constructor(
 		logger: Logger,
 		id: string,
@@ -83,6 +115,14 @@ class RemoteAgentInvoker implements RemoteAgent {
 		this.replyId = crypto.randomUUID();
 	}
 
+	/**
+	 * Runs the remote agent with the provided data
+	 *
+	 * @param data - The data to send to the agent
+	 * @param contentType - The content type of the data
+	 * @param metadata - Additional metadata to include with the request
+	 * @returns A promise that resolves to the agent response
+	 */
 	async run(
 		data: Json | ArrayBuffer | string,
 		contentType?: string,
@@ -148,6 +188,9 @@ class RemoteAgentInvoker implements RemoteAgent {
 	}
 }
 
+/**
+ * Resolves agent references to concrete agent implementations
+ */
 export default class AgentResolver {
 	private readonly logger: Logger;
 	private readonly agents: ServerAgent[];
@@ -155,6 +198,15 @@ export default class AgentResolver {
 	private readonly projectId: string;
 	private readonly currentAgentId: string;
 
+	/**
+	 * Creates a new agent resolver
+	 *
+	 * @param logger - The logger to use
+	 * @param agents - List of available server agents
+	 * @param port - The port the server is running on
+	 * @param projectId - The project ID
+	 * @param currentAgentId - The ID of the current agent
+	 */
 	constructor(
 		logger: Logger,
 		agents: ServerAgent[],
@@ -169,6 +221,13 @@ export default class AgentResolver {
 		this.currentAgentId = currentAgentId;
 	}
 
+	/**
+	 * Gets an agent implementation based on the provided parameters
+	 *
+	 * @param params - Parameters to identify the agent
+	 * @returns A promise that resolves to the agent implementation
+	 * @throws Error if the agent is not found or if there's an agent loop
+	 */
 	async getAgent(params: GetAgentRequestParams): Promise<RemoteAgent> {
 		const agent = this.agents.find((a) => {
 			if ('id' in params && a.id === params.id) {
@@ -240,9 +299,15 @@ interface PromiseWithResolver<T> {
 	reject: (reason?: any) => void;
 }
 
+/**
+ * Handles callbacks for asynchronous agent responses
+ */
 export class CallbackAgentHandler {
 	private pending: Map<string, PromiseWithResolver<AgentResponseType>>;
 
+	/**
+	 * Creates a new callback agent handler
+	 */
 	constructor() {
 		this.pending = new Map();
 	}

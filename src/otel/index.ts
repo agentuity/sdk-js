@@ -30,6 +30,9 @@ import { createLogger, patchConsole } from './logger';
 import { ConsoleLogRecordExporter } from './console';
 import { instrumentFetch } from './fetch';
 
+/**
+ * Configuration for OpenTelemetry initialization
+ */
 interface OtelConfig {
 	url?: string;
 	name: string;
@@ -44,12 +47,21 @@ interface OtelConfig {
 	cliVersion?: string;
 }
 
+/**
+ * Response from OpenTelemetry initialization
+ */
 interface OtelResponse {
 	tracer: Tracer;
 	logger: Logger;
 	shutdown: () => Promise<void>;
 }
 
+/**
+ * Registers and initializes OpenTelemetry with the specified configuration
+ *
+ * @param config - The configuration for OpenTelemetry
+ * @returns An object containing the tracer, logger, and shutdown function
+ */
 export function registerOtel(config: OtelConfig): OtelResponse {
 	const {
 		url,
