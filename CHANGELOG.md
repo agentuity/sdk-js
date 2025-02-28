@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.66
+
+### Patch Changes
+
+- Add an additional key for the object stored in Vector Storage so we have something to display to the user in the console
+
 ## 0.0.65
 
 ### Patch Changes
