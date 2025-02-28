@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.65
+
+### Patch Changes
+
+- Reworks moving IO out of the configuration and into the API. Reworks agent routing to require an explicit Agent ID
+
 ## 0.0.64
 
 ### Patch Changes
