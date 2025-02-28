@@ -93,7 +93,7 @@ export class NodeServer implements Server {
 			// Execute the request handler within the extracted context
 			await context.with(extractedContext, async () => {
 				// Create a span for this incoming request
-				return trace.getTracer('http-server').startActiveSpan(
+				await trace.getTracer('http-server').startActiveSpan(
 					`${req.method} ${req.url}`,
 					{
 						kind: SpanKind.SERVER,
@@ -118,13 +118,15 @@ export class NodeServer implements Server {
 								const body = await this.getJSON<AgentResponseType>(req);
 								callbackAgentHandler.received(id, body);
 								span.setStatus({ code: SpanStatusCode.OK });
-								return new Response('OK', { status: 202 });
+								res.writeHead(202);
+								res.end('OK');
+								return;
 							}
 
 							const route = this.routes.find((r) => r.path === req.url);
 							if (!route) {
 								this.logger.error(
-									'route not found: %s for: %s',
+									'agent not found: %s for: %s',
 									req.method,
 									req.url
 								);
@@ -132,7 +134,7 @@ export class NodeServer implements Server {
 								res.end();
 								span.setStatus({
 									code: SpanStatusCode.ERROR,
-									message: `Route not found: ${req.method} ${req.url}`,
+									message: `No Agent found at ${req.url}`,
 								});
 								return;
 							}
@@ -152,28 +154,30 @@ export class NodeServer implements Server {
 								return;
 							}
 
-							const payload = await this.getJSON<IncomingRequest>(req);
-							const agentReq = {
-								request: payload as IncomingRequest,
-								url: req.url ?? '',
-								headers: this.getHeaders(req),
-							};
-							const response = await route.handler(agentReq);
-							res.writeHead(200, {
-								'Content-Type': 'application/json',
-								Server: `Agentuity NodeJS/${sdkVersion}`,
-							});
-							res.end(JSON.stringify(response));
-							span.setStatus({ code: SpanStatusCode.OK });
-						} catch (err) {
-							this.logger.error('Server error', err);
-							res.writeHead(500);
-							res.end();
-							span.recordException(err as Error);
-							span.setStatus({
-								code: SpanStatusCode.ERROR,
-								message: (err as Error).message,
-							});
+							try {
+								const payload = await this.getJSON<IncomingRequest>(req);
+								const agentReq = {
+									request: payload as IncomingRequest,
+									url: req.url ?? '',
+									headers: this.getHeaders(req),
+								};
+								const response = await route.handler(agentReq);
+								res.writeHead(200, {
+									'Content-Type': 'application/json',
+									Server: `Agentuity NodeJS/${sdkVersion}`,
+								});
+								res.end(JSON.stringify(response));
+								span.setStatus({ code: SpanStatusCode.OK });
+							} catch (err) {
+								this.logger.error('Server error', err);
+								res.writeHead(500);
+								res.end();
+								span.recordException(err as Error);
+								span.setStatus({
+									code: SpanStatusCode.ERROR,
+									message: (err as Error).message,
+								});
+							}
 						} finally {
 							span.end();
 						}

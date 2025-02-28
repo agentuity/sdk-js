@@ -651,6 +651,10 @@ export type AgentHandler = (
  */
 export interface AgentConfig {
 	/**
+	 * the unique id of the agent
+	 */
+	id: string;
+	/**
 	 * the name of the agent
 	 */
 	name: string;
