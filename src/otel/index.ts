@@ -45,6 +45,7 @@ interface OtelConfig {
 	environment?: string;
 	sdkVersion?: string;
 	cliVersion?: string;
+	devmode?: boolean;
 }
 
 /**
@@ -55,6 +56,9 @@ interface OtelResponse {
 	logger: Logger;
 	shutdown: () => Promise<void>;
 }
+
+const devmodeExportInterval = 1_000; // 1 second
+const productionExportInterval = 10_000; // 10 seconds
 
 /**
  * Registers and initializes OpenTelemetry with the specified configuration
@@ -75,6 +79,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		projectId,
 		deploymentId,
 		runId,
+		devmode = false,
 	} = config;
 
 	let headers: Record<string, string> | undefined;
@@ -92,6 +97,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/deploymentId': deploymentId ?? 'unknown',
 		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
+		'@agentuity/devmode': devmode,
 		'@agentuity/sdkVersion': sdkVersion ?? 'unknown',
 		'@agentuity/cliVersion': cliVersion ?? 'unknown',
 	});
@@ -128,12 +134,14 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/deploymentId': deploymentId ?? 'unknown',
 		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
+		'@agentuity/devmode': devmode,
 	});
 
 	const traceExporter = url
 		? new OTLPTraceExporter({
 				url: `${url}/v1/traces`,
 				headers,
+				keepAlive: true,
 			})
 		: undefined;
 
@@ -141,6 +149,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		? new OTLPMetricExporter({
 				url: `${url}/v1/metrics`,
 				headers,
+				keepAlive: true,
 			})
 		: undefined;
 
@@ -149,6 +158,11 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
 					exporter: metricExporter,
+					exportTimeoutMillis:
+						(devmode ? devmodeExportInterval : productionExportInterval) * 2,
+					exportIntervalMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
 				})
 			: undefined;
 
@@ -157,6 +171,11 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
 					exporter: metricExporter,
+					exportTimeoutMillis:
+						(devmode ? devmodeExportInterval : productionExportInterval) * 2,
+					exportIntervalMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
 				})
 			: undefined;
 

@@ -229,6 +229,11 @@ type VectorUpsertBase = {
 	 * the metadata to upsert
 	 */
 	metadata?: Json;
+
+	/**
+	 * the key of the vector object which can be used as a reference. the value of this key is opaque to the vector storage.
+	 */
+	key: string;
 };
 
 export type VectorUpsertParams = VectorUpsertBase &
@@ -258,9 +263,13 @@ export interface VectorSearchParams {
  */
 export interface VectorSearchResult {
 	/**
-	 * the unique id of the vector object
+	 * the unique id of the object in vector storage
 	 */
 	id: string;
+	/**
+	 * the key used when the vector object was added to vector storage
+	 */
+	key: string;
 	/**
 	 * the metadata of the vector object when it was stored
 	 */
