@@ -158,7 +158,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 				resolve: (_value: AgentResponseType) => {
 					return;
 				},
-				reject: (_reason?: any) => {
+				reject: (_reason?: Error) => {
 					return;
 				},
 			};
@@ -251,7 +251,7 @@ export default class AgentResolver {
 				agent.description
 			);
 		}
-		const resp = await POST(`/sdk/agent/resolve`, JSON.stringify(params), {
+		const resp = await POST('/sdk/agent/resolve', JSON.stringify(params), {
 			'Content-Type': 'application/json',
 		});
 		if (resp.status === 404) {
@@ -292,7 +292,7 @@ export default class AgentResolver {
 
 interface PromiseWithResolver<T> {
 	resolve: (value: T) => void;
-	reject: (reason?: any) => void;
+	reject: (reason?: Error) => void;
 }
 
 /**

@@ -8,10 +8,7 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"type": "module",
-	"files": [
-		"dist/**/*",
-		"LICENSE.md"
-	],
+	"files": ["dist/**/*", "LICENSE.md"],
 	"engines": {
 		"node": ">=22"
 	},
@@ -24,18 +21,13 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": [
-		"ai",
-		"agents",
-		"agenuity",
-		"ai agent",
-		"agent"
-	],
+	"keywords": ["ai", "agents", "agenuity", "ai agent", "agent"],
 	"scripts": {
 		"build": "rm -rf dist && tsup",
 		"bun:start": "bun run build && bun run ./dist/index.js",
 		"node:start": "bun run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
+		"lint": "npx @biomejs/biome lint --write",
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
 		"release": "rm -rf dist && npm run build && npx @changesets/cli publish && git push --follow-tags"

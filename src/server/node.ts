@@ -5,7 +5,10 @@ import type {
 	UnifiedServerConfig,
 } from './types';
 import type { Logger } from '../logger';
-import { createServer as createHttpServer, IncomingMessage } from 'node:http';
+import {
+	createServer as createHttpServer,
+	type IncomingMessage,
+} from 'node:http';
 import type { AgentResponseType } from '../types';
 import { callbackAgentHandler } from './agents';
 import {
@@ -203,13 +206,13 @@ export class NodeServer implements Server {
 		const carrier: Record<string, string> = {};
 
 		// Convert headers to the format expected by the propagator
-		Object.entries(req.headers).forEach(([key, value]) => {
+		for (const [key, value] of Object.entries(req.headers)) {
 			if (typeof value === 'string') {
 				carrier[key] = value;
 			} else if (Array.isArray(value)) {
 				carrier[key] = value[0] || '';
 			}
-		});
+		}
 
 		// Extract the context using the global propagator
 		const activeContext = context.active();

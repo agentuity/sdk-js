@@ -101,21 +101,21 @@ export function createLogger(
  */
 export function patchConsole(attributes: Record<string, Json>) {
 	const delegate = createLogger(true, attributes);
-	const _patch = { ...console };
-	_patch.log = (...args: unknown[]) => {
+
+	// Patch individual console methods instead of reassigning the whole object
+	console.log = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
-	_patch.error = (...args: unknown[]) => {
+	console.error = (...args: unknown[]) => {
 		delegate.error(args[0] as string, ...args.slice(1));
 	};
-	_patch.warn = (...args: unknown[]) => {
+	console.warn = (...args: unknown[]) => {
 		delegate.warn(args[0] as string, ...args.slice(1));
 	};
-	_patch.debug = (...args: unknown[]) => {
+	console.debug = (...args: unknown[]) => {
 		delegate.debug(args[0] as string, ...args.slice(1));
 	};
-	_patch.info = (...args: unknown[]) => {
+	console.info = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
-	console = globalThis.console = _patch;
 }

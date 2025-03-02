@@ -46,7 +46,7 @@ export async function run(config: AutostartConfig) {
 			if (!port) {
 				const match = ymlData.match(/port: (\d+)/);
 				if (match?.length) {
-					port = parseInt(match[1]);
+					port = Number.parseInt(match[1]);
 				}
 			}
 		}
