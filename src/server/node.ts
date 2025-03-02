@@ -11,13 +11,11 @@ import {
 } from 'node:http';
 import type { AgentResponseType } from '../types';
 import { callbackAgentHandler } from './agents';
+import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
-	context,
-	propagation,
-	trace,
-	SpanKind,
-	SpanStatusCode,
-} from '@opentelemetry/api';
+	extractTraceContextFromNodeRequest,
+	injectTraceContextToNodeResponse,
+} from './otel';
 
 /**
  * Node.js implementation of the Server interface
@@ -75,13 +73,19 @@ export class NodeServer implements Server {
 		});
 	}
 
+	/**
+	 * Gets the headers from the request
+	 */
 	private getHeaders(req: IncomingMessage) {
-		return Object.fromEntries(
-			Object.entries(req.headers).map(([k, v]) => [
-				k,
-				Array.isArray(v) ? v.join(', ') : (v ?? ''),
-			])
-		);
+		const headers: Record<string, string> = {};
+		for (const [key, value] of Object.entries(req.headers)) {
+			if (typeof value === 'string') {
+				headers[key] = value;
+			} else if (Array.isArray(value)) {
+				headers[key] = value[0] || '';
+			}
+		}
+		return headers;
 	}
 
 	/**
@@ -90,8 +94,17 @@ export class NodeServer implements Server {
 	async start(): Promise<void> {
 		const { sdkVersion } = this;
 		this.server = createHttpServer(async (req, res) => {
+			let payload: IncomingRequest;
+			try {
+				payload = await this.getJSON<IncomingRequest>(req);
+			} catch (err) {
+				this.logger.error('Error parsing request body as json: %s', err);
+				res.writeHead(400);
+				res.end();
+			}
+
 			// Extract trace context from headers
-			const extractedContext = this.extractTraceContext(req);
+			const extractedContext = extractTraceContextFromNodeRequest(req);
 
 			// Execute the request handler within the extracted context
 			await context.with(extractedContext, async () => {
@@ -110,6 +123,7 @@ export class NodeServer implements Server {
 					async (span) => {
 						try {
 							if (req.method === 'GET' && req.url === '/_health') {
+								injectTraceContextToNodeResponse(res);
 								res.writeHead(200);
 								res.end();
 								span.setStatus({ code: SpanStatusCode.OK });
@@ -121,6 +135,7 @@ export class NodeServer implements Server {
 								const body = await this.getJSON<AgentResponseType>(req);
 								callbackAgentHandler.received(id, body);
 								span.setStatus({ code: SpanStatusCode.OK });
+								injectTraceContextToNodeResponse(res);
 								res.writeHead(202);
 								res.end('OK');
 								return;
@@ -158,13 +173,13 @@ export class NodeServer implements Server {
 							}
 
 							try {
-								const payload = await this.getJSON<IncomingRequest>(req);
 								const agentReq = {
 									request: payload as IncomingRequest,
 									url: req.url ?? '',
 									headers: this.getHeaders(req),
 								};
 								const response = await route.handler(agentReq);
+								injectTraceContextToNodeResponse(res);
 								res.writeHead(200, {
 									'Content-Type': 'application/json',
 									Server: `Agentuity NodeJS/${sdkVersion}`,
@@ -173,6 +188,7 @@ export class NodeServer implements Server {
 								span.setStatus({ code: SpanStatusCode.OK });
 							} catch (err) {
 								this.logger.error('Server error', err);
+								injectTraceContextToNodeResponse(res);
 								res.writeHead(500);
 								res.end();
 								span.recordException(err as Error);
@@ -196,26 +212,5 @@ export class NodeServer implements Server {
 				resolve();
 			});
 		});
-	}
-
-	/**
-	 * Extract trace context from incoming request headers
-	 */
-	private extractTraceContext(req: IncomingMessage) {
-		// Create a carrier object from the headers
-		const carrier: Record<string, string> = {};
-
-		// Convert headers to the format expected by the propagator
-		for (const [key, value] of Object.entries(req.headers)) {
-			if (typeof value === 'string') {
-				carrier[key] = value;
-			} else if (Array.isArray(value)) {
-				carrier[key] = value[0] || '';
-			}
-		}
-
-		// Extract the context using the global propagator
-		const activeContext = context.active();
-		return propagation.extract(activeContext, carrier);
 	}
 }

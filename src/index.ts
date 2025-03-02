@@ -27,7 +27,6 @@ export async function runner(
 			orgId: process.env.AGENTUITY_CLOUD_ORG_ID,
 			projectId: process.env.AGENTUITY_CLOUD_PROJECT_ID,
 			deploymentId: process.env.AGENTUITY_CLOUD_DEPLOYMENT_ID,
-			runId: process.env.AGENTUITY_CLOUD_RUN_ID,
 			port: process.env.PORT ? Number.parseInt(process.env.PORT) : undefined,
 			devmode: process.env.AGENTUITY_SDK_DEV_MODE === 'true',
 			cliVersion: process.env.AGENTUITY_CLI_VERSION,

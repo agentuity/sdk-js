@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.68
+
+### Patch Changes
+
+- Add more work around otel trace propagation
+
 ## 0.0.67
 
 ### Patch Changes
