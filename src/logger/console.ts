@@ -39,8 +39,19 @@ export default class ConsoleLogger implements Logger {
 					.join(' ')
 			: '';
 
-		const m = format(message, ...args);
-		return `${m}${contextStr ? ` [${contextStr}]` : ''}`;
+		// Use a safe way to format the message without causing recursion
+		let formattedMessage = message;
+		if (args.length > 0) {
+			try {
+				// Use the util.format directly to avoid potential recursion
+				formattedMessage = format(message, ...args);
+			} catch (err) {
+				// If formatting fails, fall back to a simple string representation
+				formattedMessage = `${message} ${args.map((arg) => String(arg)).join(' ')}`;
+			}
+		}
+
+		return `${formattedMessage}${contextStr ? ` [${contextStr}]` : ''}`;
 	}
 
 	/**

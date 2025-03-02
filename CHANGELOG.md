@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.69
+
+### Patch Changes
+
+- A fixes to make sure the logger cannot get into an infinite recursion loop and cleanup some safety around logging
+
 ## 0.0.68
 
 ### Patch Changes
