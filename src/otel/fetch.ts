@@ -17,10 +17,10 @@ export const __originalFetch = fetch; // save the original fetch before we patch
  * for each HTTP request and propagates trace context in headers
  */
 export function instrumentFetch() {
-	const patch = async function (
+	const patch = async (
 		input: string | Request | URL,
 		init: RequestInit | undefined
-	) {
+	) => {
 		const url =
 			typeof input === 'string'
 				? input
@@ -69,9 +69,9 @@ export function instrumentFetch() {
 			propagation.inject(newContext, carrier);
 
 			// Copy the carrier properties to headers
-			Object.entries(carrier).forEach(([key, value]) => {
+			for (const [key, value] of Object.entries(carrier)) {
 				headers.set(key, value);
-			});
+			}
 
 			// Create new init object with updated headers
 			const newInit = {

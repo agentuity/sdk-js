@@ -19,7 +19,7 @@ export async function runner(
 	if (autoStart && !!dir) {
 		const agentsJSON = process.env.AGENTUITY_CLOUD_AGENTS_JSON;
 		let agents: AgentConfig[] = [];
-		if (!!agentsJSON) {
+		if (agentsJSON) {
 			agents = JSON.parse(agentsJSON);
 		}
 		await run({
@@ -28,7 +28,7 @@ export async function runner(
 			projectId: process.env.AGENTUITY_CLOUD_PROJECT_ID,
 			deploymentId: process.env.AGENTUITY_CLOUD_DEPLOYMENT_ID,
 			runId: process.env.AGENTUITY_CLOUD_RUN_ID,
-			port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
+			port: process.env.PORT ? Number.parseInt(process.env.PORT) : undefined,
 			devmode: process.env.AGENTUITY_SDK_DEV_MODE === 'true',
 			cliVersion: process.env.AGENTUITY_CLI_VERSION,
 			environment:

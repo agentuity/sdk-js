@@ -87,7 +87,7 @@ export const toAgentResponseJSON = (
 				encoding
 			);
 		} else {
-			throw new Error('invalid payload type: ' + typeof payload);
+			throw new Error(`invalid payload type: ${typeof payload}`);
 		}
 	}
 	return resp as AgentResponseType;
