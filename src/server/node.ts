@@ -95,6 +95,22 @@ export class NodeServer implements Server {
 	async start(): Promise<void> {
 		const { sdkVersion } = this;
 		this.server = createHttpServer(async (req, res) => {
+			if (req.method === 'GET' && req.url === '/_health') {
+				res.writeHead(200);
+				res.end();
+				return;
+			}
+			if (req.method !== 'POST') {
+				res.writeHead(405);
+				res.end();
+				return;
+			}
+			if (!req.headers?.['content-type']?.includes('json')) {
+				res.writeHead(400);
+				res.end();
+				return;
+			}
+
 			let payload: IncomingRequest;
 			try {
 				payload = await this.getJSON<IncomingRequest>(req);
@@ -123,14 +139,6 @@ export class NodeServer implements Server {
 					},
 					async (span) => {
 						try {
-							if (req.method === 'GET' && req.url === '/_health') {
-								injectTraceContextToNodeResponse(res);
-								res.writeHead(200);
-								res.end();
-								span.setStatus({ code: SpanStatusCode.OK });
-								return;
-							}
-
 							if (req.method === 'POST' && req.url?.startsWith('/_reply/')) {
 								const id = req.url.slice(8);
 								const body = await this.getJSON<AgentResponseType>(req);

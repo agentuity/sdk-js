@@ -1,5 +1,17 @@
 # @agentuity/sdk
 
+## 0.0.71
+
+### Patch Changes
+
+- Make sure we check correctness of incoming HTTP request before continuing
+
+## 0.0.70
+
+### Patch Changes
+
+- fix issue with composite tracer, use a safe JSON stringify
+
 ## 0.0.69
 
 ### Patch Changes
