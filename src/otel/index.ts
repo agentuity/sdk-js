@@ -198,8 +198,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	let instrumentationSDK: NodeSDK | undefined;
 
 	if (url) {
-		const propagator = new AgentuityIdPropagator();
-		new CompositePropagator({
+		const propagator = new CompositePropagator({
 			propagators: [
 				new AgentuityIdPropagator(),
 				new W3CTraceContextPropagator(),

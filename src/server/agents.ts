@@ -8,6 +8,8 @@ import { toAgentResponseJSON } from '../router';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
+import { safeStringify } from './util';
+
 // FIXME: add spans for these
 
 /**
@@ -66,7 +68,7 @@ class LocalAgentInvoker implements RemoteAgent {
 		};
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 			method: 'POST',
-			body: JSON.stringify(payload),
+			body: safeStringify(payload),
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -136,7 +138,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 		);
 		const resp = await POST(
 			`/sdk/agent/${this.id}/run/${this.replyId}`,
-			JSON.stringify(payload),
+			safeStringify(payload),
 			{
 				'Content-Type': 'application/json',
 			}
@@ -251,7 +253,7 @@ export default class AgentResolver {
 				agent.description
 			);
 		}
-		const resp = await POST('/sdk/agent/resolve', JSON.stringify(params), {
+		const resp = await POST('/sdk/agent/resolve', safeStringify(params), {
 			'Content-Type': 'application/json',
 		});
 		if (resp.status === 404) {

@@ -10,6 +10,7 @@ import {
 	extractTraceContextFromBunRequest,
 	injectTraceContextToHeaders,
 } from './otel';
+import { safeStringify } from './util';
 
 /**
  * Bun implementation of the Server interface
@@ -50,13 +51,30 @@ export class BunServer implements Server {
 		this.server = Bun.serve({
 			port: this.config.port,
 			async fetch(req) {
+				const url = new URL(req.url);
+				const method = req.method;
+
+				if (method === 'GET' && url.pathname === '/_health') {
+					return new Response('OK', {
+						status: 200,
+					});
+				}
+				if (method !== 'POST') {
+					return new Response('Method not allowed', {
+						status: 405,
+					});
+				}
+				if (!req.headers.get('content-type')?.includes('json')) {
+					return new Response('Invalid Content-Type', {
+						status: 400,
+					});
+				}
+
 				// Extract trace context from headers
 				const extractedContext = extractTraceContextFromBunRequest(req);
 
 				// Execute the request handler within the extracted context
 				return context.with(extractedContext, async () => {
-					const url = new URL(req.url);
-					const method = req.method;
 					const body = await req.json();
 
 					// Create a span for this incoming request
@@ -74,14 +92,6 @@ export class BunServer implements Server {
 						},
 						async (span) => {
 							try {
-								if (method === 'GET' && url.pathname === '/_health') {
-									span.setStatus({ code: SpanStatusCode.OK });
-									return new Response('OK', {
-										status: 200,
-										headers: injectTraceContextToHeaders(),
-									});
-								}
-
 								if (method === 'POST' && url.pathname.startsWith('/_reply/')) {
 									const id = url.pathname.slice(8);
 									const body = await req.json();
@@ -122,7 +132,7 @@ export class BunServer implements Server {
 										request: body as IncomingRequest,
 									});
 									span.setStatus({ code: SpanStatusCode.OK });
-									return new Response(JSON.stringify(resp), {
+									return new Response(safeStringify(resp), {
 										headers: injectTraceContextToHeaders({
 											'Content-Type': 'application/json',
 											Server: `Agentuity BunJS/${sdkVersion}`,
