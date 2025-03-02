@@ -2,6 +2,7 @@ import { format } from 'node:util';
 import type { Logger } from './logger';
 import type { Json } from '../types';
 import { __originalConsole } from '../otel/logger';
+import { safeStringify } from '../server/util';
 
 const yellow = '\x1b[33m';
 const green = '\x1b[32m';
@@ -33,24 +34,43 @@ export default class ConsoleLogger implements Logger {
 	 * @private
 	 */
 	private formatMessage(message: string, args: unknown[]): string {
-		const contextStr = this.context
-			? Object.entries(this.context)
-					.map(([key, value]) => `${key}=${value}`)
-					.join(' ')
-			: '';
+		// Format the context string
+		const contextStr =
+			this.context && Object.keys(this.context).length > 0
+				? Object.entries(this.context)
+						.map(([key, value]) => {
+							try {
+								return `${key}=${typeof value === 'object' ? safeStringify(value) : value}`;
+							} catch (err) {
+								return `${key}=[Complex Object]`;
+							}
+						})
+						.join(' ')
+				: '';
 
-		// Use a safe way to format the message without causing recursion
-		let formattedMessage = message;
-		if (args.length > 0) {
-			try {
-				// Use the util.format directly to avoid potential recursion
+		// Format the message with args
+		let formattedMessage: string;
+		try {
+			// Only use format if we have arguments
+			if (args.length > 0) {
 				formattedMessage = format(message, ...args);
-			} catch (err) {
-				// If formatting fails, fall back to a simple string representation
-				formattedMessage = `${message} ${args.map((arg) => String(arg)).join(' ')}`;
+			} else {
+				formattedMessage = message;
 			}
+		} catch (err) {
+			// If formatting fails, use a simple concatenation
+			formattedMessage = `${message} ${args
+				.map((arg) => {
+					try {
+						return typeof arg === 'object' ? safeStringify(arg) : String(arg);
+					} catch (err) {
+						return '[Complex Object]';
+					}
+				})
+				.join(' ')}`;
 		}
 
+		// Combine message with context
 		return `${formattedMessage}${contextStr ? ` [${contextStr}]` : ''}`;
 	}
 
@@ -61,9 +81,14 @@ export default class ConsoleLogger implements Logger {
 	 * @param args - Additional arguments to log
 	 */
 	debug(message: string, ...args: unknown[]): void {
-		__originalConsole.debug(
-			`${black}[DEBUG]${reset} ${this.formatMessage(message, args)}`
-		);
+		try {
+			const formattedMessage = this.formatMessage(message, args);
+			__originalConsole.debug(`${black}[DEBUG]${reset} ${formattedMessage}`);
+		} catch (err) {
+			// Fallback to direct logging if formatting fails
+			__originalConsole.debug(`${black}[DEBUG]${reset} ${message}`, ...args);
+			__originalConsole.debug('Error formatting log message:', err);
+		}
 	}
 
 	/**
@@ -73,9 +98,14 @@ export default class ConsoleLogger implements Logger {
 	 * @param args - Additional arguments to log
 	 */
 	info(message: string, ...args: unknown[]): void {
-		__originalConsole.info(
-			`${green}[INFO]${reset}  ${this.formatMessage(message, args)}`
-		);
+		try {
+			const formattedMessage = this.formatMessage(message, args);
+			__originalConsole.info(`${green}[INFO]${reset}  ${formattedMessage}`);
+		} catch (err) {
+			// Fallback to direct logging if formatting fails
+			__originalConsole.info(`${green}[INFO]${reset}  ${message}`, ...args);
+			__originalConsole.debug('Error formatting log message:', err);
+		}
 	}
 
 	/**
@@ -85,9 +115,14 @@ export default class ConsoleLogger implements Logger {
 	 * @param args - Additional arguments to log
 	 */
 	warn(message: string, ...args: unknown[]): void {
-		__originalConsole.warn(
-			`${yellow}[WARN]${reset}  ${this.formatMessage(message, args)}`
-		);
+		try {
+			const formattedMessage = this.formatMessage(message, args);
+			__originalConsole.warn(`${yellow}[WARN]${reset}  ${formattedMessage}`);
+		} catch (err) {
+			// Fallback to direct logging if formatting fails
+			__originalConsole.warn(`${yellow}[WARN]${reset}  ${message}`, ...args);
+			__originalConsole.debug('Error formatting log message:', err);
+		}
 	}
 
 	/**
@@ -97,9 +132,14 @@ export default class ConsoleLogger implements Logger {
 	 * @param args - Additional arguments to log
 	 */
 	error(message: string, ...args: unknown[]): void {
-		__originalConsole.error(
-			`${red}[ERROR]${reset} ${this.formatMessage(message, args)}`
-		);
+		try {
+			const formattedMessage = this.formatMessage(message, args);
+			__originalConsole.error(`${red}[ERROR]${reset} ${formattedMessage}`);
+		} catch (err) {
+			// Fallback to direct logging if formatting fails
+			__originalConsole.error(`${red}[ERROR]${reset} ${message}`, ...args);
+			__originalConsole.debug('Error formatting log message:', err);
+		}
 	}
 
 	/**

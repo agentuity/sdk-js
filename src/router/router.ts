@@ -21,6 +21,7 @@ import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
 import type { Logger } from '../logger';
 import AgentResolver from '../server/agents';
+import { safeStringify } from '../server/util';
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -41,7 +42,7 @@ function toBase64(payload: Json | ArrayBuffer | string | undefined) {
 		return Buffer.from(payload).toString('base64');
 	}
 	if (payload instanceof Object) {
-		return Buffer.from(JSON.stringify(payload)).toString('base64');
+		return Buffer.from(safeStringify(payload)).toString('base64');
 	}
 	return payload;
 }
@@ -83,7 +84,7 @@ export const toAgentResponseJSON = (
 			resp.payload = Buffer.from(payload).toString(encoding);
 		} else if (payload instanceof Object) {
 			resp.contentType = contentType ?? 'application/json';
-			resp.payload = Buffer.from(JSON.stringify(payload), 'utf-8').toString(
+			resp.payload = Buffer.from(safeStringify(payload), 'utf-8').toString(
 				encoding
 			);
 		} else {
@@ -318,7 +319,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 										handlerResponse.metadata ?? req.request.metadata,
 									]
 								);
-								logger.debug('redirect response: %s', JSON.stringify(val));
+								logger.debug('redirect response: %s', safeStringify(val));
 								if (isCURLUserAgent(req) && 'payload' in val && val.payload) {
 									val.payload = Buffer.from(
 										val.payload as string,
@@ -331,7 +332,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							const data = toServerResponseJSON(req, handlerResponse);
 							if (config.context.devmode) {
 								logger.info(
-									`${config.context.agent.name} returned: ${JSON.stringify(
+									`${config.context.agent.name} returned: ${safeStringify(
 										data
 									)}`
 								);

@@ -16,6 +16,7 @@ import {
 	extractTraceContextFromNodeRequest,
 	injectTraceContextToNodeResponse,
 } from './otel';
+import { safeStringify } from './util';
 
 /**
  * Node.js implementation of the Server interface
@@ -184,7 +185,7 @@ export class NodeServer implements Server {
 									'Content-Type': 'application/json',
 									Server: `Agentuity NodeJS/${sdkVersion}`,
 								});
-								res.end(JSON.stringify(response));
+								res.end(safeStringify(response));
 								span.setStatus({ code: SpanStatusCode.OK });
 							} catch (err) {
 								this.logger.error('Server error', err);

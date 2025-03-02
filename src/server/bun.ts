@@ -10,6 +10,7 @@ import {
 	extractTraceContextFromBunRequest,
 	injectTraceContextToHeaders,
 } from './otel';
+import { safeStringify } from './util';
 
 /**
  * Bun implementation of the Server interface
@@ -122,7 +123,7 @@ export class BunServer implements Server {
 										request: body as IncomingRequest,
 									});
 									span.setStatus({ code: SpanStatusCode.OK });
-									return new Response(JSON.stringify(resp), {
+									return new Response(safeStringify(resp), {
 										headers: injectTraceContextToHeaders({
 											'Content-Type': 'application/json',
 											Server: `Agentuity BunJS/${sdkVersion}`,

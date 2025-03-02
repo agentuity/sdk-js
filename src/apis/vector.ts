@@ -7,6 +7,7 @@ import type {
 import { DELETE, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace } from '@opentelemetry/api';
+import { safeStringify } from '../server/util';
 
 /**
  * Response for a successful vector upsert operation
@@ -110,7 +111,7 @@ export default class VectorAPI implements VectorStorage {
 			return await context.with(spanContext, async () => {
 				const resp = await PUT<VectorUpsertResponse>(
 					`/sdk/vector/${encodeURIComponent(name)}`,
-					JSON.stringify(documents)
+					safeStringify(documents)
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {
@@ -160,7 +161,7 @@ export default class VectorAPI implements VectorStorage {
 			return await context.with(spanContext, async () => {
 				const resp = await POST<VectorSearchResponse>(
 					`/sdk/vector/search/${encodeURIComponent(name)}`,
-					JSON.stringify(params)
+					safeStringify(params)
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
@@ -211,7 +212,7 @@ export default class VectorAPI implements VectorStorage {
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE<VectorDeleteResponse>(
 					`/sdk/vector/${encodeURIComponent(name)}`,
-					JSON.stringify(ids)
+					safeStringify(ids)
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {

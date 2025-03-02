@@ -3,6 +3,7 @@ import * as LogsAPI from '@opentelemetry/api-logs';
 import type { Logger } from '../logger';
 import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
+import { safeStringify } from '../server/util';
 
 /**
  * Reference to the original console object before patching
@@ -29,7 +30,7 @@ class OtelLogger implements Logger {
 			return message;
 		}
 		try {
-			return JSON.stringify(message);
+			return safeStringify(message);
 		} catch (err) {
 			// Handle circular references or other JSON stringification errors
 			return String(message);

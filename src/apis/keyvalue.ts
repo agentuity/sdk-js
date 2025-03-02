@@ -2,6 +2,7 @@ import type { Json, KeyValueStorage } from '../types';
 import { DELETE, GET, PUT, type Body } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace } from '@opentelemetry/api';
+import { safeStringify } from '../server/util';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -96,7 +97,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 						body = value;
 						contentType = 'application/octet-stream';
 					} else {
-						body = JSON.stringify(value);
+						body = safeStringify(value);
 						contentType = 'application/json';
 					}
 				} else {
