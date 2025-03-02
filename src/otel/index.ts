@@ -135,6 +135,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
 		'@agentuity/devmode': devmode,
+		'@agentuity/language': 'javascript',
 	});
 
 	const traceExporter = url
