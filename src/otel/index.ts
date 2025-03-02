@@ -13,7 +13,7 @@ import {
 	ATTR_SERVICE_NAME,
 	ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import opentelemetry, { type Tracer } from '@opentelemetry/api';
+import opentelemetry, { propagation, type Tracer } from '@opentelemetry/api';
 import {
 	W3CTraceContextPropagator,
 	W3CBaggagePropagator,
@@ -22,6 +22,8 @@ import {
 import * as LogsAPI from '@opentelemetry/api-logs';
 import {
 	LoggerProvider,
+	type LogRecordProcessor,
+	BatchLogRecordProcessor,
 	SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
@@ -29,6 +31,7 @@ import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { createLogger, patchConsole } from './logger';
 import { ConsoleLogRecordExporter } from './console';
 import { instrumentFetch } from './fetch';
+import AgentuityIdPropagator from './trace';
 
 /**
  * Configuration for OpenTelemetry initialization
@@ -41,7 +44,6 @@ interface OtelConfig {
 	orgId?: string;
 	projectId?: string;
 	deploymentId?: string;
-	runId?: string;
 	environment?: string;
 	sdkVersion?: string;
 	cliVersion?: string;
@@ -78,7 +80,6 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		orgId,
 		projectId,
 		deploymentId,
-		runId,
 		devmode = false,
 	} = config;
 
@@ -95,7 +96,6 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/orgId': orgId ?? 'unknown',
 		'@agentuity/projectId': projectId ?? 'unknown',
 		'@agentuity/deploymentId': deploymentId ?? 'unknown',
-		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
 		'@agentuity/devmode': devmode,
 		'@agentuity/sdkVersion': sdkVersion ?? 'unknown',
@@ -103,7 +103,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	});
 
 	let otlpLogExporter: OTLPLogExporter | undefined;
-	let logRecordProcessor: SimpleLogRecordProcessor | undefined;
+	let logRecordProcessor: LogRecordProcessor | undefined;
 
 	if (url) {
 		otlpLogExporter = new OTLPLogExporter({
@@ -112,7 +112,9 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 			compression: CompressionAlgorithm.GZIP,
 			timeoutMillis: 10_000,
 		});
-		logRecordProcessor = new SimpleLogRecordProcessor(otlpLogExporter);
+		logRecordProcessor = devmode
+			? new SimpleLogRecordProcessor(new ConsoleLogRecordExporter())
+			: new BatchLogRecordProcessor(otlpLogExporter);
 	} else {
 		logRecordProcessor = new SimpleLogRecordProcessor(
 			new ConsoleLogRecordExporter()
@@ -132,7 +134,6 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		'@agentuity/orgId': orgId ?? 'unknown',
 		'@agentuity/projectId': projectId ?? 'unknown',
 		'@agentuity/deploymentId': deploymentId ?? 'unknown',
-		'@agentuity/runId': runId ?? 'unknown',
 		'@agentuity/env': environment,
 		'@agentuity/devmode': devmode,
 		'@agentuity/language': 'javascript',
@@ -197,6 +198,16 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	let instrumentationSDK: NodeSDK | undefined;
 
 	if (url) {
+		const propagator = new AgentuityIdPropagator();
+		new CompositePropagator({
+			propagators: [
+				new AgentuityIdPropagator(),
+				new W3CTraceContextPropagator(),
+				new W3CBaggagePropagator(),
+			],
+		});
+		propagation.setGlobalPropagator(propagator);
+
 		instrumentFetch();
 		instrumentationSDK = new NodeSDK({
 			logRecordProcessor,
@@ -204,12 +215,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 			metricReader: sdkMetricReader,
 			instrumentations: [getNodeAutoInstrumentations()],
 			resource,
-			textMapPropagator: new CompositePropagator({
-				propagators: [
-					new W3CTraceContextPropagator(),
-					new W3CBaggagePropagator(),
-				],
-			}),
+			textMapPropagator: propagator,
 		});
 		instrumentationSDK.start();
 		hostMetrics?.start();

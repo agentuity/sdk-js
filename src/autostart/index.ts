@@ -13,7 +13,6 @@ interface AutostartConfig {
 	orgId?: string;
 	projectId?: string;
 	deploymentId?: string;
-	runId?: string;
 	port?: number;
 	devmode?: boolean;
 	environment?: string;
@@ -68,7 +67,6 @@ export async function run(config: AutostartConfig) {
 		orgId: config.orgId,
 		projectId: config.projectId,
 		deploymentId: config.deploymentId,
-		runId: config.runId,
 		bearerToken: config?.otlp?.bearerToken,
 		url: config?.otlp?.url,
 		environment: config.devmode ? 'development' : config.environment,
@@ -76,7 +74,6 @@ export async function run(config: AutostartConfig) {
 	const server = await createServer({
 		context: createServerContext({
 			devmode: config.devmode,
-			runId: config.runId,
 			deploymentId: config.deploymentId,
 			projectId: config.projectId,
 			orgId: config.orgId,

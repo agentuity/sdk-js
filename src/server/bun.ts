@@ -5,13 +5,11 @@ import type {
 	IncomingRequest,
 } from './types';
 import { callbackAgentHandler } from './agents';
+import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
-	context,
-	propagation,
-	trace,
-	SpanKind,
-	SpanStatusCode,
-} from '@opentelemetry/api';
+	extractTraceContextFromBunRequest,
+	injectTraceContextToHeaders,
+} from './otel';
 
 /**
  * Bun implementation of the Server interface
@@ -53,12 +51,13 @@ export class BunServer implements Server {
 			port: this.config.port,
 			async fetch(req) {
 				// Extract trace context from headers
-				const extractedContext = extractTraceContext(req);
+				const extractedContext = extractTraceContextFromBunRequest(req);
 
 				// Execute the request handler within the extracted context
 				return context.with(extractedContext, async () => {
 					const url = new URL(req.url);
 					const method = req.method;
+					const body = await req.json();
 
 					// Create a span for this incoming request
 					return trace.getTracer('http-server').startActiveSpan(
@@ -77,7 +76,10 @@ export class BunServer implements Server {
 							try {
 								if (method === 'GET' && url.pathname === '/_health') {
 									span.setStatus({ code: SpanStatusCode.OK });
-									return new Response('OK', { status: 200 });
+									return new Response('OK', {
+										status: 200,
+										headers: injectTraceContextToHeaders(),
+									});
 								}
 
 								if (method === 'POST' && url.pathname.startsWith('/_reply/')) {
@@ -85,7 +87,10 @@ export class BunServer implements Server {
 									const body = await req.json();
 									callbackAgentHandler.received(id, body);
 									span.setStatus({ code: SpanStatusCode.OK });
-									return new Response('OK', { status: 202 });
+									return new Response('OK', {
+										status: 202,
+										headers: injectTraceContextToHeaders(),
+									});
 								}
 
 								const routeKey = `${method}:${url.pathname}`;
@@ -104,12 +109,13 @@ export class BunServer implements Server {
 										code: SpanStatusCode.ERROR,
 										message: `No Agent found at ${url.pathname}`,
 									});
-									return new Response('Not Found', { status: 404 });
+									return new Response('Not Found', {
+										status: 404,
+										headers: injectTraceContextToHeaders(),
+									});
 								}
 
 								try {
-									const body = await req.json();
-
 									const resp = await route.handler({
 										url: req.url,
 										headers: req.headers.toJSON(),
@@ -117,10 +123,10 @@ export class BunServer implements Server {
 									});
 									span.setStatus({ code: SpanStatusCode.OK });
 									return new Response(JSON.stringify(resp), {
-										headers: {
+										headers: injectTraceContextToHeaders({
 											'Content-Type': 'application/json',
 											Server: `Agentuity BunJS/${sdkVersion}`,
-										},
+										}),
 									});
 								} catch (error) {
 									span.recordException(error as Error);
@@ -128,7 +134,10 @@ export class BunServer implements Server {
 										code: SpanStatusCode.ERROR,
 										message: (error as Error).message,
 									});
-									return new Response('Internal Server Error', { status: 500 });
+									return new Response('Internal Server Error', {
+										status: 500,
+										headers: injectTraceContextToHeaders(),
+									});
 								}
 							} finally {
 								span.end();
@@ -155,21 +164,4 @@ export class BunServer implements Server {
 		await server.stop();
 		this.config.logger.info('server stopped');
 	}
-}
-
-/**
- * Extract trace context from incoming request headers
- */
-function extractTraceContext(req: Request) {
-	// Create a carrier object from the headers
-	const carrier: Record<string, string> = {};
-
-	// Convert headers to the format expected by the propagator
-	req.headers.forEach((value, key) => {
-		carrier[key] = value;
-	});
-
-	// Extract the context using the global propagator
-	const activeContext = context.active();
-	return propagation.extract(activeContext, carrier);
 }

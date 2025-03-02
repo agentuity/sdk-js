@@ -225,8 +225,9 @@ async function agentRedirectRun(
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 	return async (req: ServerRequest): Promise<AgentResponseType> => {
 		const agentId = config.context.agent.id;
+		const runId = req.request.runId;
 		const logger = config.context.logger.child({
-			runId: req.request.runId,
+			runId,
 		});
 		const resolver = new AgentResolver(
 			logger,
@@ -244,8 +245,8 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 			'agent.run',
 			{
 				attributes: {
-					agentName: config.context.agent.name,
-					agentId,
+					'@agentuity/agentName': config.context.agent.name,
+					'@agentuity/agentId': agentId,
 				},
 			},
 			currentContext
@@ -259,7 +260,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 			return await asyncStorage.run(
 				{
 					span,
-					runId: req.request.runId,
+					runId,
 					projectId: config.context.projectId,
 					deploymentId: config.context.deploymentId,
 					orgId: config.context.orgId,
@@ -274,7 +275,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 						const response = new AgentResponseHandler();
 						const context = {
 							...config.context,
-							runId: req.request.runId,
+							runId,
 							getAgent: (params: GetAgentRequestParams) =>
 								resolver.getAgent(params),
 						} as AgentContext;
@@ -306,7 +307,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 								const val = await agentRedirectRun(
 									logger,
 									config,
-									req.request.runId,
+									runId,
 									{ ...config.context.agent, id: agentId },
 									agent,
 									[
@@ -324,10 +325,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 										'base64'
 									).toString('utf-8');
 								}
-								span.setStatus({
-									code: SpanStatusCode.OK,
-									message: JSON.stringify(val),
-								});
+								span.setStatus({ code: SpanStatusCode.OK });
 								return val;
 							}
 							const data = toServerResponseJSON(req, handlerResponse);
@@ -338,9 +336,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 									)}`
 								);
 							}
-							span.setStatus({
-								code: SpanStatusCode.OK,
-							});
+							span.setStatus({ code: SpanStatusCode.OK });
 							return data;
 						} catch (err) {
 							recordException(span, err);
