@@ -1,5 +1,6 @@
 <div align="center">
-    <img src=".github/Agentuity.png" alt="Agentuity" width="100"/>
+    <img src=".github/Agentuity.png" alt="Agentuity" width="100"/> <br/>
+    <strong>Build Agents, Not Infrastructure</strong> <br/>
 </div>
 
 <br />
@@ -10,7 +11,7 @@
 
 # Agentuity TypeScript SDK
 
-**Build Agents, Not Infrastructure** <br/>
+
 **Visit [https://agentuity.com](https://agentuity.com) to get started with Agentuity.**
 
 > [!WARNING]  
