@@ -28,6 +28,27 @@ The Agentuity TypeScript SDK is a powerful toolkit for building, deploying, and 
 - Implementing intelligent data processing systems
 - Building AI-powered APIs and services
 
+## Getting Started
+
+To use this SDK in a real project, you should install the Agentuity CLI.
+
+### Mac OS
+
+```bash
+brew tap agentuity/tap && brew install agentuity
+```
+
+### Linux or Windows
+
+See the [Agentuity CLI](https://github.com/agenuity/cli) repository for installation instructions and releases.
+
+Once installed, you can create a new project with the following command:
+
+```bash
+agentuity new
+```
+
+
 ## Development Setup
 
 ### Prerequisites
