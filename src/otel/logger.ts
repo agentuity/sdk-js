@@ -129,36 +129,32 @@ export function createLogger(
  *
  * @param attributes - Attributes to include with all console log records
  */
-export function patchConsole(attributes: Record<string, Json>) {
-	const delegate = createLogger(false, attributes); // Set useConsole to false to avoid circular reference
-
-	// Store original methods before patching to avoid circular references
-	const originalLog = __originalConsole.log;
-	const originalError = __originalConsole.error;
-	const originalWarn = __originalConsole.warn;
-	const originalDebug = __originalConsole.debug;
-	const originalInfo = __originalConsole.info;
+export function patchConsole(
+	enabled: boolean,
+	attributes: Record<string, Json>
+) {
+	if (!enabled) {
+		return;
+	}
+	const _patch = { ...__originalConsole };
+	const delegate = createLogger(true, attributes);
 
 	// Patch individual console methods instead of reassigning the whole object
-	console.log = (...args: unknown[]) => {
-		// Use the delegate for OpenTelemetry but call original for actual console output
+	_patch.log = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
-		originalLog.apply(__originalConsole, args);
 	};
-	console.error = (...args: unknown[]) => {
+	_patch.error = (...args: unknown[]) => {
 		delegate.error(args[0] as string, ...args.slice(1));
-		originalError.apply(__originalConsole, args);
 	};
-	console.warn = (...args: unknown[]) => {
+	_patch.warn = (...args: unknown[]) => {
 		delegate.warn(args[0] as string, ...args.slice(1));
-		originalWarn.apply(__originalConsole, args);
 	};
-	console.debug = (...args: unknown[]) => {
+	_patch.debug = (...args: unknown[]) => {
 		delegate.debug(args[0] as string, ...args.slice(1));
-		originalDebug.apply(__originalConsole, args);
 	};
-	console.info = (...args: unknown[]) => {
+	_patch.info = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
-		originalInfo.apply(__originalConsole, args);
 	};
+	// biome-ignore lint/suspicious/noGlobalAssign: <explanation>
+	console = globalThis.console = _patch;
 }
