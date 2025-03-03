@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.72
+
+### Patch Changes
+
+- Fix issue with non-otel logging causing issues
+
 ## 0.0.71
 
 ### Patch Changes

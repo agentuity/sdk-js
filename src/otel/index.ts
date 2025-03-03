@@ -127,10 +127,10 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	loggerProvider.addLogRecordProcessor(logRecordProcessor);
 	LogsAPI.logs.setGlobalLoggerProvider(loggerProvider);
 
-	const logger = createLogger(!!url);
+	const logger = createLogger(false);
 
 	// must do this after we have created the logger
-	patchConsole({
+	patchConsole(!!url, {
 		'@agentuity/orgId': orgId ?? 'unknown',
 		'@agentuity/projectId': projectId ?? 'unknown',
 		'@agentuity/deploymentId': deploymentId ?? 'unknown',
