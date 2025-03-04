@@ -127,12 +127,13 @@ export class NodeServer implements Server {
 			await context.with(extractedContext, async () => {
 				// Create a span for this incoming request
 				await trace.getTracer('http-server').startActiveSpan(
-					`${req.method} ${req.url}`,
+					`HTTP ${req.method}`,
 					{
 						kind: SpanKind.SERVER,
 						attributes: {
 							'http.method': req.method || 'UNKNOWN',
-							'http.url': req.url || '',
+							'http.path': req.url,
+							'http.url': req.url || '', // FIXME should be full url
 							'http.host': req.headers.host || '',
 							'http.user_agent': req.headers['user-agent'] || '',
 						},
@@ -140,6 +141,7 @@ export class NodeServer implements Server {
 					async (span) => {
 						try {
 							if (req.method === 'POST' && req.url?.startsWith('/_reply/')) {
+								span.setAttribute('http.status_code', '202');
 								const id = req.url.slice(8);
 								const body = await this.getJSON<AgentResponseType>(req);
 								callbackAgentHandler.received(id, body);
@@ -157,6 +159,7 @@ export class NodeServer implements Server {
 									req.method,
 									req.url
 								);
+								span.setAttribute('http.status_code', '404');
 								res.writeHead(404);
 								res.end();
 								span.setStatus({
@@ -172,6 +175,7 @@ export class NodeServer implements Server {
 									req.method,
 									req.url
 								);
+								span.setAttribute('http.status_code', '405');
 								res.writeHead(405);
 								res.end();
 								span.setStatus({
@@ -189,6 +193,7 @@ export class NodeServer implements Server {
 								};
 								const response = await route.handler(agentReq);
 								injectTraceContextToNodeResponse(res);
+								span.setAttribute('http.status_code', '200');
 								res.writeHead(200, {
 									'Content-Type': 'application/json',
 									Server: `Agentuity NodeJS/${sdkVersion}`,
@@ -201,6 +206,7 @@ export class NodeServer implements Server {
 								res.writeHead(500);
 								res.end();
 								span.recordException(err as Error);
+								span.setAttribute('http.status_code', '500');
 								span.setStatus({
 									code: SpanStatusCode.ERROR,
 									message: (err as Error).message,

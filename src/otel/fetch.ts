@@ -44,6 +44,7 @@ export function instrumentFetch() {
 
 		// Get the current active context
 		const currentContext = context.active();
+		const _url = new URL(url);
 
 		// Create a child span using the current context
 		const childSpan = trace.getTracer('fetch').startSpan(
@@ -51,7 +52,9 @@ export function instrumentFetch() {
 			{
 				attributes: {
 					'http.url': url,
+					'http.path': _url.pathname,
 					'http.method': method,
+					host: _url.host,
 				},
 			},
 			currentContext
@@ -84,6 +87,7 @@ export function instrumentFetch() {
 			// Add response attributes to span
 			childSpan.setAttributes({
 				'http.status_code': response.status,
+				'http.user_agent': response.headers.get('user-agent') || '',
 			});
 
 			if (!response.ok) {

@@ -79,7 +79,7 @@ export class BunServer implements Server {
 
 					// Create a span for this incoming request
 					return trace.getTracer('http-server').startActiveSpan(
-						`${method} ${url.pathname}`,
+						`HTTP ${method}`,
 						{
 							kind: SpanKind.SERVER,
 							attributes: {

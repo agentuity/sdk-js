@@ -332,7 +332,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							const data = toServerResponseJSON(req, handlerResponse);
 							if (config.context.devmode) {
 								logger.info(
-									`${config.context.agent.name} returned: ${safeStringify(
+									`${config.context.agent.name} returned: ${JSON.stringify(
 										data
 									)}`
 								);
