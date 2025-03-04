@@ -1,5 +1,13 @@
 # @agentuity/sdk
 
+## 0.0.73
+
+### Patch Changes
+
+- - Fix issue where logs wouldn't show up in console
+  - Fix issue where the gray color for debug in log
+  - Print debug message when connected to cloud
+
 ## 0.0.72
 
 ### Patch Changes

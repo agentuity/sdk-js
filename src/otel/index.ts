@@ -127,7 +127,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	loggerProvider.addLogRecordProcessor(logRecordProcessor);
 	LogsAPI.logs.setGlobalLoggerProvider(loggerProvider);
 
-	const logger = createLogger(false);
+	const logger = createLogger(!!url);
 
 	// must do this after we have created the logger
 	patchConsole(!!url, {
@@ -243,6 +243,10 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 			logger.debug('shut down OpenTelemetry');
 		}
 	};
+
+	if (url) {
+		logger.debug('connected to Agentuity Agent Cloud');
+	}
 
 	return { tracer, logger, shutdown };
 }
