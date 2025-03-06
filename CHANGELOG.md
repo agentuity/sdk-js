@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.74
+
+### Patch Changes
+
+- Fixed issue with local agent-to-agent routing
+
 ## 0.0.73
 
 ### Patch Changes

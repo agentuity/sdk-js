@@ -62,7 +62,7 @@ async function createRoute(
 	}
 	const handler = createRouter({
 		handler: thehandler,
-		context: { ...context, agent, agents } as AgentContext,
+		context: { ...context, agent } as AgentContext,
 		port,
 	});
 	return {
