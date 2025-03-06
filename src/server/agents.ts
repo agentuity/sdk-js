@@ -73,11 +73,14 @@ class LocalAgentInvoker implements RemoteAgent {
 				'Content-Type': 'application/json',
 			},
 		});
-		const json = await resp.json();
-		return {
-			...json,
-			agentId: this.id,
-		} as AgentResponseType;
+		if (resp.ok) {
+			const json = await resp.json();
+			return {
+				...json,
+				agentId: this.id,
+			} as AgentResponseType;
+		}
+		throw new Error(await resp.text());
 	}
 }
 
@@ -281,8 +284,8 @@ export default class AgentResolver {
 				description?: string;
 			};
 		};
-		if (!payload.success) {
-			throw new Error(payload.message);
+		if (!payload?.success) {
+			throw new Error(payload?.message ?? 'unknown error from agent response');
 		}
 		return new RemoteAgentInvoker(
 			this.logger,

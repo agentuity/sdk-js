@@ -30,7 +30,7 @@ export default class AgentRequestHandler implements AgentRequest {
 			contentType = this.request.contentType;
 			let matched = false;
 			for (const t of type) {
-				if (contentType === t) {
+				if (contentType === t || t === '' || t === '*/*') {
 					matched = true;
 					break;
 				}
@@ -46,6 +46,11 @@ export default class AgentRequestHandler implements AgentRequest {
 				);
 			}
 			return; // return when matched
+		}
+		for (const t of type) {
+			if (t === '' || t === '*/*') {
+				return; // return when matched even when no contentType property was provided in the request payload
+			}
 		}
 		throw new Error(
 			`Expected content type ${type}, but no contentType property was provided in the request payload`

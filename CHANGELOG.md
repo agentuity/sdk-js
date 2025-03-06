@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.75
+
+### Patch Changes
+
+- Improve handling for request text()
+
 ## 0.0.74
 
 ### Patch Changes
