@@ -150,7 +150,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 			success: boolean;
 			message?: string;
 		};
-		if (respPayload.success) {
+		if (respPayload?.success) {
 			const started = Date.now();
 			this.logger.debug(
 				'waiting for remote agent response using reply id: %s',
@@ -185,7 +185,9 @@ class RemoteAgentInvoker implements RemoteAgent {
 			}
 			return respPayload;
 		}
-		throw new Error(respPayload.message);
+		throw new Error(
+			respPayload?.message ?? 'unknown error from agent response'
+		);
 	}
 }
 

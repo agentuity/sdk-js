@@ -21,6 +21,10 @@ export async function runner(
 		let agents: AgentConfig[] = [];
 		if (agentsJSON) {
 			agents = JSON.parse(agentsJSON);
+		} else {
+			console.error(
+				'expected AGENTUITY_CLOUD_AGENTS_JSON to be set but it was not'
+			);
 		}
 		await run({
 			basedir: dir,
