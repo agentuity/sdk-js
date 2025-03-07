@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.78
+
+### Patch Changes
+
+- Fixed issue with Vector delete
+
 ## 0.0.77
 
 ### Patch Changes
