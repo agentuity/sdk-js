@@ -4,7 +4,7 @@ import type {
 	VectorSearchParams,
 	VectorSearchResult,
 } from '../types';
-import { DELETE, POST, PUT } from './api';
+import { DELETE, GET, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace } from '@opentelemetry/api';
 import { safeStringify } from '../server/util';
@@ -133,6 +133,56 @@ export default class VectorAPI implements VectorStorage {
 	}
 
 	/**
+	 * get a vector from the vector storage by key
+	 *
+	 * @param name - the name of the vector storage
+	 * @param key - the key of the vector to get
+	 * @returns the results of the vector search
+	 */
+	async get(name: string, key: string): Promise<VectorSearchResult[]> {
+		const tracer = getTracer();
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan(
+			'agentuity.vector.get',
+			{ attributes: { name } },
+			currentContext
+		);
+
+		try {
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await GET<VectorSearchResponse>(
+					`/sdk/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+				);
+				if (resp.status === 404) {
+					span.addEvent('miss');
+					return [];
+				}
+				if (resp.status === 200) {
+					if (resp.json?.success) {
+						span.addEvent('hit');
+						return resp.json.data;
+					}
+				}
+				if (!resp.json?.success && resp.json?.error) {
+					throw new Error(resp.json.error);
+				}
+				throw new Error('unknown error');
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
+	}
+
+	/**
 	 * search for vectors in the vector storage
 	 *
 	 * @param name - the name of the vector storage
@@ -190,10 +240,10 @@ export default class VectorAPI implements VectorStorage {
 	 * delete a vector from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param ids - the ids of the vectors to delete
+	 * @param key  - the ids of the vectors to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	async delete(name: string, ...ids: string[]): Promise<number> {
+	async delete(name: string, key: string): Promise<number> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -211,8 +261,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE<VectorDeleteResponse>(
-					`/sdk/vector/${encodeURIComponent(name)}`,
-					safeStringify(ids)
+					`/sdk/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {
