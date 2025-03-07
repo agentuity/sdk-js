@@ -190,10 +190,10 @@ export default class VectorAPI implements VectorStorage {
 	 * delete a vector from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param ids - the ids of the vectors to delete
+	 * @param key  - the ids of the vectors to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	async delete(name: string, ...ids: string[]): Promise<number> {
+	async delete(name: string, key: string): Promise<number> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -211,8 +211,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE<VectorDeleteResponse>(
-					`/sdk/vector/${encodeURIComponent(name)}`,
-					safeStringify(ids)
+					`/sdk/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {
