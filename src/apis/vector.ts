@@ -4,7 +4,7 @@ import type {
 	VectorSearchParams,
 	VectorSearchResult,
 } from '../types';
-import { DELETE, POST, PUT } from './api';
+import { DELETE, GET, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace } from '@opentelemetry/api';
 import { safeStringify } from '../server/util';
@@ -117,6 +117,56 @@ export default class VectorAPI implements VectorStorage {
 					if (resp.json?.success) {
 						const json = resp.json as unknown as { data: { id: string }[] };
 						return json.data.map((o) => o.id);
+					}
+				}
+				if (!resp.json?.success && resp.json?.error) {
+					throw new Error(resp.json.error);
+				}
+				throw new Error('unknown error');
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
+	}
+
+	/**
+	 * get a vector from the vector storage by key
+	 *
+	 * @param name - the name of the vector storage
+	 * @param key - the key of the vector to get
+	 * @returns the results of the vector search
+	 */
+	async get(name: string, key: string): Promise<VectorSearchResult[]> {
+		const tracer = getTracer();
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan(
+			'agentuity.vector.get',
+			{ attributes: { name } },
+			currentContext
+		);
+
+		try {
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await GET<VectorSearchResponse>(
+					`/sdk/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+				);
+				if (resp.status === 404) {
+					span.addEvent('miss');
+					return [];
+				}
+				if (resp.status === 200) {
+					if (resp.json?.success) {
+						span.addEvent('hit');
+						return resp.json.data;
 					}
 				}
 				if (!resp.json?.success && resp.json?.error) {
