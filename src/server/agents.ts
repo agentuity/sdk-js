@@ -45,6 +45,39 @@ class LocalAgentInvoker implements RemoteAgent {
 		this.description = description;
 	}
 
+	private isStringJSON(val: string) {
+		if (val && val.charAt(0) === '{' && val.charAt(val.length - 1) === '}') {
+			try {
+				JSON.parse(val);
+				return true;
+			} catch (e) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	private toPayload(data: Json | ArrayBuffer | string, contentType?: string) {
+		if (typeof data === 'string') {
+			return [
+				Buffer.from(data, 'utf-8').toString('base64'),
+				(contentType ?? this.isStringJSON(data))
+					? 'application/json'
+					: 'text/plain',
+			];
+		}
+		if (data instanceof ArrayBuffer) {
+			return [
+				Buffer.from(data).toString('base64'),
+				contentType ?? 'application/octet-stream',
+			];
+		}
+		return [
+			Buffer.from(JSON.stringify(data)).toString('base64'),
+			contentType ?? 'application/json',
+		];
+	}
+
 	/**
 	 * Runs the local agent with the provided data
 	 *
@@ -58,12 +91,11 @@ class LocalAgentInvoker implements RemoteAgent {
 		contentType?: string,
 		metadata?: Record<string, Json>
 	): Promise<AgentResponseType> {
-		// NOTE: even though the signature says it can be stuff other than a string,
-		// the router will only pass strings to the agent to this local agent via redirect
+		const [buffer, ct] = this.toPayload(data, contentType);
 		const payload = {
 			trigger: 'agent',
-			payload: data as string,
-			contentType: contentType as string,
+			payload: buffer,
+			contentType: ct,
 			metadata,
 		};
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {

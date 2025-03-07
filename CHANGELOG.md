@@ -1,5 +1,14 @@
 # @agentuity/sdk
 
+## 0.0.76
+
+### Patch Changes
+
+- Removed unused package
+  AgentRequest metadata is now a getter
+  AgentRequest metadata() is not get()
+  Fixed issue with local agent-to-agent serialization
+
 ## 0.0.75
 
 ### Patch Changes

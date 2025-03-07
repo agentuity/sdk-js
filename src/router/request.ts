@@ -16,6 +16,15 @@ export default class AgentRequestHandler implements AgentRequest {
 	}
 
 	/**
+	 * Gets the content type for this request
+	 *
+	 * @returns The content type
+	 */
+	get contentType(): string {
+		return this.request.contentType;
+	}
+
+	/**
 	 * Gets the trigger for this request
 	 *
 	 * @returns The trigger string
@@ -84,13 +93,20 @@ export default class AgentRequestHandler implements AgentRequest {
 	}
 
 	/**
-	 * Gets metadata from the request
+	 * get the metadata object of the request
+	 */
+	get metadata(): Json {
+		return this.request.metadata ?? {};
+	}
+
+	/**
+	 * Gets metadata value from the request
 	 *
 	 * @param key - The metadata key to retrieve
 	 * @param defaultValue - Value to return if the key is not found
 	 * @returns The metadata value or defaultValue if not found
 	 */
-	metadata(key: string, defaultValue?: Json): Json {
+	get(key: string, defaultValue?: Json): Json {
 		if (this.request.metadata) {
 			return this.request.metadata[key] ?? defaultValue ?? null;
 		}

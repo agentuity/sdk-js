@@ -1,5 +1,4 @@
 import type { Tracer } from '@opentelemetry/api';
-import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Logger } from './logger';
 
 /**
@@ -442,14 +441,24 @@ export interface AgentContext {
 
 export interface AgentRequest {
 	/**
+	 * returns the content type for the request
+	 */
+	get contentType(): string;
+
+	/**
 	 * get the trigger of the request
 	 */
 	get trigger(): string;
 
 	/**
-	 * get the metadata of the request
+	 * get the metadata object of the request
 	 */
-	metadata(key: string, defaultValue?: Json): Json;
+	get metadata(): Json;
+
+	/**
+	 * get the metadata value of the request
+	 */
+	get(key: string, defaultValue?: Json): Json;
 
 	/**
 	 * get the payload of the request as an object of the given type
@@ -622,27 +631,6 @@ export interface AgentResponse {
 	 * return an OGG response with optional metadata
 	 */
 	ogg(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType;
-}
-
-export interface IOSchema {
-	source?: {
-		sms?: StandardSchemaV1;
-		voice?: StandardSchemaV1;
-		email?: StandardSchemaV1;
-		webhook?: StandardSchemaV1;
-		queue?: StandardSchemaV1;
-		agent?: StandardSchemaV1;
-		manual?: StandardSchemaV1;
-		cron?: StandardSchemaV1;
-	};
-	destination?: {
-		sms?: StandardSchemaV1;
-		voice?: StandardSchemaV1;
-		email?: StandardSchemaV1;
-		webhook?: StandardSchemaV1;
-		queue?: StandardSchemaV1;
-		agent?: StandardSchemaV1;
-	};
 }
 
 /**
