@@ -50,24 +50,67 @@ export class BunServer implements Server {
 
 		this.server = Bun.serve({
 			port: this.config.port,
+			routes: {
+				'/_health': new Response('OK'),
+				'/run/:id': {
+					POST: async (req) => {
+						const url = new URL(req.url);
+						const id = url.pathname.slice(5);
+						const body = await req.text();
+						const headers = req.headers.toJSON();
+						const resp = await fetch(
+							`http://127.0.0.1:${this.config.port}/${id}`,
+							{
+								method: 'POST',
+								body: safeStringify({
+									trigger: 'manual',
+									payload: Buffer.from(body).toString('base64'),
+									contentType:
+										req.headers.get('content-type') ??
+										'application/octet-stream',
+									metadata: headers,
+								}),
+								headers: {
+									'Content-Type': 'application/json',
+								},
+							}
+						);
+						if (resp.ok) {
+							const response = await resp.json();
+							if (response.payload) {
+								response.payload = Buffer.from(
+									response.payload,
+									'base64'
+								).toString('utf-8');
+							}
+							return new Response(safeStringify(response), {
+								status: resp.status,
+								headers: resp.headers,
+							});
+						}
+						return new Response(resp.body, {
+							status: resp.status,
+							headers: resp.headers,
+						});
+					},
+				},
+			},
 			async fetch(req) {
 				const url = new URL(req.url);
 				const method = req.method;
 
-				if (method === 'GET' && url.pathname === '/_health') {
-					return new Response('OK', {
-						status: 200,
-					});
-				}
 				if (method !== 'POST') {
 					return new Response('Method not allowed', {
 						status: 405,
 					});
 				}
 				if (!req.headers.get('content-type')?.includes('json')) {
-					return new Response('Invalid Content-Type', {
-						status: 400,
-					});
+					return new Response(
+						'Invalid Content-Type, Expected application/json',
+						{
+							status: 400,
+						}
+					);
 				}
 
 				// Extract trace context from headers
