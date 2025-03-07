@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.77
+
+### Patch Changes
+
+- Expose public run route for HTTP server for local testing
+
 ## 0.0.76
 
 ### Patch Changes
