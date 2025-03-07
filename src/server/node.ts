@@ -185,6 +185,9 @@ export class NodeServer implements Server {
 								return;
 							}
 
+							span.setAttribute('@agentuity/agentName', route.agent.name);
+							span.setAttribute('@agentuity/agentId', route.agent.id);
+
 							try {
 								const agentReq = {
 									request: payload as IncomingRequest,

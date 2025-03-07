@@ -168,6 +168,9 @@ export class BunServer implements Server {
 									});
 								}
 
+								span.setAttribute('@agentuity/agentName', route.agent.name);
+								span.setAttribute('@agentuity/agentId', route.agent.id);
+
 								try {
 									const resp = await route.handler({
 										url: req.url,
