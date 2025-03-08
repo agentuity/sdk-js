@@ -29,12 +29,14 @@ export function getRoutesHelpText(host: string, routes: ServerRoute[]) {
 		buffer.push(`${route.method} /run${route.path} [${route.agent.name}]`);
 	}
 	buffer.push('');
-	buffer.push('Example usage:');
-	buffer.push('');
-	buffer.push(
-		`curl http://${host}/run${routes[0].path} \\\n\t--json '{"prompt":"Hello"}'`
-	);
-	buffer.push('');
+	if (process.platform === 'darwin' || process.platform === 'linux') {
+		buffer.push('Example usage:');
+		buffer.push('');
+		buffer.push(
+			`curl http://${host}/run${routes[0].path} \\\n\t--json '{"prompt":"Hello"}'`
+		);
+		buffer.push('');
+	}
 	return buffer.join('\n');
 }
 

@@ -69,7 +69,7 @@ export class BunServer implements Server {
 					POST: async (req) => {
 						const url = new URL(req.url);
 						const id = url.pathname.slice(5);
-						const body = await req.text();
+						const body = await req.arrayBuffer();
 						const headers = req.headers.toJSON();
 						const resp = await fetch(
 							`http://127.0.0.1:${this.config.port}/${id}`,
