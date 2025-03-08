@@ -197,12 +197,15 @@ export class BunServer implements Server {
 												url: req.url,
 												headers: req.headers.toJSON(),
 												request: body as IncomingRequest,
+												setTimeout: (val: number) =>
+													this.server?.timeout(req, val),
 											});
 											const result = {
 												payload: resp.data.base64,
 												contentType: resp.data.contentType,
 												metadata: resp.metadata,
 											};
+											span.setAttribute('http.status_code', '200');
 											span.setStatus({ code: SpanStatusCode.OK });
 											return new Response(safeStringify(result), {
 												headers: injectTraceContextToHeaders({

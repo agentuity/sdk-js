@@ -138,7 +138,8 @@ export class NodeServer implements Server {
 					body: safeStringify({
 						trigger: 'manual',
 						payload: body.toString('base64'),
-						contentType: 'application/json',
+						contentType:
+							req.headers['content-type'] || 'application/octet-stream',
 						metadata: this.getHeaders(req),
 					}),
 					headers: {
@@ -154,9 +155,7 @@ export class NodeServer implements Server {
 					'Content-Type': respBody.contentType,
 					Server: response.headers.get('Server') || '',
 				});
-				const output = Buffer.from(respBody.payload, 'base64').toString(
-					'utf-8'
-				);
+				const output = Buffer.from(respBody.payload, 'base64');
 				res.write(output);
 				res.end();
 				return;
@@ -251,6 +250,7 @@ export class NodeServer implements Server {
 									request: payload as IncomingRequest,
 									url: req.url ?? '',
 									headers: this.getHeaders(req),
+									setTimeout: (val: number) => req.setTimeout(val),
 								};
 								const response = await route.handler(agentReq);
 								const respPayload = {

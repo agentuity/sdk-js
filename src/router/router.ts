@@ -240,6 +240,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 								const redirect =
 									handlerResponse as unknown as AgentRedirectResponse;
 								const agent = await context.getAgent(redirect.agent);
+								req.setTimeout(255); // increase the timeout for the redirect
 								const redirectResponse = await agentRedirectRun(
 									logger,
 									config,
