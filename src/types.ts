@@ -50,7 +50,7 @@ export interface Data {
 	/**
 	 * the binary data represented as a Uint8Array<ArrayBuffer>
 	 */
-	binary: Uint8Array<ArrayBuffer>;
+	binary: Uint8Array;
 
 	/**
 	 * the binary data represented as a Buffer
@@ -63,7 +63,7 @@ export interface Data {
  */
 export type DataType =
 	| Buffer
-	| Uint8Array<ArrayBuffer>
+	| Uint8Array
 	| ArrayBuffer
 	| string
 	| Json

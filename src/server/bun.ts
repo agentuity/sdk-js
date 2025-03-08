@@ -50,6 +50,7 @@ export class BunServer implements Server {
 
 		this.server = Bun.serve({
 			port: this.config.port,
+			idleTimeout: 60,
 			routes: {
 				'/': {
 					GET: async (req) => {
@@ -67,6 +68,7 @@ export class BunServer implements Server {
 				'/_health': new Response('OK'),
 				'/run/:id': {
 					POST: async (req) => {
+						this.server?.timeout(req, 60);
 						const url = new URL(req.url);
 						const id = url.pathname.slice(5);
 						const body = await req.arrayBuffer();
@@ -96,6 +98,7 @@ export class BunServer implements Server {
 								headers: {
 									...resp.headers,
 									'Content-Type': response.contentType,
+									'Content-Length': buf.byteLength.toString(),
 								},
 							});
 						}
@@ -123,6 +126,7 @@ export class BunServer implements Server {
 								}
 							);
 						}
+						this.server?.timeout(req, 60);
 
 						// Extract trace context from headers
 						const extractedContext = extractTraceContextFromBunRequest(req);

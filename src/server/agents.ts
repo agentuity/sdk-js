@@ -7,7 +7,7 @@ import type {
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
-import { safeStringify } from './util';
+import { toDataType, safeStringify } from './util';
 import { injectTraceContextToHeaders } from './otel';
 
 // FIXME: add spans for these
@@ -46,11 +46,15 @@ class LocalAgentInvoker implements RemoteAgent {
 	}
 
 	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
+		const body = await toDataType(
+			'agent',
+			args as unknown as InvocationArguments
+		);
 		const headers = {};
 		injectTraceContextToHeaders(headers);
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 			method: 'POST',
-			body: safeStringify(args),
+			body: safeStringify(body),
 			headers: {
 				...headers,
 				'Content-Type': 'application/json',
@@ -99,11 +103,15 @@ class RemoteAgentInvoker implements RemoteAgent {
 	}
 
 	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
+		const body = await toDataType(
+			'agent',
+			args as unknown as InvocationArguments
+		);
 		const headers = {};
 		injectTraceContextToHeaders(headers);
 		const resp = await POST<{ success: boolean; message?: string }>(
 			`/sdk/agent/${this.id}/run/${this.replyId}`,
-			safeStringify(args),
+			safeStringify(body),
 			{
 				...headers,
 				'Content-Type': 'application/json',

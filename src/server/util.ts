@@ -1,5 +1,12 @@
 import { DataHandler } from '../router/data';
-import type { AgentResponseData, DataType, Data, JsonObject } from '../types';
+import type {
+	AgentResponseData,
+	DataType,
+	Data,
+	JsonObject,
+	InvocationArguments,
+	TriggerType,
+} from '../types';
 import type { ServerRoute } from './types';
 
 export function safeStringify(obj: unknown) {
@@ -38,6 +45,98 @@ export function getRoutesHelpText(host: string, routes: ServerRoute[]) {
 		buffer.push('');
 	}
 	return buffer.join('\n');
+}
+
+export async function toDataType(
+	trigger: TriggerType,
+	args: InvocationArguments
+): Promise<{
+	trigger: TriggerType;
+	payload: string;
+	contentType: string;
+	metadata?: JsonObject;
+}> {
+	if (args.data === null || args.data === undefined) {
+		return {
+			trigger,
+			payload: '',
+			contentType: 'text/plain',
+			metadata: args.metadata,
+		};
+	}
+	if (typeof args.data === 'string') {
+		return {
+			trigger,
+			payload: Buffer.from(args.data).toString('base64'),
+			contentType: 'text/plain',
+			metadata: args.metadata,
+		};
+	}
+	if (typeof args.data === 'object') {
+		if ('contentType' in args.data) {
+			const value = args.data as Data;
+			return {
+				trigger,
+				payload: value.base64,
+				contentType: value.contentType,
+				metadata: args.metadata,
+			};
+		}
+		if (args.data instanceof ArrayBuffer) {
+			return {
+				trigger,
+				payload: Buffer.from(args.data).toString('base64'),
+				contentType: args.contentType ?? 'application/octet-stream',
+				metadata: args.metadata,
+			};
+		}
+		if (args.data instanceof Buffer) {
+			return {
+				trigger,
+				payload: args.data.toString('base64'),
+				contentType: args.contentType ?? 'application/octet-stream',
+				metadata: args.metadata,
+			};
+		}
+		if (args.data instanceof Blob) {
+			return {
+				trigger,
+				payload: Buffer.from(await args.data.arrayBuffer()).toString('base64'),
+				contentType: args.contentType ?? 'application/octet-stream',
+				metadata: args.metadata,
+			};
+		}
+		if (args.data instanceof Uint8Array) {
+			return {
+				trigger,
+				payload: Buffer.from(args.data).toString('base64'),
+				contentType: args.contentType ?? 'application/octet-stream',
+				metadata: args.metadata,
+			};
+		}
+		if (args.data instanceof ReadableStream) {
+			const reader = args.data.getReader();
+			const chunks: string[] = [];
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				chunks.push(value);
+			}
+			return {
+				trigger,
+				payload: Buffer.from(chunks.join('')).toString('base64'),
+				contentType: args.contentType ?? 'application/octet-stream',
+				metadata: args.metadata,
+			};
+		}
+		return {
+			trigger,
+			payload: Buffer.from(safeStringify(args.data)).toString('base64'),
+			contentType: args.contentType ?? 'application/json',
+			metadata: args.metadata,
+		};
+	}
+	throw new Error('Invalid data type');
 }
 
 export async function fromDataType(
