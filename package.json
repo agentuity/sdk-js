@@ -21,7 +21,7 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": ["ai", "agents", "agenuity", "ai agent", "agent"],
+	"keywords": ["ai", "agents", "agentuity", "ai agent", "agent"],
 	"scripts": {
 		"build": "rm -rf dist && tsup",
 		"bun:start": "bun run build && bun run ./dist/index.js",
