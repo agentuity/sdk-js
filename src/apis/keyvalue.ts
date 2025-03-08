@@ -121,7 +121,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 
 				const resp = await PUT(
 					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					datavalue.data.binary.buffer,
+					Buffer.from(datavalue.data.base64, 'base64').buffer,
 					{
 						'Content-Type': datavalue.data.contentType,
 					}

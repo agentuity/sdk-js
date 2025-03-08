@@ -12,6 +12,9 @@ import {
 } from './otel';
 import { safeStringify, getRoutesHelpText } from './util';
 
+const idleTimeout = 255; // expressed in seconds
+const timeout = 600;
+
 /**
  * Bun implementation of the Server interface
  */
@@ -50,7 +53,7 @@ export class BunServer implements Server {
 
 		this.server = Bun.serve({
 			port: this.config.port,
-			idleTimeout: 60,
+			idleTimeout: idleTimeout,
 			routes: {
 				'/': {
 					GET: async (req) => {
@@ -68,7 +71,7 @@ export class BunServer implements Server {
 				'/_health': new Response('OK'),
 				'/run/:id': {
 					POST: async (req) => {
-						this.server?.timeout(req, 60);
+						this.server?.timeout(req, timeout);
 						const url = new URL(req.url);
 						const id = url.pathname.slice(5);
 						const body = await req.arrayBuffer();
@@ -126,7 +129,7 @@ export class BunServer implements Server {
 								}
 							);
 						}
-						this.server?.timeout(req, 60);
+						this.server?.timeout(req, timeout);
 
 						// Extract trace context from headers
 						const extractedContext = extractTraceContextFromBunRequest(req);

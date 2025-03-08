@@ -18,6 +18,8 @@ import {
 import { safeStringify, safeParse, getRoutesHelpText } from './util';
 import type { RemoteAgentResponse } from '../types';
 
+export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
+
 /**
  * Node.js implementation of the Server interface
  */
@@ -286,6 +288,8 @@ export class NodeServer implements Server {
 
 		return new Promise((resolve) => {
 			const server = this.server as ReturnType<typeof createHttpServer>;
+			server.requestTimeout = MAX_REQUEST_TIMEOUT;
+			server.timeout = MAX_REQUEST_TIMEOUT;
 			server.listen(this.port, () => {
 				this.logger.info(`Node server listening on port ${this.port}`);
 				resolve();
