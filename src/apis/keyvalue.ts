@@ -1,8 +1,16 @@
-import type { Json, KeyValueStorage } from '../types';
-import { DELETE, GET, PUT, type Body } from './api';
+import type {
+	DataResult,
+	DataResultFound,
+	DataResultNotFound,
+	DataType,
+	KeyValueStorage,
+	KeyValueStorageSetParams,
+} from '../types';
+import { DELETE, GET, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace } from '@opentelemetry/api';
-import { safeStringify } from '../server/util';
+import { fromDataType } from '../server/util';
+import { DataHandler } from '../router/data';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -15,7 +23,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 	 * @param key - the key to get the value of
 	 * @returns the value of the key
 	 */
-	async get(name: string, key: string): Promise<ArrayBuffer | null> {
+	async get(name: string, key: string): Promise<DataResult> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -37,11 +45,21 @@ export default class KeyValueAPI implements KeyValueStorage {
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
-					return null;
+					return { exists: false } as DataResultNotFound;
 				}
 				if (resp.status === 200) {
 					span.addEvent('hit');
-					return resp.response.arrayBuffer();
+					const result: DataResultFound = {
+						exists: true,
+						data: new DataHandler({
+							payload: await Buffer.from(
+								await resp.response.arrayBuffer()
+							).toString('base64'),
+							contentType:
+								resp.headers.get('content-type') ?? 'application/octet-stream',
+						}),
+					};
+					return result;
 				}
 				throw new Error(
 					`error getting keyvalue: ${resp.response.statusText} (${resp.response.status})`
@@ -66,8 +84,8 @@ export default class KeyValueAPI implements KeyValueStorage {
 	async set(
 		name: string,
 		key: string,
-		value: ArrayBuffer | string | Json,
-		ttl?: number
+		value: DataType,
+		params?: KeyValueStorageSetParams
 	): Promise<void> {
 		const tracer = getTracer();
 		const currentContext = context.active();
@@ -78,8 +96,11 @@ export default class KeyValueAPI implements KeyValueStorage {
 		try {
 			span.setAttribute('name', name);
 			span.setAttribute('key', key);
-			if (ttl) {
-				span.setAttribute('ttl', ttl);
+			if (params?.ttl) {
+				span.setAttribute('ttl', params.ttl);
+			}
+			if (params?.contentType) {
+				span.setAttribute('contentType', params.contentType);
 			}
 
 			// Create a new context with the child span
@@ -87,40 +108,22 @@ export default class KeyValueAPI implements KeyValueStorage {
 
 			// Execute the operation within the new context
 			await context.with(spanContext, async () => {
-				let body: Body | undefined;
-				let contentType: string;
-				if (typeof value === 'string') {
-					body = value;
-					contentType = 'text/plain';
-				} else if (typeof value === 'object') {
-					if (value instanceof ArrayBuffer) {
-						body = value;
-						contentType = 'application/octet-stream';
-					} else {
-						body = safeStringify(value);
-						contentType = 'application/json';
-					}
-				} else {
-					throw new Error(
-						'Invalid value type. Expected either string, ArrayBuffer or object'
-					);
-				}
-
+				const datavalue = await fromDataType(value, params?.contentType);
 				let ttlstr = '';
-				if (ttl) {
-					if (ttl < 60) {
+				if (params?.ttl) {
+					if (params.ttl < 60) {
 						throw new Error(
-							`ttl for keyvalue set must be at least 60 seconds, got ${ttl}`
+							`ttl for keyvalue set must be at least 60 seconds, got ${params.ttl}`
 						);
 					}
-					ttlstr = `/${ttl}`;
+					ttlstr = `/${params.ttl}`;
 				}
 
 				const resp = await PUT(
 					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					body,
+					datavalue.data.binary.buffer,
 					{
-						'Content-Type': contentType,
+						'Content-Type': datavalue.data.contentType,
 					}
 				);
 

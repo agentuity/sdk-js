@@ -1,14 +1,14 @@
 import type {
-	AgentResponseType,
 	GetAgentRequestParams,
-	Json,
 	RemoteAgent,
+	InvocationArguments,
+	RemoteAgentResponse,
 } from '../types';
-import { toAgentResponseJSON } from '../router';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
 import { safeStringify } from './util';
+import { injectTraceContextToHeaders } from './otel';
 
 // FIXME: add spans for these
 
@@ -45,72 +45,19 @@ class LocalAgentInvoker implements RemoteAgent {
 		this.description = description;
 	}
 
-	private isStringJSON(val: string) {
-		if (val && val.charAt(0) === '{' && val.charAt(val.length - 1) === '}') {
-			try {
-				JSON.parse(val);
-				return true;
-			} catch (e) {
-				return false;
-			}
-		}
-		return false;
-	}
-
-	private toPayload(data: Json | ArrayBuffer | string, contentType?: string) {
-		if (typeof data === 'string') {
-			return [
-				Buffer.from(data, 'utf-8').toString('base64'),
-				(contentType ?? this.isStringJSON(data))
-					? 'application/json'
-					: 'text/plain',
-			];
-		}
-		if (data instanceof ArrayBuffer) {
-			return [
-				Buffer.from(data).toString('base64'),
-				contentType ?? 'application/octet-stream',
-			];
-		}
-		return [
-			Buffer.from(JSON.stringify(data)).toString('base64'),
-			contentType ?? 'application/json',
-		];
-	}
-
-	/**
-	 * Runs the local agent with the provided data
-	 *
-	 * @param data - The data to send to the agent
-	 * @param contentType - The content type of the data
-	 * @param metadata - Additional metadata to include with the request
-	 * @returns A promise that resolves to the agent response
-	 */
-	async run(
-		data: Json | ArrayBuffer | string,
-		contentType?: string,
-		metadata?: Record<string, Json>
-	): Promise<AgentResponseType> {
-		const [buffer, ct] = this.toPayload(data, contentType);
-		const payload = {
-			trigger: 'agent',
-			payload: buffer,
-			contentType: ct,
-			metadata,
-		};
+	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
+		const headers = {};
+		injectTraceContextToHeaders(headers);
 		const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 			method: 'POST',
-			body: safeStringify(payload),
+			body: safeStringify(args),
 			headers: {
+				...headers,
 				'Content-Type': 'application/json',
 			},
 		});
 		if (resp.ok) {
-			const json = await resp.json();
-			return {
-				...json,
-				agentId: this.id,
-			} as AgentResponseType;
+			return (await resp.json()) as RemoteAgentResponse;
 		}
 		throw new Error(await resp.text());
 	}
@@ -151,40 +98,18 @@ class RemoteAgentInvoker implements RemoteAgent {
 		this.replyId = crypto.randomUUID();
 	}
 
-	/**
-	 * Runs the remote agent with the provided data
-	 *
-	 * @param data - The data to send to the agent
-	 * @param contentType - The content type of the data
-	 * @param metadata - Additional metadata to include with the request
-	 * @returns A promise that resolves to the agent response
-	 */
-	async run(
-		data: Json | ArrayBuffer | string,
-		contentType?: string,
-		metadata?: Record<string, Json>
-	): Promise<AgentResponseType> {
-		const payload = toAgentResponseJSON(
-			'agent',
-			data,
-			'base64',
-			contentType,
-			metadata
-		);
-		const resp = await POST(
+	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
+		const headers = {};
+		injectTraceContextToHeaders(headers);
+		const resp = await POST<{ success: boolean; message?: string }>(
 			`/sdk/agent/${this.id}/run/${this.replyId}`,
-			safeStringify(payload),
+			safeStringify(args),
 			{
+				...headers,
 				'Content-Type': 'application/json',
 			}
 		);
-		if (resp.status !== 200) {
-			throw new Error(await resp.response.text());
-		}
-		const respPayload = resp.json as {
-			success: boolean;
-			message?: string;
-		};
+		const respPayload = resp.json;
 		if (respPayload?.success) {
 			const started = Date.now();
 			this.logger.debug(
@@ -192,14 +117,14 @@ class RemoteAgentInvoker implements RemoteAgent {
 				this.replyId
 			);
 			const handler = {
-				resolve: (_value: AgentResponseType) => {
+				resolve: (_value: RemoteAgentResponse) => {
 					return;
 				},
 				reject: (_reason?: Error) => {
 					return;
 				},
 			};
-			const promise = new Promise<AgentResponseType>((resolve, reject) => {
+			const promise = new Promise<RemoteAgentResponse>((resolve, reject) => {
 				handler.resolve = resolve;
 				handler.reject = reject;
 			});
@@ -210,14 +135,6 @@ class RemoteAgentInvoker implements RemoteAgent {
 				this.replyId,
 				Date.now() - started
 			);
-			if ('payload' in respPayload && respPayload.payload) {
-				const data = { ...respPayload };
-				data.payload = Buffer.from(
-					respPayload.payload as string,
-					'base64'
-				).toString('utf-8');
-				return data;
-			}
 			return respPayload;
 		}
 		throw new Error(
@@ -338,7 +255,7 @@ interface PromiseWithResolver<T> {
  * Handles callbacks for asynchronous agent responses
  */
 export class CallbackAgentHandler {
-	private pending: Map<string, PromiseWithResolver<AgentResponseType>>;
+	private pending: Map<string, PromiseWithResolver<RemoteAgentResponse>>;
 
 	/**
 	 * Creates a new callback agent handler
@@ -351,7 +268,7 @@ export class CallbackAgentHandler {
 	 * register is called to register a promise callback handler for a pending
 	 * remote agent response.
 	 */
-	register(id: string, promise: PromiseWithResolver<AgentResponseType>) {
+	register(id: string, promise: PromiseWithResolver<RemoteAgentResponse>) {
 		this.pending.set(id, promise);
 	}
 
@@ -359,7 +276,7 @@ export class CallbackAgentHandler {
 	 * received is called when a remote agent response is received to forward to the
 	 * promise callback handler.
 	 */
-	received(id: string, response: AgentResponseType) {
+	received(id: string, response: RemoteAgentResponse) {
 		const promise = this.pending.get(id);
 		if (promise) {
 			this.pending.delete(id);
