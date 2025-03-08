@@ -9,14 +9,16 @@ import {
 	createServer as createHttpServer,
 	type IncomingMessage,
 } from 'node:http';
-import type { AgentResponseType } from '../types';
 import { callbackAgentHandler } from './agents';
 import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
 	extractTraceContextFromNodeRequest,
 	injectTraceContextToNodeResponse,
 } from './otel';
-import { safeStringify } from './util';
+import { safeStringify, safeParse, getRoutesHelpText } from './util';
+import type { RemoteAgentResponse } from '../types';
+
+export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
 /**
  * Node.js implementation of the Server interface
@@ -65,7 +67,7 @@ export class NodeServer implements Server {
 			req.on('data', (chunk) => chunks.push(chunk));
 			req.on('end', async () => {
 				const body = Buffer.concat(chunks);
-				const payload = JSON.parse(body.toString());
+				const payload = safeParse(body.toString());
 				resolve(payload as T);
 			});
 			req.on('error', (err) => {
@@ -74,6 +76,19 @@ export class NodeServer implements Server {
 		});
 	}
 
+	private getBuffer(req: IncomingMessage): Promise<Buffer> {
+		return new Promise((resolve, reject) => {
+			const chunks: Buffer[] = [];
+			req.on('data', (chunk) => chunks.push(chunk));
+			req.on('end', async () => {
+				const body = Buffer.concat(chunks);
+				resolve(body);
+			});
+			req.on('error', (err) => {
+				reject(err);
+			});
+		});
+	}
 	/**
 	 * Gets the headers from the request
 	 */
@@ -100,13 +115,55 @@ export class NodeServer implements Server {
 				res.end();
 				return;
 			}
+			if (req.method === 'GET' && req.url === '/') {
+				res.writeHead(200, {
+					'Content-Type': 'text/plain',
+				});
+				res.end(
+					getRoutesHelpText(req.headers.host ?? 'localhost:3500', this.routes)
+				);
+				return;
+			}
 			if (req.method !== 'POST') {
 				res.writeHead(405);
 				res.end();
 				return;
 			}
+
+			if (req.url?.startsWith('/run/agent_')) {
+				const id = req.url.slice(5);
+				const body = await this.getBuffer(req);
+				const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
+					method: 'POST',
+					body: safeStringify({
+						trigger: 'manual',
+						payload: body.toString('base64'),
+						contentType:
+							req.headers['content-type'] || 'application/octet-stream',
+						metadata: this.getHeaders(req),
+					}),
+					headers: {
+						'Content-Type': 'application/json',
+						'User-Agent': req.headers['user-agent'] || '',
+					},
+				});
+				const respBody = (await response.json()) as {
+					contentType: string;
+					payload: string;
+				};
+				res.writeHead(response.status, {
+					'Content-Type': respBody.contentType,
+					Server: response.headers.get('Server') || '',
+				});
+				const output = Buffer.from(respBody.payload, 'base64');
+				res.write(output);
+				res.end();
+				return;
+			}
+
 			if (!req.headers?.['content-type']?.includes('json')) {
 				res.writeHead(400);
+				res.write('Invalid content type, expected application/json');
 				res.end();
 				return;
 			}
@@ -143,7 +200,7 @@ export class NodeServer implements Server {
 							if (req.method === 'POST' && req.url?.startsWith('/_reply/')) {
 								span.setAttribute('http.status_code', '202');
 								const id = req.url.slice(8);
-								const body = await this.getJSON<AgentResponseType>(req);
+								const body = await this.getJSON<RemoteAgentResponse>(req);
 								callbackAgentHandler.received(id, body);
 								span.setStatus({ code: SpanStatusCode.OK });
 								injectTraceContextToNodeResponse(res);
@@ -193,15 +250,21 @@ export class NodeServer implements Server {
 									request: payload as IncomingRequest,
 									url: req.url ?? '',
 									headers: this.getHeaders(req),
+									setTimeout: (val: number) => req.setTimeout(val),
 								};
 								const response = await route.handler(agentReq);
+								const respPayload = {
+									payload: response.data.base64,
+									contentType: response.data.contentType,
+									metadata: response.metadata,
+								};
 								injectTraceContextToNodeResponse(res);
 								span.setAttribute('http.status_code', '200');
 								res.writeHead(200, {
 									'Content-Type': 'application/json',
 									Server: `Agentuity NodeJS/${sdkVersion}`,
 								});
-								res.end(safeStringify(response));
+								res.end(safeStringify(respPayload));
 								span.setStatus({ code: SpanStatusCode.OK });
 							} catch (err) {
 								this.logger.error('Server error', err);
@@ -225,6 +288,8 @@ export class NodeServer implements Server {
 
 		return new Promise((resolve) => {
 			const server = this.server as ReturnType<typeof createHttpServer>;
+			server.requestTimeout = MAX_REQUEST_TIMEOUT;
+			server.timeout = MAX_REQUEST_TIMEOUT;
 			server.listen(this.port, () => {
 				this.logger.info(`Node server listening on port ${this.port}`);
 				resolve();
