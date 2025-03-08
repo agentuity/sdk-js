@@ -211,16 +211,16 @@ export async function fromDataType(
 		}
 		if (data instanceof ReadableStream) {
 			const reader = data.getReader();
-			const chunks: string[] = [];
+			let buffer: Uint8Array = new Uint8Array();
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
-				chunks.push(value);
+				buffer = new Uint8Array([...buffer, ...value]);
 			}
 			return {
 				data: new DataHandler({
 					contentType: contentType ?? 'application/octet-stream',
-					payload: Buffer.from(chunks.join('')).toString('base64'),
+					payload: Buffer.from(buffer).toString('base64'),
 				}),
 				metadata,
 			};
