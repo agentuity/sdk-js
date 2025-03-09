@@ -22,7 +22,7 @@ interface VectorUpsertSuccessResponse {
  */
 interface VectorUpsertErrorResponse {
 	success: false;
-	error: string;
+	message: string;
 }
 
 /**
@@ -45,7 +45,7 @@ interface VectorSearchSuccessResponse {
  */
 interface VectorSearchErrorResponse {
 	success: false;
-	error: string;
+	message: string;
 }
 
 /**
@@ -68,7 +68,7 @@ interface VectorDeleteSuccessResponse {
  */
 interface VectorDeleteErrorResponse {
 	success: false;
-	error: string;
+	message: string;
 }
 
 /**
@@ -119,8 +119,8 @@ export default class VectorAPI implements VectorStorage {
 						return json.data.map((o) => o.id);
 					}
 				}
-				if (!resp.json?.success && resp.json?.error) {
-					throw new Error(resp.json.error);
+				if (!resp.json?.success && resp.json?.message) {
+					throw new Error(resp.json.message);
 				}
 				throw new Error('unknown error');
 			});
@@ -169,8 +169,8 @@ export default class VectorAPI implements VectorStorage {
 						return resp.json.data;
 					}
 				}
-				if (!resp.json?.success && resp.json?.error) {
-					throw new Error(resp.json.error);
+				if (!resp.json?.success && resp.json?.message) {
+					throw new Error(resp.json.message);
 				}
 				throw new Error('unknown error');
 			});
@@ -223,8 +223,8 @@ export default class VectorAPI implements VectorStorage {
 						return resp.json.data;
 					}
 				}
-				if (!resp.json?.success && resp.json?.error) {
-					throw new Error(resp.json.error);
+				if (!resp.json?.success && resp.json?.message) {
+					throw new Error(resp.json.message);
 				}
 				throw new Error('unknown error');
 			});
@@ -268,8 +268,8 @@ export default class VectorAPI implements VectorStorage {
 						return resp.json.ids.length;
 					}
 				}
-				if (!resp.json?.success && resp.json?.error) {
-					throw new Error(resp.json.error);
+				if (!resp.json?.success && resp.json?.message) {
+					throw new Error(resp.json.message);
 				}
 				throw new Error('unknown error');
 			});
