@@ -286,7 +286,11 @@ export interface InvocationArguments {
 	metadata?: JsonObject;
 }
 
-export type RemoteAgentResponse = Omit<DataPayload, 'trigger'>;
+export interface RemoteAgentResponse {
+	data: Data;
+	contentType: string;
+	metadata?: JsonObject;
+}
 
 export interface RemoteAgent {
 	/**

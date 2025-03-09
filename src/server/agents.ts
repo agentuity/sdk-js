@@ -3,12 +3,14 @@ import type {
 	RemoteAgent,
 	InvocationArguments,
 	RemoteAgentResponse,
+	DataPayload,
 } from '../types';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
 import { toDataType, safeStringify } from './util';
 import { injectTraceContextToHeaders } from './otel';
+import { DataHandler } from '../router/data';
 
 // FIXME: add spans for these
 
@@ -61,7 +63,12 @@ class LocalAgentInvoker implements RemoteAgent {
 			},
 		});
 		if (resp.ok) {
-			return (await resp.json()) as RemoteAgentResponse;
+			const result = (await resp.json()) as DataPayload;
+			return {
+				data: new DataHandler(result),
+				contentType: result.contentType,
+				metadata: result.metadata,
+			};
 		}
 		throw new Error(await resp.text());
 	}
@@ -125,14 +132,14 @@ class RemoteAgentInvoker implements RemoteAgent {
 				this.replyId
 			);
 			const handler = {
-				resolve: (_value: RemoteAgentResponse) => {
+				resolve: (_value: DataPayload) => {
 					return;
 				},
 				reject: (_reason?: Error) => {
 					return;
 				},
 			};
-			const promise = new Promise<RemoteAgentResponse>((resolve, reject) => {
+			const promise = new Promise<DataPayload>((resolve, reject) => {
 				handler.resolve = resolve;
 				handler.reject = reject;
 			});
@@ -143,7 +150,11 @@ class RemoteAgentInvoker implements RemoteAgent {
 				this.replyId,
 				Date.now() - started
 			);
-			return respPayload;
+			return {
+				data: new DataHandler(respPayload),
+				contentType: respPayload.contentType,
+				metadata: respPayload.metadata,
+			};
 		}
 		throw new Error(
 			respPayload?.message ?? 'unknown error from agent response'
@@ -263,7 +274,7 @@ interface PromiseWithResolver<T> {
  * Handles callbacks for asynchronous agent responses
  */
 export class CallbackAgentHandler {
-	private pending: Map<string, PromiseWithResolver<RemoteAgentResponse>>;
+	private pending: Map<string, PromiseWithResolver<DataPayload>>;
 
 	/**
 	 * Creates a new callback agent handler
@@ -276,7 +287,7 @@ export class CallbackAgentHandler {
 	 * register is called to register a promise callback handler for a pending
 	 * remote agent response.
 	 */
-	register(id: string, promise: PromiseWithResolver<RemoteAgentResponse>) {
+	register(id: string, promise: PromiseWithResolver<DataPayload>) {
 		this.pending.set(id, promise);
 	}
 
@@ -284,7 +295,7 @@ export class CallbackAgentHandler {
 	 * received is called when a remote agent response is received to forward to the
 	 * promise callback handler.
 	 */
-	received(id: string, response: RemoteAgentResponse) {
+	received(id: string, response: DataPayload) {
 		const promise = this.pending.get(id);
 		if (promise) {
 			this.pending.delete(id);
