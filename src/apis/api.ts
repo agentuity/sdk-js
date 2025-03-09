@@ -73,7 +73,7 @@ export async function send<K>(
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
 		'Content-Type': 'application/json',
-		'User-Agent': `@agentuity/sdk (${sdkVersion})`,
+		'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 	};
 	// allow headers to be overridden
 	for (const key in request.headers) {
