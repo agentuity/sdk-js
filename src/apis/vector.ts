@@ -6,7 +6,7 @@ import type {
 } from '../types';
 import { DELETE, GET, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
-import { context, trace } from '@opentelemetry/api';
+import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { safeStringify } from '../server/util';
 
 /**
@@ -116,6 +116,7 @@ export default class VectorAPI implements VectorStorage {
 				if (resp.status === 200) {
 					if (resp.json?.success) {
 						const json = resp.json as unknown as { data: { id: string }[] };
+						span.setStatus({ code: SpanStatusCode.OK });
 						return json.data.map((o) => o.id);
 					}
 				}
@@ -161,11 +162,13 @@ export default class VectorAPI implements VectorStorage {
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
+					span.setStatus({ code: SpanStatusCode.OK });
 					return [];
 				}
 				if (resp.status === 200) {
 					if (resp.json?.success) {
 						span.addEvent('hit');
+						span.setStatus({ code: SpanStatusCode.OK });
 						return resp.json.data;
 					}
 				}
@@ -199,7 +202,14 @@ export default class VectorAPI implements VectorStorage {
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.search',
-			{ attributes: { name } },
+			{
+				attributes: {
+					name,
+					query: params.query,
+					limit: params.limit,
+					similarity: params.similarity,
+				},
+			},
 			currentContext
 		);
 
@@ -215,11 +225,13 @@ export default class VectorAPI implements VectorStorage {
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
+					span.setStatus({ code: SpanStatusCode.OK });
 					return [];
 				}
 				if (resp.status === 200) {
 					if (resp.json?.success) {
 						span.addEvent('hit');
+						span.setStatus({ code: SpanStatusCode.OK });
 						return resp.json.data;
 					}
 				}
@@ -250,7 +262,7 @@ export default class VectorAPI implements VectorStorage {
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.delete',
-			{ attributes: { name } },
+			{ attributes: { name, key } },
 			currentContext
 		);
 
@@ -265,6 +277,8 @@ export default class VectorAPI implements VectorStorage {
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {
+						span.addEvent('delete_count', resp.json.ids.length);
+						span.setStatus({ code: SpanStatusCode.OK });
 						return resp.json.ids.length;
 					}
 				}

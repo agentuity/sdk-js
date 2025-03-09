@@ -250,6 +250,15 @@ export interface VectorStorage {
 	upsert(name: string, ...documents: VectorUpsertParams[]): Promise<string[]>;
 
 	/**
+	 * get a vector from the vector storage by key
+	 *
+	 * @param name - the name of the vector storage
+	 * @param key - the key of the vector to get
+	 * @returns the results of the vector search
+	 */
+	get(name: string, key: string): Promise<VectorSearchResult[]>;
+
+	/**
 	 * search for vectors in the vector storage
 	 *
 	 * @param name - the name of the vector storage

@@ -8,7 +8,7 @@ import type {
 } from '../types';
 import { DELETE, GET, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
-import { context, trace } from '@opentelemetry/api';
+import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { fromDataType } from '../server/util';
 import { DataHandler } from '../router/data';
 
@@ -45,6 +45,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
+					span.setStatus({ code: SpanStatusCode.OK });
 					return { exists: false } as DataResultNotFound;
 				}
 				if (resp.status === 200) {
@@ -59,6 +60,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 								resp.headers.get('content-type') ?? 'application/octet-stream',
 						}),
 					};
+					span.setStatus({ code: SpanStatusCode.OK });
 					return result;
 				}
 				throw new Error(
@@ -132,6 +134,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 						`error setting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				}
+				span.setStatus({ code: SpanStatusCode.OK });
 			});
 		} catch (ex) {
 			recordException(span, ex);
@@ -175,6 +178,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 						`error deleting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				}
+				span.setStatus({ code: SpanStatusCode.OK });
 			});
 		} catch (ex) {
 			recordException(span, ex);
