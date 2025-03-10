@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.80
+
+### Patch Changes
+
+- Refactor the types to make it easier to use and fix a number of other small issues
+
 ## 0.0.79
 
 ### Patch Changes
