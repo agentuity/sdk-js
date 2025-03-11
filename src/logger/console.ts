@@ -42,29 +42,34 @@ export default class ConsoleLogger implements Logger {
 							try {
 								return `${key}=${typeof value === 'object' ? safeStringify(value) : value}`;
 							} catch (err) {
-								return `${key}=[Complex Object]`;
+								return `${key}=[object Object]`;
 							}
 						})
 						.join(' ')
 				: '';
+
+		let _message = message;
+		if (typeof _message === 'object') {
+			_message = safeStringify(_message);
+		}
 
 		// Format the message with args
 		let formattedMessage: string;
 		try {
 			// Only use format if we have arguments
 			if (args.length > 0) {
-				formattedMessage = format(message, ...args);
+				formattedMessage = format(_message, ...args);
 			} else {
-				formattedMessage = message;
+				formattedMessage = _message;
 			}
 		} catch (err) {
 			// If formatting fails, use a simple concatenation
-			formattedMessage = `${message} ${args
+			formattedMessage = `${_message} ${args
 				.map((arg) => {
 					try {
 						return typeof arg === 'object' ? safeStringify(arg) : String(arg);
 					} catch (err) {
-						return '[Complex Object]';
+						return '[object Object]';
 					}
 				})
 				.join(' ')}`;
@@ -87,7 +92,7 @@ export default class ConsoleLogger implements Logger {
 		} catch (err) {
 			// Fallback to direct logging if formatting fails
 			__originalConsole.debug(`${black}[DEBUG]${reset} ${message}`, ...args);
-			__originalConsole.debug('Error formatting log message:', err);
+			__originalConsole.error('Error formatting log message:', err);
 		}
 	}
 
@@ -104,7 +109,7 @@ export default class ConsoleLogger implements Logger {
 		} catch (err) {
 			// Fallback to direct logging if formatting fails
 			__originalConsole.info(`${green}[INFO]${reset}  ${message}`, ...args);
-			__originalConsole.debug('Error formatting log message:', err);
+			__originalConsole.error('Error formatting log message:', err);
 		}
 	}
 
@@ -121,7 +126,7 @@ export default class ConsoleLogger implements Logger {
 		} catch (err) {
 			// Fallback to direct logging if formatting fails
 			__originalConsole.warn(`${yellow}[WARN]${reset}  ${message}`, ...args);
-			__originalConsole.debug('Error formatting log message:', err);
+			__originalConsole.error('Error formatting log message:', err);
 		}
 	}
 
@@ -138,7 +143,7 @@ export default class ConsoleLogger implements Logger {
 		} catch (err) {
 			// Fallback to direct logging if formatting fails
 			__originalConsole.error(`${red}[ERROR]${reset} ${message}`, ...args);
-			__originalConsole.debug('Error formatting log message:', err);
+			__originalConsole.error('Error formatting log message:', err);
 		}
 	}
 
