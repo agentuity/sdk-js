@@ -1,4 +1,4 @@
-import type { AgentRequest, Json, DataPayload } from '../types';
+import type { AgentRequest, Json, DataPayload, TriggerMetadataMap } from '../types';
 import { DataHandler } from './data';
 
 /**
@@ -39,11 +39,25 @@ export default class AgentRequestHandler implements AgentRequest {
 	 * @param key - the key to get the value of
 	 * @param defaultValue - the default value to return if the key is not found
 	 */
-	get<K extends string>(key: K, defaultValue?: Json): any {
+	get<K extends string>(key: K, defaultValue?: Json): this['trigger'] extends keyof TriggerMetadataMap
+		? K extends keyof TriggerMetadataMap[this['trigger']]
+			? TriggerMetadataMap[this['trigger']][K]
+			: Json
+		: Json {
 		const metadata = this.metadata;
 		if (key in metadata) {
-			return metadata[key];
+			// Type assertion to match the complex conditional return type
+			return metadata[key] as this['trigger'] extends keyof TriggerMetadataMap
+				? K extends keyof TriggerMetadataMap[this['trigger']]
+					? TriggerMetadataMap[this['trigger']][K]
+					: Json
+				: Json;
 		}
-		return defaultValue ?? null;
+		// Type assertion for default value
+		return (defaultValue ?? null) as this['trigger'] extends keyof TriggerMetadataMap
+			? K extends keyof TriggerMetadataMap[this['trigger']]
+				? TriggerMetadataMap[this['trigger']][K]
+				: Json
+			: Json;
 	}
 }
