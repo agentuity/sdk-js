@@ -35,9 +35,11 @@ export default class AgentRequestHandler implements AgentRequest {
 	}
 
 	/**
-	 * get the metadata value of the request
+	 * get the metadata value of the request with proper typing based on the trigger type
+	 * @param key - the key to get the value of
+	 * @param defaultValue - the default value to return if the key is not found
 	 */
-	get(key: string, defaultValue?: Json) {
+	get<K extends string>(key: K, defaultValue?: Json): any {
 		const metadata = this.metadata;
 		if (key in metadata) {
 			return metadata[key];

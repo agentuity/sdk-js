@@ -4,6 +4,24 @@ import type { Logger } from './logger';
 /**
  * Types of triggers that can initiate an agent request
  */
+/**
+ * Metadata types for specific trigger types
+ */
+export interface WebhookMetadata {
+  headers: Record<string, string>;
+}
+
+/**
+ * Maps trigger types to their specific metadata types
+ */
+export type TriggerMetadataMap = {
+  webhook: WebhookMetadata;
+  // Add other trigger types as needed
+  // For example:
+  // cron: CronMetadata;
+  // sms: SmsMetadata;
+  // etc.
+};
 export type TriggerType =
 	| 'webhook'
 	| 'cron'
@@ -431,9 +449,15 @@ export interface AgentRequest {
 	get metadata(): JsonObject;
 
 	/**
-	 * get the metadata value of the request
+	 * get the metadata value of the request with proper typing based on the trigger type
+	 * @param key - the key to get the value of
+	 * @param defaultValue - the default value to return if the key is not found
 	 */
-	get(key: string, defaultValue?: Json): Json;
+	get<K extends string>(key: K, defaultValue?: Json): this['trigger'] extends keyof TriggerMetadataMap
+		? K extends keyof TriggerMetadataMap[this['trigger']]
+			? TriggerMetadataMap[this['trigger']][K]
+			: Json
+		: Json;
 }
 
 export interface AgentResponseData {
