@@ -11,7 +11,7 @@ import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { fromDataType } from '../server/util';
 import { DataHandler } from '../router/data';
-import { gunzipBuffer, gzipString } from '../server/gzip';
+import { gzipString } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -50,11 +50,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					return { exists: false } as DataResultNotFound;
 				}
 				if (resp.status === 200) {
-					let buffer = await Buffer.from(await resp.response.arrayBuffer());
-					if (resp.headers.get('content-encoding') === 'gzip') {
-						const decompressed = await gunzipBuffer(buffer);
-						buffer = Buffer.from(decompressed);
-					}
+					const buffer = await Buffer.from(await resp.response.arrayBuffer());
 					span.addEvent('hit');
 					const result: DataResultFound = {
 						exists: true,
