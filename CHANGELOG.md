@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.82
+
+### Patch Changes
+
+- KeyValue compression only on upload, not download
+
 ## 0.0.81
 
 ### Patch Changes
