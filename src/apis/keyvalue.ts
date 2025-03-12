@@ -11,6 +11,7 @@ import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { fromDataType } from '../server/util';
 import { DataHandler } from '../router/data';
+import { gunzipBuffer, gzipString } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -49,13 +50,16 @@ export default class KeyValueAPI implements KeyValueStorage {
 					return { exists: false } as DataResultNotFound;
 				}
 				if (resp.status === 200) {
+					let buffer = await Buffer.from(await resp.response.arrayBuffer());
+					if (resp.headers.get('content-encoding') === 'gzip') {
+						const decompressed = await gunzipBuffer(buffer);
+						buffer = Buffer.from(decompressed);
+					}
 					span.addEvent('hit');
 					const result: DataResultFound = {
 						exists: true,
 						data: new DataHandler({
-							payload: await Buffer.from(
-								await resp.response.arrayBuffer()
-							).toString('base64'),
+							payload: buffer.toString('base64'),
 							contentType:
 								resp.headers.get('content-type') ?? 'application/octet-stream',
 						}),
@@ -121,12 +125,25 @@ export default class KeyValueAPI implements KeyValueStorage {
 					ttlstr = `/${params.ttl}`;
 				}
 
+				let base64 = datavalue.data.base64;
+
+				const headers: Record<string, string> = {
+					'Content-Type': datavalue.data.contentType,
+				};
+
+				if (
+					datavalue.data.contentType.includes('text') ||
+					datavalue.data.contentType.includes('json')
+				) {
+					const compressed = await gzipString(datavalue.data.text);
+					base64 = compressed.toString('base64');
+					headers['Content-Encoding'] = 'gzip';
+				}
+
 				const resp = await PUT(
 					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					Buffer.from(datavalue.data.base64, 'base64').buffer,
-					{
-						'Content-Type': datavalue.data.contentType,
-					}
+					Buffer.from(base64, 'base64').buffer,
+					headers
 				);
 
 				if (resp.status !== 201) {
