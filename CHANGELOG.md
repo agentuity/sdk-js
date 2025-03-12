@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.83
+
+### Patch Changes
+
+- Stream IO Input: add new facility to support stream io for input data
+
 ## 0.0.82
 
 ### Patch Changes
