@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.81
+
+### Patch Changes
+
+- Add support for compressing keyvalue entries
+
 ## 0.0.80
 
 ### Patch Changes
