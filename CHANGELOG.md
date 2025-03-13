@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Stream IO Input: add new facility to support stream io for input data
+- Fix devmode logging when devmode environment is set by live
 
 ## 0.0.82
 
