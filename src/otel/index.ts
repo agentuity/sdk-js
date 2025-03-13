@@ -112,9 +112,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 			compression: CompressionAlgorithm.GZIP,
 			timeoutMillis: 10_000,
 		});
-		logRecordProcessor = devmode
-			? new SimpleLogRecordProcessor(new ConsoleLogRecordExporter())
-			: new BatchLogRecordProcessor(otlpLogExporter);
+		logRecordProcessor = new BatchLogRecordProcessor(otlpLogExporter);
 	} else {
 		logRecordProcessor = new SimpleLogRecordProcessor(
 			new ConsoleLogRecordExporter()
