@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.83
+
+### Patch Changes
+
+- Fix devmode logging when devmode environment is set by live
+
 ## 0.0.82
 
 ### Patch Changes
