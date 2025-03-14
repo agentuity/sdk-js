@@ -19,13 +19,13 @@ export class DataHandler implements Data {
 	constructor(payload: Arguments) {
 		this.payload = payload;
 		this.type = payload.contentType ?? 'application/octet-stream';
-		this.isStream = this.payload?.payload?.startsWith('stream:') ?? false;
+		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
 	}
 
 	private getStreamFilename() {
 		// this function will ensure that the stream is loaded on-demand as needed, once.
 		if (this.payload?.payload && this.isStream && !this.streamLoaded) {
-			const id = this.payload.payload.substring('stream:'.length);
+			const id = this.payload.payload.substring('blob:'.length);
 			const streamDir = process.env.AGENTUITY_IO_INPUT_DIR;
 			if (!streamDir) {
 				throw new Error('AGENTUITY_IO_INPUT_DIR is not set');
