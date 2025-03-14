@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.84
+
+### Patch Changes
+
+- Release with new transport model
+
 ## 0.0.83
 
 ### Patch Changes
