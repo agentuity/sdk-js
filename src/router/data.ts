@@ -1,3 +1,5 @@
+import { readFileSync, existsSync, createReadStream } from 'node:fs';
+import path from 'node:path';
 import type { Data, DataPayload } from '../types';
 import { safeParse } from '../server/util';
 
@@ -11,17 +13,48 @@ type Arguments = Pick<DataPayload, 'contentType' | 'payload'>;
 export class DataHandler implements Data {
 	private readonly payload: Arguments;
 	private readonly type: string;
+	private isStream = false;
+	private streamLoaded = false;
 
 	constructor(payload: Arguments) {
 		this.payload = payload;
 		this.type = payload.contentType ?? 'application/octet-stream';
+		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
+	}
+
+	private getStreamFilename() {
+		// this function will ensure that the stream is loaded on-demand as needed, once.
+		if (this.payload?.payload && this.isStream && !this.streamLoaded) {
+			const id = this.payload.payload.substring('blob:'.length);
+			const streamDir = process.env.AGENTUITY_IO_INPUT_DIR;
+			if (!streamDir) {
+				throw new Error('AGENTUITY_IO_INPUT_DIR is not set');
+			}
+			const fn = path.join(streamDir, id);
+			if (!existsSync(fn)) {
+				throw new Error(`Stream file ${fn} does not exist`);
+			}
+			return fn;
+		}
+	}
+
+	private ensureStreamLoaded() {
+		// this function will ensure that the stream is loaded on-demand as needed, once.
+		const filename = this.getStreamFilename();
+		if (filename) {
+			const streamBuf = readFileSync(filename, 'utf-8');
+			this.payload.payload = Buffer.from(streamBuf).toString('base64');
+			this.streamLoaded = true;
+		}
 	}
 
 	public toString() {
+		this.ensureStreamLoaded();
 		return this.base64;
 	}
 
 	public toJSON() {
+		this.ensureStreamLoaded();
 		return {
 			contentType: this.contentType,
 			base64: this.base64,
@@ -32,6 +65,7 @@ export class DataHandler implements Data {
 		if (!this.payload.payload) {
 			return Buffer.from([]);
 		}
+		this.ensureStreamLoaded();
 		return Buffer.from(this.payload.payload, 'base64');
 	}
 
@@ -40,10 +74,12 @@ export class DataHandler implements Data {
 	}
 
 	get base64() {
+		this.ensureStreamLoaded();
 		return this.payload.payload ?? '';
 	}
 
 	get text() {
+		this.ensureStreamLoaded();
 		return this.data.toString('utf-8');
 	}
 
@@ -77,6 +113,10 @@ export class DataHandler implements Data {
 	}
 
 	get stream() {
+		const filename = this.getStreamFilename();
+		if (filename) {
+			return createReadStream(filename, 'utf-8');
+		}
 		const data = this.data;
 		return new ReadableStream({
 			start(controller) {
