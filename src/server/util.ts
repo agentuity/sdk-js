@@ -338,7 +338,7 @@ export function createStreamingResponse(
 							const data = await toBuffer(value);
 							if (streamAsSSE) {
 								const buf = Buffer.from(
-									`data: ${data.toString(encoding as BufferEncoding)}\n`,
+									`data: ${data.toString(encoding as BufferEncoding)}\n\n`,
 									'utf-8'
 								);
 								controller.enqueue(buf);

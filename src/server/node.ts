@@ -266,6 +266,8 @@ export class NodeServer implements Server {
 									routeResult
 								);
 								res.writeHead(200, headers);
+								// Ensure headers are sent before streaming
+								res.flushHeaders();
 								// Pipe the stream to the response
 								const reader = stream.getReader();
 								while (true) {
