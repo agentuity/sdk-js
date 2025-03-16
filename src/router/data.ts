@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, createReadStream } from 'node:fs';
+import { ReadableStream } from 'node:stream/web';
 import path from 'node:path';
-import type { Data, DataPayload } from '../types';
+import type { Data, DataPayload, ReadableDataType } from '../types';
 import { safeParse } from '../server/util';
 
 const invalidJsonSymbol = Symbol('invalid json');
@@ -15,11 +16,18 @@ export class DataHandler implements Data {
 	private readonly type: string;
 	private isStream = false;
 	private streamLoaded = false;
+	private readstream?:
+		| ReadableStream<ReadableDataType>
+		| AsyncIterable<ReadableDataType>;
 
-	constructor(payload: Arguments) {
+	constructor(
+		payload: Arguments,
+		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
+	) {
 		this.payload = payload;
 		this.type = payload.contentType ?? 'application/octet-stream';
 		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
+		this.readstream = stream;
 	}
 
 	private getStreamFilename() {
@@ -112,10 +120,40 @@ export class DataHandler implements Data {
 		return data.buffer;
 	}
 
-	get stream() {
+	get stream(): ReadableStream<ReadableDataType> {
+		if (this.readstream) {
+			if (this.readstream instanceof ReadableStream) {
+				return this.readstream;
+			}
+			const iterator = this.readstream;
+			return new ReadableStream({
+				async start(controller) {
+					for await (const chunk of iterator) {
+						controller.enqueue(chunk);
+					}
+					controller.close();
+				},
+			});
+		}
 		const filename = this.getStreamFilename();
 		if (filename) {
-			return createReadStream(filename, 'utf-8');
+			const nodeStream = createReadStream(filename, 'utf-8');
+			return new ReadableStream({
+				start(controller) {
+					nodeStream.on('data', (chunk) => {
+						controller.enqueue(Buffer.from(chunk));
+					});
+					nodeStream.on('end', () => {
+						controller.close();
+					});
+					nodeStream.on('error', (err) => {
+						controller.error(err);
+					});
+				},
+				cancel() {
+					nodeStream.destroy();
+				},
+			});
 		}
 		const data = this.data;
 		return new ReadableStream({

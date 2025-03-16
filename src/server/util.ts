@@ -1,12 +1,16 @@
+import { SpanStatusCode } from '@opentelemetry/api';
+import type { Span } from '@opentelemetry/api';
 import { DataHandler } from '../router/data';
 import type {
 	AgentResponseData,
 	DataType,
 	Data,
 	JsonObject,
+	ReadableDataType,
 	InvocationArguments,
 	TriggerType,
 } from '../types';
+import { injectTraceContextToHeaders } from './otel';
 import type { ServerRoute } from './types';
 
 export function safeStringify(obj: unknown) {
@@ -45,6 +49,25 @@ export function getRoutesHelpText(host: string, routes: ServerRoute[]) {
 		buffer.push('');
 	}
 	return buffer.join('\n');
+}
+
+export async function toBuffer(data: ReadableDataType) {
+	if (data instanceof Buffer) {
+		return data;
+	}
+	if (data instanceof Uint8Array) {
+		return Buffer.from(data);
+	}
+	if (data instanceof ArrayBuffer) {
+		return Buffer.from(data);
+	}
+	if (typeof data === 'string') {
+		return Buffer.from(data, 'utf-8');
+	}
+	if (data instanceof Blob) {
+		return Buffer.from(await data.arrayBuffer());
+	}
+	throw new Error('Invalid data type');
 }
 
 export async function toDataType(
@@ -235,4 +258,118 @@ export async function fromDataType(
 	}
 
 	throw new Error('Invalid data type');
+}
+
+// a few bits of the code here are taken from https://github.com/marceljuenemann/base64-stream
+// https://github.com/mazira/base64-stream/blob/master/lib/encode.js
+export class Base64StreamHelper {
+	private extra: Buffer | null = null;
+
+	push(_chunk: Buffer) {
+		let chunk = _chunk;
+		if (this.extra) {
+			chunk = Buffer.concat([this.extra, _chunk]);
+			this.extra = null;
+		}
+
+		// 3 bytes are represented by 4 characters, so we can only encode in groups of 3 bytes
+		const remaining = chunk.length % 3;
+
+		if (remaining !== 0) {
+			// Store the extra bytes for later
+			this.extra = Buffer.from(chunk.subarray(chunk.length - remaining));
+			chunk = Buffer.from(chunk.subarray(0, chunk.length - remaining));
+		}
+
+		return chunk.toString('base64');
+	}
+	flush(): string {
+		if (this.extra) {
+			return this.push(this.extra);
+		}
+		return '';
+	}
+}
+
+export function createStreamingResponse(
+	server: string,
+	headers: Headers,
+	span: Span,
+	routeResult: Promise<AgentResponseData>
+): [Record<string, string>, ReadableStream] {
+	const responseheaders = injectTraceContextToHeaders({
+		Server: server,
+	});
+
+	const streamAsSSE = headers.get('accept')?.includes('text/event-stream');
+
+	if (streamAsSSE) {
+		responseheaders['Content-Type'] = 'text/event-stream;charset=utf-8';
+		responseheaders['Cache-Control'] = 'no-cache, no-transform';
+		responseheaders.Connection = 'keep-alive';
+		responseheaders['X-Accel-Buffering'] = 'no';
+		span.setAttribute('http.sse', 'true');
+	} else {
+		responseheaders['Content-Type'] = 'application/json';
+		span.setAttribute('http.sse', 'false');
+	}
+	span.setAttribute('http.status_code', '200');
+	span.setStatus({ code: SpanStatusCode.OK });
+	return [
+		responseheaders,
+		new ReadableStream({
+			start(controller) {
+				routeResult
+					.then(async (resp) => {
+						let encoding = 'base64';
+						if (streamAsSSE) {
+							encoding = (headers.get('accept-encoding') ??
+								'utf-8') as BufferEncoding;
+						} else {
+							controller.enqueue(
+								`{"contentType":"${resp.data.contentType}","metadata":${JSON.stringify(resp.metadata ?? null)},"payload":"`
+							);
+						}
+						const helper = new Base64StreamHelper();
+						const reader = resp.data.stream.getReader();
+						while (true) {
+							const { done, value } = await reader.read();
+							if (done) break;
+							const data = await toBuffer(value);
+							if (streamAsSSE) {
+								const buf = Buffer.from(
+									`data: ${data.toString(encoding as BufferEncoding)}\n`,
+									'utf-8'
+								);
+								controller.enqueue(buf);
+							} else {
+								if (encoding === 'base64') {
+									controller.enqueue(helper.push(data));
+								} else {
+									controller.enqueue(data.toString(encoding as BufferEncoding));
+								}
+							}
+						}
+						if (!streamAsSSE) {
+							if (encoding === 'base64') {
+								controller.enqueue(helper.flush());
+							}
+							controller.enqueue('"}');
+						}
+						controller.close();
+					})
+					.catch((err) => {
+						span.recordException(err as Error);
+						span.setStatus({
+							code: SpanStatusCode.ERROR,
+							message: err.message,
+						});
+						controller.error(err);
+					});
+			},
+			cancel(controller: ReadableStreamDefaultController) {
+				controller.close();
+			},
+		}),
+	];
 }

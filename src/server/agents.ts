@@ -311,7 +311,7 @@ export default class AgentResolver {
 				if ('name' in params) {
 					span.setStatus({
 						code: SpanStatusCode.ERROR,
-						message: `agent ${params.id} not found or you don't have access to it`,
+						message: `agent ${params.name} not found or you don't have access to it`,
 					});
 					throw new Error(
 						`agent ${params.name} not found or you don't have access to it`

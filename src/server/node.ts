@@ -15,7 +15,12 @@ import {
 	extractTraceContextFromNodeRequest,
 	injectTraceContextToNodeResponse,
 } from './otel';
-import { safeStringify, safeParse, getRoutesHelpText } from './util';
+import {
+	safeStringify,
+	safeParse,
+	getRoutesHelpText,
+	createStreamingResponse,
+} from './util';
 import type { RemoteAgentResponse } from '../types';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
@@ -199,11 +204,12 @@ export class NodeServer implements Server {
 						try {
 							if (req.method === 'POST' && req.url?.startsWith('/_reply/')) {
 								span.setAttribute('http.status_code', '202');
-								const id = req.url.slice(8);
-								const body = await this.getJSON<RemoteAgentResponse>(req);
-								callbackAgentHandler.received(id, body);
-								span.setStatus({ code: SpanStatusCode.OK });
-								injectTraceContextToNodeResponse(res);
+								// FIXME:
+								// const id = req.url.slice(8);
+								// const body = await this.getJSON<RemoteAgentResponse>(req);
+								// callbackAgentHandler.received(id, body);
+								// span.setStatus({ code: SpanStatusCode.OK });
+								// injectTraceContextToNodeResponse(res);
 								res.writeHead(202);
 								res.end('OK');
 								return;
@@ -252,20 +258,22 @@ export class NodeServer implements Server {
 									headers: this.getHeaders(req),
 									setTimeout: (val: number) => req.setTimeout(val),
 								};
-								const response = await route.handler(agentReq);
-								const respPayload = {
-									payload: response.data.base64,
-									contentType: response.data.contentType,
-									metadata: response.metadata,
-								};
-								injectTraceContextToNodeResponse(res);
-								span.setAttribute('http.status_code', '200');
-								res.writeHead(200, {
-									'Content-Type': 'application/json',
-									Server: `Agentuity NodeJS/${sdkVersion}`,
-								});
-								res.end(safeStringify(respPayload));
-								span.setStatus({ code: SpanStatusCode.OK });
+								const routeResult = route.handler(agentReq);
+								const [headers, stream] = createStreamingResponse(
+									`Agentuity NodeJS/${sdkVersion}`,
+									new Headers(req.headers as Record<string, string>),
+									span,
+									routeResult
+								);
+								res.writeHead(200, headers);
+								// Pipe the stream to the response
+								const reader = stream.getReader();
+								while (true) {
+									const { done, value } = await reader.read();
+									if (done) break;
+									res.write(value);
+								}
+								res.end();
 							} catch (err) {
 								this.logger.error('Server error', err);
 								injectTraceContextToNodeResponse(res);
