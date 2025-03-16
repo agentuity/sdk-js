@@ -321,16 +321,11 @@ export function createStreamingResponse(
 			start(controller) {
 				routeResult
 					.then(async (resp) => {
-						let encoding = 'base64';
-						if (streamAsSSE) {
-							encoding = (headers.get('accept-encoding') ??
-								'utf-8') as BufferEncoding;
-						} else {
+						if (!streamAsSSE) {
 							controller.enqueue(
 								`{"contentType":"${resp.data.contentType}","metadata":${JSON.stringify(resp.metadata ?? null)},"payload":"`
 							);
 						}
-						const helper = new Base64StreamHelper();
 						const reader = resp.data.stream.getReader();
 						while (true) {
 							const { done, value } = await reader.read();
@@ -338,22 +333,15 @@ export function createStreamingResponse(
 							const data = await toBuffer(value);
 							if (streamAsSSE) {
 								const buf = Buffer.from(
-									`data: ${data.toString(encoding as BufferEncoding)}\n\n`,
+									`data: ${data.toString('utf-8')}\n\n`,
 									'utf-8'
 								);
 								controller.enqueue(buf);
 							} else {
-								if (encoding === 'base64') {
-									controller.enqueue(helper.push(data));
-								} else {
-									controller.enqueue(data.toString(encoding as BufferEncoding));
-								}
+								controller.enqueue(data.toString('utf-8'));
 							}
 						}
 						if (!streamAsSSE) {
-							if (encoding === 'base64') {
-								controller.enqueue(helper.flush());
-							}
 							controller.enqueue('"}');
 						}
 						controller.close();

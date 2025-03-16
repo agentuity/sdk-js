@@ -7,6 +7,7 @@ import type {
 	JsonObject,
 	DataType,
 	AgentRedirectResponse,
+	ReadableDataType,
 } from '../types';
 import type { ReadableStream } from 'node:stream/web';
 import { DataHandler } from './data';
@@ -179,7 +180,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 * stream a response to the client
 	 */
 	async stream(
-		stream: ReadableStream<Uint8Array> | AsyncIterable<Uint8Array>,
+		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
 		contentType: string,
 		metadata?: JsonObject
 	): Promise<AgentResponseData> {

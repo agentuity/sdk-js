@@ -565,7 +565,7 @@ export interface AgentResponse {
 	 * stream a response to the client
 	 */
 	stream(
-		stream: ReadableStream,
+		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
 		contentType: string,
 		metadata?: JsonObject
 	): Promise<AgentResponseData>;
