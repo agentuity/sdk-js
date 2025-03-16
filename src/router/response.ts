@@ -181,17 +181,15 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	async stream(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
-		contentType: string,
-		metadata?: JsonObject
+		contentType?: string
 	): Promise<AgentResponseData> {
 		return {
 			data: new DataHandler(
 				{
-					contentType,
+					contentType: contentType ?? 'text/plain',
 				},
 				stream
 			),
-			metadata,
 		};
 	}
 }

@@ -562,12 +562,11 @@ export interface AgentResponse {
 	ogg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
 
 	/**
-	 * stream a response to the client
+	 * stream a response to the client. the content type will default to text/plain if not provided or if SSE is requested.
 	 */
 	stream(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
-		contentType: string,
-		metadata?: JsonObject
+		contentType?: string
 	): Promise<AgentResponseData>;
 }
 
