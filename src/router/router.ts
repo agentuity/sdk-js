@@ -153,7 +153,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		const agentId = config.context.agent.id;
 		const runId = req.request.runId;
 		const logger = config.context.logger.child({
-			runId,
+			'@agentuity/agentId': agentId,
 		});
 		const resolver = new AgentResolver(
 			logger,
@@ -201,9 +201,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 						const response = new AgentResponseHandler();
 						const context = {
 							...config.context,
-							logger: config.context.logger.child({
-								'@agentuity/agentId': agentId,
-							}),
+							logger,
 							runId,
 							getAgent: (params: GetAgentRequestParams) =>
 								resolver.getAgent(params),
@@ -262,6 +260,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							span.setStatus({ code: SpanStatusCode.OK });
 							return handlerResponse;
 						} catch (err) {
+							logger.error('Error in agent run: %s', err);
 							recordException(span, err);
 							throw err;
 						}

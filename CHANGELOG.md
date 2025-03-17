@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.87
+
+### Patch Changes
+
+- Slight improvement in location of when context.logger for agent is created
+
 ## 0.0.86
 
 ### Patch Changes
