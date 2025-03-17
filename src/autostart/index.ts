@@ -35,18 +35,30 @@ export async function run(config: AutostartConfig) {
 	let { port } = config;
 	const { basedir } = config;
 	if (process.env.AGENTUITY_ENVIRONMENT !== 'production') {
-		// this path only works in local dev mode
-		let ymlfile = join(basedir, 'agentuity.yaml');
-		if (!existsSync(ymlfile)) {
-			ymlfile = join(basedir, '..', 'agentuity.yaml');
-		}
-		if (existsSync(ymlfile)) {
+		// check to see if we should attempt to load the config from the local file
+		const shouldAttemptLoad =
+			!config.projectId ||
+			!config.agents ||
+			!config.agents.length ||
+			(!config.port && !process.env.PORT);
+		if (shouldAttemptLoad) {
+			// this path only works in local dev mode
+			let ymlfile = join(basedir, 'agentuity.yaml');
+			if (!existsSync(ymlfile)) {
+				ymlfile = join(basedir, '..', 'agentuity.yaml');
+			}
+			if (!existsSync(ymlfile)) {
+				console.error(
+					'[ERROR] Failed to find the agentuity.yaml file in the current directory'
+				);
+				process.exit(1);
+			}
 			const ymlData = readFileSync(ymlfile, 'utf8').toString();
 			const data = yml.load(ymlData);
-			if (data?.project_id) {
+			if (!config.projectId && data?.project_id) {
 				config.projectId = data.project_id;
 			}
-			if (data?.development?.port) {
+			if (data?.development?.port && !process.env.PORT) {
 				port = data.development.port;
 			}
 			if (!config.agents || config.agents.length === 0) {
