@@ -22,8 +22,8 @@ export async function runner(
 		if (agentsJSON) {
 			agents = JSON.parse(agentsJSON);
 		} else {
-			console.error(
-				'expected AGENTUITY_CLOUD_AGENTS_JSON to be set but it was not'
+			console.warn(
+				'[WARN] expected AGENTUITY_CLOUD_AGENTS_JSON to be set but it was not. will attempt to load manually.'
 			);
 		}
 		await run({

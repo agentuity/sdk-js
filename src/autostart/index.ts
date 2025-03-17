@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import yml from 'js-yaml';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
@@ -34,18 +35,46 @@ export async function run(config: AutostartConfig) {
 	let { port } = config;
 	const { basedir } = config;
 	if (process.env.AGENTUITY_ENVIRONMENT !== 'production') {
-		// this path only works in local dev mode
-		const yml = join(basedir, '..', 'agentuity.yaml');
-		if (existsSync(yml)) {
-			const ymlData = readFileSync(yml, 'utf8').toString();
-			const match = ymlData.match(/project_id: (\w+)/);
-			if (match?.length) {
-				config.projectId = match[1];
+		// check to see if we should attempt to load the config from the local file
+		const shouldAttemptLoad =
+			!config.projectId ||
+			!config.agents ||
+			!config.agents.length ||
+			(!config.port && !process.env.PORT);
+		if (shouldAttemptLoad) {
+			// this path only works in local dev mode
+			let ymlfile = join(basedir, 'agentuity.yaml');
+			if (!existsSync(ymlfile)) {
+				ymlfile = join(basedir, '..', 'agentuity.yaml');
 			}
-			if (!port) {
-				const match = ymlData.match(/port: (\d+)/);
-				if (match?.length) {
-					port = Number.parseInt(match[1]);
+			if (!existsSync(ymlfile)) {
+				console.error(
+					'[ERROR] Failed to find the agentuity.yaml file in the current directory'
+				);
+				process.exit(1);
+			}
+			const ymlData = readFileSync(ymlfile, 'utf8').toString();
+			const data = yml.load(ymlData);
+			if (!config.projectId && data?.project_id) {
+				config.projectId = data.project_id;
+			}
+			if (data?.development?.port && !process.env.PORT) {
+				port = data.development.port;
+			}
+			if (!config.agents || config.agents.length === 0) {
+				const agentdir = data?.bundler?.agents?.dir;
+				if (agentdir && existsSync(agentdir)) {
+					config.agents = data.agents
+						.map((agent: { id: string; name: string }) => {
+							const filename = join(agentdir, agent.name, 'index.ts');
+							if (existsSync(filename)) {
+								return {
+									...agent,
+									filename,
+								};
+							}
+						})
+						.filter(Boolean);
 				}
 			}
 		}
