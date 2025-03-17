@@ -201,6 +201,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 						const response = new AgentResponseHandler();
 						const context = {
 							...config.context,
+							logger: config.context.logger.child({
+								'@agentuity/agentId': agentId,
+							}),
 							runId,
 							getAgent: (params: GetAgentRequestParams) =>
 								resolver.getAgent(params),
