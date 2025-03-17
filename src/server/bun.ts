@@ -10,7 +10,13 @@ import {
 	extractTraceContextFromBunRequest,
 	injectTraceContextToHeaders,
 } from './otel';
-import { safeStringify, getRoutesHelpText } from './util';
+import {
+	safeStringify,
+	toBuffer,
+	getRoutesHelpText,
+	Base64StreamHelper,
+	createStreamingResponse,
+} from './util';
 
 const idleTimeout = 255; // expressed in seconds
 const timeout = 600;
@@ -193,25 +199,24 @@ export class BunServer implements Server {
 										span.setAttribute('@agentuity/agentId', route.agent.id);
 
 										try {
-											const resp = await route.handler({
+											const routeResult = route.handler({
 												url: req.url,
 												headers: req.headers.toJSON(),
 												request: body as IncomingRequest,
 												setTimeout: (val: number) =>
 													this.server?.timeout(req, val),
 											});
-											const result = {
-												payload: resp.data.base64,
-												contentType: resp.data.contentType,
-												metadata: resp.metadata,
-											};
-											span.setAttribute('http.status_code', '200');
-											span.setStatus({ code: SpanStatusCode.OK });
-											return new Response(safeStringify(result), {
-												headers: injectTraceContextToHeaders({
-													'Content-Type': 'application/json',
-													Server: `Agentuity BunJS/${sdkVersion}`,
-												}),
+
+											const [headers, stream] = createStreamingResponse(
+												`Agentuity BunJS/${sdkVersion}`,
+												req.headers,
+												span,
+												routeResult
+											);
+
+											return new Response(stream, {
+												status: 200,
+												headers,
 											});
 										} catch (error) {
 											span.recordException(error as Error);

@@ -16,6 +16,7 @@ export interface ServerRequest {
 	request: IncomingRequest;
 	headers: Record<string, string>;
 	setTimeout: (val: number) => void;
+	controller?: ReadableStreamDefaultController;
 }
 
 /**

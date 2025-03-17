@@ -7,7 +7,9 @@ import type {
 	JsonObject,
 	DataType,
 	AgentRedirectResponse,
+	ReadableDataType,
 } from '../types';
+import type { ReadableStream } from 'node:stream/web';
 import { DataHandler } from './data';
 import { safeStringify, fromDataType } from '../server/util';
 
@@ -172,5 +174,22 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	ogg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
 		return fromDataType(data, 'audio/ogg', metadata);
+	}
+
+	/**
+	 * stream a response to the client
+	 */
+	async stream(
+		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
+		contentType?: string
+	): Promise<AgentResponseData> {
+		return {
+			data: new DataHandler(
+				{
+					contentType: contentType ?? 'text/plain',
+				},
+				stream
+			),
+		};
 	}
 }

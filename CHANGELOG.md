@@ -1,8 +1,15 @@
 # @agentuity/sdk
 
+## 0.0.85
+
+### Patch Changes
+
+- Streaming Support including SSE
+
 ## 0.0.84 - 2025-03-14
 
 ### Added
+
 - Stream IO Input: add new facility to support stream io for input data [#23](https://github.com/agentuity/sdk-js/pull/23)
 
 ### Patch Changes

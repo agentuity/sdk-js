@@ -1,5 +1,6 @@
 import type { Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
+import type { ReadableStream } from 'node:stream/web';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -56,7 +57,19 @@ export interface Data {
 	 * the binary data represented as a Buffer
 	 */
 	buffer: Buffer;
+
+	/**
+	 * the stream of the data
+	 */
+	stream: ReadableStream<ReadableDataType>;
 }
+
+export type ReadableDataType =
+	| Buffer
+	| Uint8Array
+	| ArrayBuffer
+	| string
+	| Blob;
 
 /**
  * The type of data that can be passed to an agent as a payload
@@ -547,6 +560,14 @@ export interface AgentResponse {
 	 * return an OGG response with optional metadata
 	 */
 	ogg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+
+	/**
+	 * stream a response to the client. the content type will default to text/plain if not provided or if SSE is requested.
+	 */
+	stream(
+		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
+		contentType?: string
+	): Promise<AgentResponseData>;
 }
 
 /**
