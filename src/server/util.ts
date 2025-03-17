@@ -265,7 +265,7 @@ export async function fromDataType(
 export class Base64StreamHelper {
 	private extra: Buffer | null = null;
 
-	push(_chunk: Buffer) {
+	push(_chunk: Buffer): string {
 		let chunk = _chunk;
 		if (this.extra) {
 			chunk = Buffer.concat([this.extra, _chunk]);
@@ -285,7 +285,9 @@ export class Base64StreamHelper {
 	}
 	flush(): string {
 		if (this.extra) {
-			return this.push(this.extra);
+			const value = this.extra.toString('base64');
+			this.extra = null;
+			return value;
 		}
 		return '';
 	}
@@ -321,6 +323,7 @@ export function createStreamingResponse(
 			start(controller) {
 				routeResult
 					.then(async (resp) => {
+						const helper = new Base64StreamHelper();
 						if (!streamAsSSE) {
 							controller.enqueue(
 								`{"contentType":"${resp.data.contentType}","metadata":${JSON.stringify(resp.metadata ?? null)},"payload":"`
@@ -338,10 +341,21 @@ export function createStreamingResponse(
 								);
 								controller.enqueue(buf);
 							} else {
-								controller.enqueue(data.toString('utf-8'));
+								if (data.length) {
+									const _data = data.toString('utf-8');
+									const chunk = safeStringify(_data);
+									const output = helper.push(
+										Buffer.from(chunk.substring(1, chunk.length - 1))
+									);
+									controller.enqueue(output);
+								}
 							}
 						}
 						if (!streamAsSSE) {
+							const output = helper.flush();
+							if (output) {
+								controller.enqueue(output);
+							}
 							controller.enqueue('"}');
 						}
 						controller.close();

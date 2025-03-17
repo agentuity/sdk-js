@@ -104,7 +104,7 @@ class OtelLogger implements Logger {
 	child(opts: Record<string, Json>) {
 		return new OtelLogger(!!this.logger, this.delegate, {
 			...(this.context ?? {}),
-			opts,
+			...opts,
 		});
 	}
 }

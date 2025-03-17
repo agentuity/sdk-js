@@ -1,5 +1,12 @@
 # @agentuity/sdk
 
+## 0.0.86
+
+### Patch Changes
+
+- Add support for agentId on context.logger
+  Fix issue with underrun on base64 stream
+
 ## 0.0.85
 
 ### Patch Changes
