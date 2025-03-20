@@ -12,9 +12,7 @@ import {
 } from './otel';
 import {
 	safeStringify,
-	toBuffer,
 	getRoutesHelpText,
-	Base64StreamHelper,
 	createStreamingResponse,
 } from './util';
 
@@ -92,7 +90,7 @@ export class BunServer implements Server {
 									contentType:
 										req.headers.get('content-type') ??
 										'application/octet-stream',
-									metadata: headers,
+									metadata: { headers },
 								}),
 								headers: {
 									'Content-Type': 'application/json',

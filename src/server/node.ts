@@ -9,7 +9,6 @@ import {
 	createServer as createHttpServer,
 	type IncomingMessage,
 } from 'node:http';
-import { callbackAgentHandler } from './agents';
 import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
 	extractTraceContextFromNodeRequest,
@@ -21,7 +20,6 @@ import {
 	getRoutesHelpText,
 	createStreamingResponse,
 } from './util';
-import type { RemoteAgentResponse } from '../types';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
@@ -145,7 +143,7 @@ export class NodeServer implements Server {
 						payload: body.toString('base64'),
 						contentType:
 							req.headers['content-type'] || 'application/octet-stream',
-						metadata: this.getHeaders(req),
+						metadata: { headers: this.getHeaders(req) },
 					}),
 					headers: {
 						'Content-Type': 'application/json',
