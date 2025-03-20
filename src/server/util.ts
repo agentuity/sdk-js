@@ -334,6 +334,9 @@ export function createStreamingResponse(
 							const { done, value } = await reader.read();
 							if (done) break;
 							const data = await toBuffer(value);
+							if (!data || data.length === 0) {
+								continue;
+							}
 							if (streamAsSSE) {
 								const buf = Buffer.from(
 									`data: ${data.toString('utf-8')}\n\n`,
