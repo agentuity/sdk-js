@@ -1,5 +1,12 @@
 # @agentuity/sdk
 
+## 0.0.88
+
+### Patch Changes
+
+- b09c469: Improve loading project when using node or bun directly vs using start script or agentuity dev
+- Fix mismatch between local run vs remote run with HTTP headers as property of metadata vs the metadata object
+
 ## 0.0.87
 
 ### Patch Changes
