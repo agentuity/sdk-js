@@ -1,4 +1,4 @@
-import { format } from 'node:util';
+import { formatWithOptions } from 'node:util';
 import type { Logger } from './logger';
 import type { Json } from '../types';
 import { __originalConsole } from '../otel/logger';
@@ -58,7 +58,11 @@ export default class ConsoleLogger implements Logger {
 		try {
 			// Only use format if we have arguments
 			if (args.length > 0) {
-				formattedMessage = format(_message, ...args);
+				formattedMessage = formatWithOptions(
+					{ depth: null },
+					_message,
+					...args
+				);
 			} else {
 				formattedMessage = _message;
 			}
