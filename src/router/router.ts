@@ -154,6 +154,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		const runId = req.request.runId;
 		const logger = config.context.logger.child({
 			'@agentuity/agentId': agentId,
+			'@agentuity/agentName': config.context.agent.name,
 		});
 		const resolver = new AgentResolver(
 			logger,
