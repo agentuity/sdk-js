@@ -6,6 +6,14 @@ import { safeParse } from '../server/util';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
+// regex to split the data into chunks
+const chunkingRegexp: RegExp = /[^\n]*\n/m;
+
+// milliseconds to wait between chunks to smooth out the stream
+const chunkSmoothing = 30;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 type Arguments = Pick<DataPayload, 'contentType' | 'payload'>;
 
 /**
@@ -156,12 +164,34 @@ export class DataHandler implements Data {
 			});
 		}
 		const data = this.data;
+		const chunkable = this.isTextChunkable();
 		return new ReadableStream({
-			start(controller) {
-				controller.enqueue(data);
+			async start(controller) {
+				if (!chunkable) {
+					controller.enqueue(data);
+					controller.close();
+					return;
+				}
+				let match: RegExpExecArray | null;
+				let buffer = data.toString('utf-8');
+				match = chunkingRegexp.exec(buffer);
+				while (match !== null) {
+					const chunk = match[0];
+					controller.enqueue(Buffer.from(chunk));
+					buffer = buffer.slice(chunk.length);
+					match = chunkingRegexp.exec(buffer);
+					await sleep(chunkSmoothing);
+				}
 				controller.close();
 			},
 		});
+	}
+
+	private isTextChunkable() {
+		return (
+			this.contentType.startsWith('text/') ||
+			this.contentType === 'application/json'
+		);
 	}
 
 	get buffer() {
