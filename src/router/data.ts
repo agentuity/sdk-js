@@ -164,8 +164,14 @@ export class DataHandler implements Data {
 			});
 		}
 		const data = this.data;
+		const chunkable = this.isTextChunkable();
 		return new ReadableStream({
 			async start(controller) {
+				if (!chunkable) {
+					controller.enqueue(data);
+					controller.close();
+					return;
+				}
 				let match: RegExpExecArray | null;
 				let buffer = data.toString('utf-8');
 				match = chunkingRegexp.exec(buffer);
@@ -179,6 +185,13 @@ export class DataHandler implements Data {
 				controller.close();
 			},
 		});
+	}
+
+	private isTextChunkable() {
+		return (
+			this.contentType.startsWith('text/') ||
+			this.contentType === 'application/json'
+		);
 	}
 
 	get buffer() {
