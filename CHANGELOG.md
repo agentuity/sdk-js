@@ -1,13 +1,19 @@
 # @agentuity/sdk
 
-## 0.0.89
+# Changelog
+All notable changes to this project will be documented in this file.
 
-### Patch Changes
+## [0.0.89] - 2025-03-25
 
-- 9a87d61: [AGE-10] When stream is requested but the response isnt a stream, chunk up the response data into chunks and smooth out as if streamed
-- Fixed issue with buffer underrun not getting delivered and messed up formatting
-- 3435037: Console Logger: show max depth for any objects
-- 725c2cd: Add @agentuity/agentName to log spans
+### Added
+- Add the agentName to the log attributes ([#33](https://github.com/agentuity/sdk-js/pull/33))
+
+### Changed
+- Console Logger: show max depth for any objects ([#32](https://github.com/agentuity/sdk-js/pull/32))
+- When stream is requested but the response isn't a stream, chunk up the response data into chunks and smooth out as if streamed ([#31](https://github.com/agentuity/sdk-js/pull/31))
+
+### Fixed
+- Fixed issue with buffer underrun getting sent and issue with json encoding ([#34](https://github.com/agentuity/sdk-js/pull/34))
 
 ## 0.0.88
 
