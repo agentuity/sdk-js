@@ -344,14 +344,7 @@ export function createStreamingResponse(
 								);
 								controller.enqueue(buf);
 							} else {
-								if (data.length) {
-									const _data = data.toString('utf-8');
-									const chunk = safeStringify(_data);
-									const output = helper.push(
-										Buffer.from(chunk.substring(1, chunk.length - 1))
-									);
-									controller.enqueue(output);
-								}
+								controller.enqueue(helper.push(data));
 							}
 						}
 						if (!streamAsSSE) {

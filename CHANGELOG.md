@@ -1,5 +1,14 @@
 # @agentuity/sdk
 
+## 0.0.89
+
+### Patch Changes
+
+- 9a87d61: [AGE-10] When stream is requested but the response isnt a stream, chunk up the response data into chunks and smooth out as if streamed
+- Fixed issue with buffer underrun not getting delivered and messed up formatting
+- 3435037: Console Logger: show max depth for any objects
+- 725c2cd: Add @agentuity/agentName to log spans
+
 ## 0.0.88
 
 ### Patch Changes
