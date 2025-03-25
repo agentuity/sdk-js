@@ -182,6 +182,10 @@ export class DataHandler implements Data {
 					match = chunkingRegexp.exec(buffer);
 					await sleep(chunkSmoothing);
 				}
+				// in case we have a partial chunk remaining, we need to enqueue it
+				if (buffer.length > 0) {
+					controller.enqueue(Buffer.from(buffer));
+				}
 				controller.close();
 			},
 		});
