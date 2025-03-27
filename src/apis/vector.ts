@@ -60,7 +60,7 @@ type VectorSearchResponse =
  */
 interface VectorDeleteSuccessResponse {
 	success: true;
-	ids: string[];
+	data: number;
 }
 
 /**
@@ -277,9 +277,9 @@ export default class VectorAPI implements VectorStorage {
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {
-						span.addEvent('delete_count', resp.json.ids.length);
+						span.addEvent('delete_count', resp.json.data);
 						span.setStatus({ code: SpanStatusCode.OK });
-						return resp.json.ids.length;
+						return resp.json.data;
 					}
 				}
 				if (!resp.json?.success && resp.json?.message) {
