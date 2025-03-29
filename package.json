@@ -32,9 +32,9 @@
 		"agent"
 	],
 	"scripts": {
-		"build": "rm -rf dist && tsup",
-		"bun:start": "bun run build && bun run ./dist/index.js",
-		"node:start": "bun run build && node ./dist/index.js",
+		"build": "rm -rf dist && npx tsup",
+		"bun:start": "npm run build && bun run ./dist/index.js",
+		"node:start": "npm run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
 		"lint": "npx @biomejs/biome lint --write",
 		"changeset": "npx @changesets/cli",
