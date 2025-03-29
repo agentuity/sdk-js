@@ -13,8 +13,6 @@
 
 **Visit [https://agentuity.com](https://agentuity.com) to get started with Agentuity.**
 
-> [!WARNING]  
-> This is currently a work in progress and not ready to be opened to the public.
 
 
 
