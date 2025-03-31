@@ -1,5 +1,12 @@
 # @agentuity/sdk
 
+## 0.0.91
+
+### Patch Changes
+
+- Use new agentuity sdk api
+- 3869d0d: Add GitHub workflow for npm package release triggered by version tags
+
 ## 0.0.90
 
 ### Patch Changes
