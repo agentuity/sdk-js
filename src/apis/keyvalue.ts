@@ -1,3 +1,8 @@
+import { SpanStatusCode, context, trace } from '@opentelemetry/api';
+import { DataHandler } from '../router/data';
+import { getTracer, recordException } from '../router/router';
+import { gunzipBuffer, gzipString } from '../server/gzip';
+import { fromDataType } from '../server/util';
 import type {
 	DataResult,
 	DataResultFound,
@@ -7,11 +12,6 @@ import type {
 	KeyValueStorageSetParams,
 } from '../types';
 import { DELETE, GET, PUT } from './api';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
-import { fromDataType } from '../server/util';
-import { DataHandler } from '../router/data';
-import { gzipString } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -51,11 +51,12 @@ export default class KeyValueAPI implements KeyValueStorage {
 				}
 				if (resp.status === 200) {
 					const buffer = await Buffer.from(await resp.response.arrayBuffer());
+					const uncompressed = await gunzipBuffer(buffer);
 					span.addEvent('hit');
 					const result: DataResultFound = {
 						exists: true,
 						data: new DataHandler({
-							payload: buffer.toString('base64'),
+							payload: uncompressed,
 							contentType:
 								resp.headers.get('content-type') ?? 'application/octet-stream',
 						}),
