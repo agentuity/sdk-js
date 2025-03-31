@@ -157,7 +157,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 			const headers = {};
 			injectTraceContextToHeaders(headers);
 			const resp = await POST<{ success: boolean; message?: string }>(
-				`/sdk/agent/${this.id}/run/${this.replyId}`,
+				`/agent/${this.id}/run/${this.replyId}`,
 				safeStringify(body),
 				{
 					...headers,
@@ -295,7 +295,7 @@ export default class AgentResolver {
 			span.setAttribute('remote.agentName', params.name);
 		}
 		try {
-			const resp = await POST('/sdk/agent/resolve', safeStringify(params), {
+			const resp = await POST('/agent/resolve', safeStringify(params), {
 				'Content-Type': 'application/json',
 			});
 			if (resp.status === 404) {

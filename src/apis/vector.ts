@@ -110,7 +110,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await PUT<VectorUpsertResponse>(
-					`/sdk/vector/${encodeURIComponent(name)}`,
+					`/vector/${encodeURIComponent(name)}`,
 					safeStringify(documents)
 				);
 				if (resp.status === 200) {
@@ -158,7 +158,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await GET<VectorSearchResponse>(
-					`/sdk/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
@@ -220,7 +220,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await POST<VectorSearchResponse>(
-					`/sdk/vector/search/${encodeURIComponent(name)}`,
+					`/vector/search/${encodeURIComponent(name)}`,
 					safeStringify(params)
 				);
 				if (resp.status === 404) {
@@ -273,7 +273,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE<VectorDeleteResponse>(
-					`/sdk/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/vector/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {

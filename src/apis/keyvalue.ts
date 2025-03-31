@@ -41,7 +41,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await GET(
-					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
 					true
 				);
 				if (resp.status === 404) {
@@ -137,7 +137,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 				}
 
 				const resp = await PUT(
-					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
+					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
 					Buffer.from(base64, 'base64').buffer,
 					headers
 				);
@@ -184,7 +184,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 			// Execute the operation within the new context
 			await context.with(spanContext, async () => {
 				const resp = await DELETE(
-					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status !== 200) {
 					throw new Error(
