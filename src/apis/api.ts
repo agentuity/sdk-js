@@ -67,7 +67,7 @@ export async function send<K>(
 	}
 	const url = new URL(
 		request.path,
-		process.env.AGENTUITY_URL || 'https://api.agentuity.com'
+		process.env.AGENTUITY_TRANSPORT_URL || 'https://agentuity.ai/'
 	);
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
