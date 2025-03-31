@@ -39,7 +39,7 @@
 		"lint": "npx @biomejs/biome lint --write",
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
-		"release": "rm -rf dist && npm run build && npx @changesets/cli publish && git push --follow-tags",
+		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
 		"start": "npm run node:start"
 	},
 	"exports": {
