@@ -27,7 +27,7 @@ jobs:
           CURRENT_VERSION=$(jq -r .version package.json)
           if [ "$PREV_VERSION" = "$CURRENT_VERSION" ]; then
             echo "No version change detected, skipping release"
-            exit 0
+            exit 78
           fi
           echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
 
