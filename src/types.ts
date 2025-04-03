@@ -553,6 +553,16 @@ export interface AgentResponse {
 	 * return an OGG response with optional metadata
 	 */
 	ogg(data: ArrayBuffer, metadata?: Record<string, Json>): AgentResponseType;
+	
+	/**
+	 * return a response with specific data and content type with optional metadata
+	 */
+	data(data: Json | ArrayBuffer | string, contentType: string, metadata?: Record<string, Json>): AgentResponseType;
+	
+	/**
+	 * return a markdown response with optional metadata
+	 */
+	markdown(content: string, metadata?: Record<string, Json>): AgentResponseType;
 }
 
 export interface IOSchema {

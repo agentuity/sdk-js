@@ -216,4 +216,30 @@ export default class AgentResponseHandler implements AgentResponse {
 			metadata,
 		};
 	}
+
+	/**
+	 * return a response with specific data and content type with optional metadata
+	 */
+	data(
+		data: Json | ArrayBuffer | string,
+		contentType: string,
+		metadata?: Record<string, Json>
+	): AgentResponseType {
+		return {
+			contentType,
+			payload: data,
+			metadata,
+		} as AgentResponseType;
+	}
+
+	/**
+	 * return a markdown response with optional metadata
+	 */
+	markdown(content: string, metadata?: Record<string, Json>): AgentResponseType {
+		return {
+			contentType: 'text/markdown',
+			payload: content,
+			metadata,
+		} as AgentResponseType;
+	}
 }
