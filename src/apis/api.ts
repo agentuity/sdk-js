@@ -7,6 +7,9 @@ interface BaseApiRequest {
 	headers?: Record<string, string>;
 }
 
+/**
+ * Represents the body of an API request
+ */
 export type Body = string | ArrayBuffer | ReadableStream | Blob | FormData;
 
 interface GetApiRequest extends BaseApiRequest {
@@ -44,6 +47,15 @@ interface APIResponse<T> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Sends an API request
+ *
+ * @param request - The API request to send
+ * @param forceBuffer - Whether to force the response to be treated as a buffer
+ * @param attempt - The current attempt number (for retries)
+ * @returns The API response
+ * @throws Error if the API key is not set
+ */
 export async function send<K>(
 	request: ApiRequest,
 	forceBuffer = false,
@@ -55,13 +67,13 @@ export async function send<K>(
 	}
 	const url = new URL(
 		request.path,
-		process.env.AGENTUITY_URL || 'https://api.agentuity.com'
+		process.env.AGENTUITY_TRANSPORT_URL || 'https://agentuity.ai/'
 	);
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
 		'Content-Type': 'application/json',
-		'User-Agent': `@agentuity/sdk (${sdkVersion})`,
+		'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 	};
 	// allow headers to be overridden
 	for (const key in request.headers) {
@@ -108,6 +120,15 @@ export async function send<K>(
 	};
 }
 
+/**
+ * Sends a GET request
+ *
+ * @param path - The path to send the request to
+ * @param forceBuffer - Whether to force the response to be treated as a buffer
+ * @param headers - Additional headers for the request
+ * @param timeout - The timeout for the request
+ * @returns The API response
+ */
 export async function GET<K>(
 	path: string,
 	forceBuffer?: boolean,
@@ -125,6 +146,15 @@ export async function GET<K>(
 	);
 }
 
+/**
+ * Sends a POST request
+ *
+ * @param path - The path to send the request to
+ * @param body - The body of the request
+ * @param headers - Additional headers for the request
+ * @param timeout - The timeout for the request
+ * @returns The API response
+ */
 export async function POST<K>(
 	path: string,
 	body: Body,
@@ -140,6 +170,15 @@ export async function POST<K>(
 	} as PostApiRequest);
 }
 
+/**
+ * Sends a PUT request
+ *
+ * @param path - The path to send the request to
+ * @param body - The body of the request
+ * @param headers - Additional headers for the request
+ * @param timeout - The timeout for the request
+ * @returns The API response
+ */
 export async function PUT<K>(
 	path: string,
 	body: Body,
@@ -155,6 +194,15 @@ export async function PUT<K>(
 	} as PutApiRequest);
 }
 
+/**
+ * Sends a DELETE request
+ *
+ * @param path - The path to send the request to
+ * @param body - The body of the request
+ * @param headers - Additional headers for the request
+ * @param timeout - The timeout for the request
+ * @returns The API response
+ */
 export async function DELETE<K>(
 	path: string,
 	body?: Body,

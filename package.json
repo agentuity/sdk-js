@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.64",
+	"version": "0.0.91",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
@@ -27,18 +27,20 @@
 	"keywords": [
 		"ai",
 		"agents",
-		"agenuity",
+		"agentuity",
 		"ai agent",
 		"agent"
 	],
 	"scripts": {
-		"build": "rm -rf dist && tsup",
-		"bun:start": "bun run build && bun run ./dist/index.js",
-		"node:start": "bun run build && node ./dist/index.js",
+		"build": "rm -rf dist && npx tsup",
+		"bun:start": "npm run build && bun run ./dist/index.js",
+		"node:start": "npm run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
+		"lint": "npx @biomejs/biome lint --write",
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
-		"release": "rm -rf dist && npm run build && npx @changesets/cli publish && git push --follow-tags"
+		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
+		"start": "npm run node:start"
 	},
 	"exports": {
 		"./package.json": "./package.json",
@@ -72,6 +74,6 @@
 		"@opentelemetry/sdk-metrics": "^1.30.1",
 		"@opentelemetry/sdk-node": "^0.57.2",
 		"@opentelemetry/semantic-conventions": "^1.30.0",
-		"@standard-schema/spec": "^1.0.0"
+		"js-yaml": "^4.1.0"
 	}
 }

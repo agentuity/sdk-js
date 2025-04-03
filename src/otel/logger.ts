@@ -3,7 +3,11 @@ import * as LogsAPI from '@opentelemetry/api-logs';
 import type { Logger } from '../logger';
 import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
+import { safeStringify } from '../server/util';
 
+/**
+ * Reference to the original console object before patching
+ */
 export const __originalConsole = Object.create(console); // save the original console before we patch it
 
 class OtelLogger implements Logger {
@@ -25,12 +29,23 @@ class OtelLogger implements Logger {
 		if (typeof message === 'string') {
 			return message;
 		}
-		return JSON.stringify(message);
+		try {
+			return safeStringify(message);
+		} catch (err) {
+			// Handle circular references or other JSON stringification errors
+			return String(message);
+		}
 	}
 
 	debug(message: string, ...args: unknown[]) {
 		this.logger?.debug(message, ...args);
-		const body = format(this.formatMessage(message), ...args);
+		let body: string;
+		try {
+			body = format(this.formatMessage(message), ...args);
+		} catch (err) {
+			// Fallback if format causes recursion
+			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
+		}
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.DEBUG,
 			severityText: 'DEBUG',
@@ -40,7 +55,13 @@ class OtelLogger implements Logger {
 	}
 	info(message: string, ...args: unknown[]) {
 		this.logger?.info(message, ...args);
-		const body = format(this.formatMessage(message), ...args);
+		let body: string;
+		try {
+			body = format(this.formatMessage(message), ...args);
+		} catch (err) {
+			// Fallback if format causes recursion
+			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
+		}
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.INFO,
 			severityText: 'INFO',
@@ -50,7 +71,13 @@ class OtelLogger implements Logger {
 	}
 	warn(message: string, ...args: unknown[]) {
 		this.logger?.warn(message, ...args);
-		const body = format(this.formatMessage(message), ...args);
+		let body: string;
+		try {
+			body = format(this.formatMessage(message), ...args);
+		} catch (err) {
+			// Fallback if format causes recursion
+			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
+		}
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.WARN,
 			severityText: 'WARN',
@@ -60,7 +87,13 @@ class OtelLogger implements Logger {
 	}
 	error(message: string, ...args: unknown[]) {
 		this.logger?.error(message, ...args);
-		const body = format(this.formatMessage(message), ...args);
+		let body: string;
+		try {
+			body = format(this.formatMessage(message), ...args);
+		} catch (err) {
+			// Fallback if format causes recursion
+			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
+		}
 		this.delegate.emit({
 			severityNumber: LogsAPI.SeverityNumber.ERROR,
 			severityText: 'ERROR',
@@ -71,11 +104,18 @@ class OtelLogger implements Logger {
 	child(opts: Record<string, Json>) {
 		return new OtelLogger(!!this.logger, this.delegate, {
 			...(this.context ?? {}),
-			opts,
+			...opts,
 		});
 	}
 }
 
+/**
+ * Creates a logger that integrates with OpenTelemetry
+ *
+ * @param useConsole - Whether to also log to the console
+ * @param context - Additional context to include with log records
+ * @returns A logger instance
+ */
 export function createLogger(
 	useConsole: boolean,
 	context?: Record<string, Json>
@@ -84,9 +124,22 @@ export function createLogger(
 	return new OtelLogger(useConsole, delegate, context);
 }
 
-export function patchConsole(attributes: Record<string, Json>) {
+/**
+ * Patches the global console object to integrate with OpenTelemetry logging
+ *
+ * @param attributes - Attributes to include with all console log records
+ */
+export function patchConsole(
+	enabled: boolean,
+	attributes: Record<string, Json>
+) {
+	if (!enabled) {
+		return;
+	}
+	const _patch = { ...__originalConsole };
 	const delegate = createLogger(true, attributes);
-	const _patch = { ...console };
+
+	// Patch individual console methods instead of reassigning the whole object
 	_patch.log = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
@@ -102,5 +155,6 @@ export function patchConsole(attributes: Record<string, Json>) {
 	_patch.info = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
+	// biome-ignore lint/suspicious/noGlobalAssign: <explanation>
 	console = globalThis.console = _patch;
 }

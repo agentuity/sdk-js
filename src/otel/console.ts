@@ -6,13 +6,25 @@ import type {
 import ConsoleLogger from '../logger/console';
 import { SeverityNumber } from '@opentelemetry/api-logs';
 
+/**
+ * Console implementation of the LogRecordExporter interface
+ */
 export class ConsoleLogRecordExporter implements LogRecordExporter {
 	private readonly logger: ConsoleLogger;
 
+	/**
+	 * Creates a new console log record exporter
+	 */
 	constructor() {
 		this.logger = new ConsoleLogger();
 	}
 
+	/**
+	 * Exports log records to the console
+	 *
+	 * @param logs - The log records to export
+	 * @param resultCallback - Callback function to report the export result
+	 */
 	export(
 		logs: ReadableLogRecord[],
 		resultCallback: (result: ExportResult) => void
@@ -39,6 +51,11 @@ export class ConsoleLogRecordExporter implements LogRecordExporter {
 		resultCallback({ code: ExportResultCode.SUCCESS });
 	}
 
+	/**
+	 * Shuts down the exporter
+	 *
+	 * @returns A promise that resolves when shutdown is complete
+	 */
 	shutdown(): Promise<void> {
 		return Promise.resolve();
 	}

@@ -1,14 +1,20 @@
 import { join } from 'node:path';
-import { readdirSync, existsSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import type { Tracer } from '@opentelemetry/api';
-import type { Server, ServerAgent, UnifiedServerConfig } from './types';
-import type { AgentContext, AgentHandler } from '../types';
+import type { Server, UnifiedServerConfig } from './types';
+import type { AgentConfig, AgentContext, AgentHandler } from '../types';
 import type { Logger } from '../logger';
 import type { ServerRoute } from './types';
-import { createRouter, getAgentId } from '../router';
+import { createRouter } from '../router';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 
+/**
+ * Creates a unified server based on the runtime environment
+ *
+ * @param config - The server configuration
+ * @returns A promise that resolves to a server instance
+ */
 async function createUnifiedServer(
 	config: UnifiedServerConfig
 ): Promise<Server> {
@@ -20,18 +26,30 @@ async function createUnifiedServer(
 	return new server.NodeServer(config);
 }
 
+/**
+ * Creates a server route from a module file
+ *
+ * @param filename - The path to the module file
+ * @param path - The URL path for the route
+ * @param context - The agent context
+ * @param agents - List of available server agents
+ * @param port - The port the server is running on
+ * @returns A promise that resolves to a server route
+ * @throws Error if no handler is found in the module
+ */
 async function createRoute(
 	filename: string,
 	path: string,
 	context: AgentContext,
-	agents: ServerAgent[],
+	agent: AgentConfig,
+	agents: AgentConfig[],
 	port: number
 ): Promise<ServerRoute> {
 	const mod = await import(filename);
 	let thehandler: AgentHandler | undefined;
 	if (mod.default) {
 		thehandler = mod.default;
-	} else if (mod.config) {
+	} else {
 		for (const key in mod) {
 			if (key !== 'default' && mod[key] instanceof Function) {
 				thehandler = mod[key];
@@ -44,23 +62,20 @@ async function createRoute(
 	}
 	const handler = createRouter({
 		handler: thehandler,
-		context: { ...context, agent: mod.config, agents } as AgentContext,
+		context: { ...context, agent } as AgentContext,
 		port,
 	});
-	const agentId = await getAgentId(context.projectId, mod.config.name);
 	return {
 		path,
 		method: 'POST',
 		handler,
-		agent: {
-			id: agentId,
-			path: path.substring(1),
-			name: mod.config.name,
-			description: mod.config.description,
-		},
+		agent,
 	};
 }
 
+/**
+ * Configuration for creating a server
+ */
 interface ServerConfig {
 	context: AgentContext;
 	directory: string;
@@ -68,50 +83,41 @@ interface ServerConfig {
 	logger: Logger;
 }
 
+/**
+ * Creates a server with routes from agent modules in a directory
+ *
+ * @param config - The server configuration
+ * @returns A promise that resolves to a server instance
+ * @throws Error if no routes are found in the directory
+ */
 export async function createServer({
 	context,
 	directory,
 	port,
 	logger,
 }: ServerConfig) {
-	const items = readdirSync(directory);
 	const routes: ServerRoute[] = [];
-	const agents: ServerAgent[] = [];
-	for (const item of items) {
-		const filepath = join(directory, item);
-		if (statSync(filepath).isDirectory()) {
-			const index = join(filepath, 'index.js');
-			if (existsSync(index)) {
-				const route = await createRoute(
-					index,
-					`/${item}`,
-					context,
-					agents,
-					port
-				);
-				agents.push(route.agent);
-				routes.push(route);
-				// create another route by id
-				routes.push({
-					...route,
-					path: `/${route.agent.id}`,
-				});
-				logger.info('registering %s at %s', route.agent.name, route.path);
-				logger.info('registering %s at /%s', route.agent.name, route.agent.id);
-			}
+	const agents: AgentConfig[] = [];
+	for (const agent of context.agents) {
+		const filepath = join(directory, agent.filename);
+		if (existsSync(filepath)) {
+			const route = await createRoute(
+				filepath,
+				`/${agent.id}`,
+				context,
+				agent,
+				agents,
+				port
+			);
+			routes.push(route);
+			logger.info('registered %s at /%s', agent.name, agent.id);
+		} else {
+			throw new Error(`${filepath} does not exist for agent ${agent.name}`);
 		}
 	}
 	if (routes.length === 0) {
 		throw new Error(`No routes found in ${directory}`);
 	}
-	// FIXME: need to correctly handle the default route
-	const first = routes.find((r) => r.path === '/myfirstagent')!;
-	const defaultRoute = { ...first, path: '/' };
-	routes.push(defaultRoute);
-	logger.info(
-		'registering default route at / using agent %s',
-		defaultRoute.agent.name
-	);
 	return createUnifiedServer({
 		logger,
 		port,
@@ -120,6 +126,9 @@ export async function createServer({
 	});
 }
 
+/**
+ * Request parameters for creating a server context
+ */
 interface ServerContextRequest {
 	tracer: Tracer;
 	logger: Logger;
@@ -129,11 +138,18 @@ interface ServerContextRequest {
 	runId?: string;
 	devmode?: boolean;
 	sdkVersion: string;
+	agents: AgentConfig[];
 }
 
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
 
+/**
+ * Creates an agent context for server operations
+ *
+ * @param req - The server context request parameters
+ * @returns An agent context object
+ */
 export function createServerContext(req: ServerContextRequest): AgentContext {
 	return {
 		devmode: req.devmode,
@@ -146,5 +162,6 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		kv,
 		vector,
 		sdkVersion: req.sdkVersion,
-	} as AgentContext;
+		agents: req.agents,
+	} as unknown as AgentContext;
 }

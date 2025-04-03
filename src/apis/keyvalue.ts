@@ -1,7 +1,21 @@
-import type { Json, KeyValueStorage } from '../types';
-import { DELETE, GET, PUT, type Body } from './api';
+import type {
+	DataResult,
+	DataResultFound,
+	DataResultNotFound,
+	DataType,
+	KeyValueStorage,
+	KeyValueStorageSetParams,
+} from '../types';
+import { DELETE, GET, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
+import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+import { fromDataType } from '../server/util';
+import { DataHandler } from '../router/data';
+import { gzipString } from '../server/gzip';
 
+/**
+ * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
+ */
 export default class KeyValueAPI implements KeyValueStorage {
 	/**
 	 * get a value from the key value storage
@@ -10,38 +24,55 @@ export default class KeyValueAPI implements KeyValueStorage {
 	 * @param key - the key to get the value of
 	 * @returns the value of the key
 	 */
-	async get(name: string, key: string): Promise<ArrayBuffer | null> {
+	async get(name: string, key: string): Promise<DataResult> {
 		const tracer = getTracer();
-		return new Promise<ArrayBuffer | null>((resolve, reject) => {
-			tracer.startActiveSpan('agentuity.keyvalue.get', async (span) => {
-				try {
-					span.setAttribute('name', name);
-					span.setAttribute('key', key);
-					const resp = await GET(
-						`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
-						true
-					);
-					if (resp.status === 404) {
-						span.addEvent('miss');
-						resolve(null);
-						return;
-					}
-					if (resp.status === 200) {
-						span.addEvent('hit');
-						resolve(resp.response.arrayBuffer());
-						return;
-					}
-					throw new Error(
-						`error getting keyvalue: ${resp.response.statusText} (${resp.response.status})`
-					);
-				} catch (ex) {
-					recordException(span, ex);
-					reject(ex);
-				} finally {
-					span.end();
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan('agentuity.keyvalue.get', {}, currentContext);
+
+		try {
+			span.setAttribute('name', name);
+			span.setAttribute('key', key);
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await GET(
+					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					true
+				);
+				if (resp.status === 404) {
+					span.addEvent('miss');
+					span.setStatus({ code: SpanStatusCode.OK });
+					return { exists: false } as DataResultNotFound;
 				}
+				if (resp.status === 200) {
+					const buffer = await Buffer.from(await resp.response.arrayBuffer());
+					span.addEvent('hit');
+					const result: DataResultFound = {
+						exists: true,
+						data: new DataHandler({
+							payload: buffer.toString('base64'),
+							contentType:
+								resp.headers.get('content-type') ?? 'application/octet-stream',
+						}),
+					};
+					span.setStatus({ code: SpanStatusCode.OK });
+					return result;
+				}
+				throw new Error(
+					`error getting keyvalue: ${resp.response.statusText} (${resp.response.status})`
+				);
 			});
-		});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 
 	/**
@@ -55,63 +86,75 @@ export default class KeyValueAPI implements KeyValueStorage {
 	async set(
 		name: string,
 		key: string,
-		value: ArrayBuffer | string | Json,
-		ttl?: number
+		value: DataType,
+		params?: KeyValueStorageSetParams
 	): Promise<void> {
 		const tracer = getTracer();
-		tracer.startActiveSpan('agentuity.keyvalue.set', async (span) => {
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan('agentuity.keyvalue.set', {}, currentContext);
+
+		try {
 			span.setAttribute('name', name);
 			span.setAttribute('key', key);
-			if (ttl) {
-				span.setAttribute('ttl', ttl);
+			if (params?.ttl) {
+				span.setAttribute('ttl', params.ttl);
 			}
-			try {
-				let body: Body | undefined;
-				let contentType: string;
-				if (typeof value === 'string') {
-					body = value;
-					contentType = 'text/plain';
-				} else if (typeof value === 'object') {
-					if (value instanceof ArrayBuffer) {
-						body = value;
-						contentType = 'application/octet-stream';
-					} else {
-						body = JSON.stringify(value);
-						contentType = 'application/json';
-					}
-				} else {
-					throw new Error(
-						'Invalid value type. Expected either string, ArrayBuffer or object'
-					);
-				}
+			if (params?.contentType) {
+				span.setAttribute('contentType', params.contentType);
+			}
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			await context.with(spanContext, async () => {
+				const datavalue = await fromDataType(value, params?.contentType);
 				let ttlstr = '';
-				if (ttl) {
-					if (ttl < 60) {
+				if (params?.ttl) {
+					if (params.ttl < 60) {
 						throw new Error(
-							`ttl for keyvalue set must be at least 60 seconds, got ${ttl}`
+							`ttl for keyvalue set must be at least 60 seconds, got ${params.ttl}`
 						);
 					}
-					ttlstr = `/${ttl}`;
+					ttlstr = `/${params.ttl}`;
 				}
+
+				let base64 = datavalue.data.base64;
+
+				const headers: Record<string, string> = {
+					'Content-Type': datavalue.data.contentType,
+				};
+
+				if (
+					datavalue.data.contentType.includes('text') ||
+					datavalue.data.contentType.includes('json')
+				) {
+					const compressed = await gzipString(datavalue.data.text);
+					base64 = compressed.toString('base64');
+					headers['Content-Encoding'] = 'gzip';
+				}
+
 				const resp = await PUT(
-					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					body,
-					{
-						'Content-Type': contentType,
-					}
+					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
+					Buffer.from(base64, 'base64').buffer,
+					headers
 				);
+
 				if (resp.status !== 201) {
 					throw new Error(
 						`error setting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				}
-			} catch (ex) {
-				recordException(span, ex);
-				throw ex;
-			} finally {
-				span.end();
-			}
-		});
+				span.setStatus({ code: SpanStatusCode.OK });
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 
 	/**
@@ -122,24 +165,39 @@ export default class KeyValueAPI implements KeyValueStorage {
 	 */
 	async delete(name: string, key: string): Promise<void> {
 		const tracer = getTracer();
-		tracer.startActiveSpan('agentuity.keyvalue.delete', async (span) => {
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan(
+			'agentuity.keyvalue.delete',
+			{},
+			currentContext
+		);
+
+		try {
 			span.setAttribute('name', name);
 			span.setAttribute('key', key);
-			try {
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			await context.with(spanContext, async () => {
 				const resp = await DELETE(
-					`/sdk/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status !== 200) {
 					throw new Error(
 						`error deleting keyvalue: ${resp.response.statusText} (${resp.response.status})`
 					);
 				}
-			} catch (ex) {
-				recordException(span, ex);
-				throw ex;
-			} finally {
-				span.end();
-			}
-		});
+				span.setStatus({ code: SpanStatusCode.OK });
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 }
