@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.92
+
+### Patch Changes
+
+- b41dcc8: Add data and markdown methods to AgentResponse interface and implementation
+
 ## 0.0.91
 
 ### Patch Changes
