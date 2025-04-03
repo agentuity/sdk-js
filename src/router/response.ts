@@ -192,4 +192,28 @@ export default class AgentResponseHandler implements AgentResponse {
 			),
 		};
 	}
+
+	/**
+	 * return a response with specific data and content type with optional metadata
+	 */
+	data(
+		data: DataType,
+		contentType: string,
+		metadata?: JsonObject
+	): Promise<AgentResponseData> {
+		return fromDataType(data, contentType, metadata);
+	}
+
+	/**
+	 * return a markdown response with optional metadata
+	 */
+	async markdown(content: string, metadata?: JsonObject): Promise<AgentResponseData> {
+		return {
+			data: new DataHandler({
+				contentType: 'text/markdown',
+				payload: Buffer.from(content).toString('base64'),
+			}),
+			metadata,
+		};
+	}
 }

@@ -562,6 +562,16 @@ export interface AgentResponse {
 	ogg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
 
 	/**
+	 * return a response with specific data and content type with optional metadata
+	 */
+	data(data: DataType, contentType: string, metadata?: JsonObject): Promise<AgentResponseData>;
+	
+	/**
+	 * return a markdown response with optional metadata
+	 */
+	markdown(content: string, metadata?: JsonObject): Promise<AgentResponseData>;
+
+	/**
 	 * stream a response to the client. the content type will default to text/plain if not provided or if SSE is requested.
 	 */
 	stream(
