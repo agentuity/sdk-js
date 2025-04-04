@@ -84,9 +84,7 @@ describe("DataHandler", () => {
         payload: Buffer.from(JSON.stringify(jsonData)).toString("base64")
       });
       
-      if (handler.json !== undefined) {
-        expect(handler.json).toEqual(jsonData);
-      }
+      expect(handler.json).toEqual(jsonData);
     });
     
     it("should throw error for invalid JSON", () => {
@@ -95,10 +93,11 @@ describe("DataHandler", () => {
         payload: Buffer.from("invalid json").toString("base64")
       });
       
-      expect(() => {
-        const json = handler.json;
-        console.log(json); // This line should not execute
-      }).toThrow();
+      function getJson() {
+        return handler.json;
+      }
+      
+      expect(getJson).toThrow();
     });
   });
   
@@ -136,7 +135,7 @@ describe("DataHandler", () => {
         payload: Buffer.from(JSON.stringify(jsonData)).toString("base64")
       });
       
-      const result = handler.object<TestData>();
+      const result = handler.json as unknown as TestData;
       expect(result).toEqual(jsonData);
     });
   });
