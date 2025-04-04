@@ -7,7 +7,6 @@ describe("OpenTelemetry Registration", () => {
     
     mock.module("@opentelemetry/sdk-node", () => ({
       NodeSDK: class MockNodeSDK {
-        constructor() {}
         start() {}
         shutdown() { return Promise.resolve(); }
       }
@@ -15,7 +14,6 @@ describe("OpenTelemetry Registration", () => {
     
     mock.module("@opentelemetry/host-metrics", () => ({
       HostMetrics: class MockHostMetrics {
-        constructor() {}
         start() {}
       }
     }));
@@ -25,32 +23,23 @@ describe("OpenTelemetry Registration", () => {
     }));
     
     mock.module("@opentelemetry/sdk-metrics", () => ({
-      PeriodicExportingMetricReader: class MockPeriodicExportingMetricReader {
-        constructor() {}
-      },
-      MeterProvider: class MockMeterProvider {
-        constructor() {}
-      }
+      PeriodicExportingMetricReader: class MockPeriodicExportingMetricReader {},
+      MeterProvider: class MockMeterProvider {}
     }));
     
     mock.module("@opentelemetry/resources", () => ({
-      Resource: class MockResource {
-        constructor() {}
-      }
+      Resource: class MockResource {}
     }));
     
     mock.module("@opentelemetry/exporter-trace-otlp-http", () => ({
       OTLPTraceExporter: class MockOTLPTraceExporter {
-        constructor() {}
         forceFlush() { return Promise.resolve(); }
         shutdown() { return Promise.resolve(); }
       }
     }));
     
     mock.module("@opentelemetry/exporter-metrics-otlp-http", () => ({
-      OTLPMetricExporter: class MockOTLPMetricExporter {
-        constructor() {}
-      }
+      OTLPMetricExporter: class MockOTLPMetricExporter {}
     }));
     
     mock.module("@opentelemetry/semantic-conventions", () => ({
@@ -72,9 +61,7 @@ describe("OpenTelemetry Registration", () => {
     mock.module("@opentelemetry/core", () => ({
       W3CTraceContextPropagator: class MockW3CTraceContextPropagator {},
       W3CBaggagePropagator: class MockW3CBaggagePropagator {},
-      CompositePropagator: class MockCompositePropagator {
-        constructor() {}
-      }
+      CompositePropagator: class MockCompositePropagator {}
     }));
     
     mock.module("@opentelemetry/api-logs", () => ({
@@ -94,20 +81,14 @@ describe("OpenTelemetry Registration", () => {
     
     mock.module("@opentelemetry/sdk-logs", () => ({
       LoggerProvider: class MockLoggerProvider {
-        constructor() {}
         addLogRecordProcessor() {}
       },
-      BatchLogRecordProcessor: class MockBatchLogRecordProcessor {
-        constructor() {}
-      },
-      SimpleLogRecordProcessor: class MockSimpleLogRecordProcessor {
-        constructor() {}
-      }
+      BatchLogRecordProcessor: class MockBatchLogRecordProcessor {},
+      SimpleLogRecordProcessor: class MockSimpleLogRecordProcessor {}
     }));
     
     mock.module("@opentelemetry/exporter-logs-otlp-http", () => ({
       OTLPLogExporter: class MockOTLPLogExporter {
-        constructor() {}
         forceFlush() { return Promise.resolve(); }
         shutdown() { return Promise.resolve(); }
       }
