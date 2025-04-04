@@ -1,20 +1,40 @@
 import { mock } from 'bun:test';
-import { mockOpenTelemetry } from '../mocks/opentelemetry';
 
 export function setupOtelMocks() {
-  if (process.env.SKIP_OTEL_TESTS === 'true') {
-    mock.module('@opentelemetry/api', () => ({}));
-    mock.module('@opentelemetry/core', () => ({}));
-    mock.module('@opentelemetry/sdk-node', () => ({}));
-    mock.module('@opentelemetry/resources', () => ({}));
-    mock.module('@opentelemetry/sdk-metrics', () => ({}));
-    mock.module('@opentelemetry/exporter-trace-otlp-http', () => ({}));
-    mock.module('@opentelemetry/exporter-metrics-otlp-http', () => ({}));
-    mock.module('@opentelemetry/exporter-logs-otlp-http', () => ({}));
-    mock.module('@opentelemetry/sdk-logs', () => ({}));
-    mock.module('@opentelemetry/api-logs', () => ({}));
-    return;
-  }
+  mock.module('@opentelemetry/api', () => ({
+    createContextKey: (name: string) => ({ _name: name }),
+    context: {
+      active: () => ({}),
+      bind: (context: any, target: any) => target,
+      with: (context: any, fn: any) => fn(),
+    },
+    trace: {
+      getTracer: () => ({
+        startSpan: () => ({
+          end: () => {},
+          setAttribute: () => {},
+          setStatus: () => {},
+          recordException: () => {},
+        }),
+      }),
+    },
+    SpanStatusCode: {
+      OK: 'ok',
+      ERROR: 'error',
+    },
+  }));
   
-  mockOpenTelemetry();
+  mock.module('@opentelemetry/core', () => ({
+    suppressTracing: () => ({}),
+    unsuppressTracing: () => ({}),
+    isTracingSuppressed: () => false,
+  }));
+  
+  mock.module('@opentelemetry/sdk-node', () => ({
+    NodeSDK: class MockNodeSDK {
+      constructor() {}
+      start() { return this; }
+      shutdown() { return Promise.resolve(); }
+    }
+  }));
 }
