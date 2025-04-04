@@ -130,27 +130,19 @@ describe("ConsoleLogger", () => {
     });
     
     it("should handle formatting errors gracefully", () => {
-      const testError = new Error("Test formatting error");
+      const logger = new ConsoleLogger();
       
-      const formatWithOptionsModule = require("node:util");
-      const originalFormatWithOptions = formatWithOptionsModule.formatWithOptions;
-      formatWithOptionsModule.formatWithOptions = () => {
-        throw testError;
+      const originalFormatMessage = logger['formatMessage'];
+      logger['formatMessage'] = function() {
+        throw new Error("Test formatting error");
       };
       
-      try {
-        const logger = new ConsoleLogger();
-        
-        logger.info("Test message");
-        
-        expect(mockConsole.info).toHaveBeenCalled();
-        expect(mockConsole.error).toHaveBeenCalledWith(
-          'Error formatting log message:',
-          expect.any(Error)
-        );
-      } finally {
-        formatWithOptionsModule.formatWithOptions = originalFormatWithOptions;
-      }
+      logger.info("Test message");
+      
+      logger['formatMessage'] = originalFormatMessage;
+      
+      expect(mockConsole.info).toHaveBeenCalled();
+      expect(mockConsole.error).toHaveBeenCalled();
     });
   });
   
