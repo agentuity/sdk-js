@@ -85,21 +85,21 @@ export class DataHandler implements Data {
 		return Buffer.from(this.payload.payload, 'base64');
 	}
 
-	get contentType() {
+	get contentType(): string {
 		return this.type;
 	}
 
-	get base64() {
+	get base64(): string {
 		this.ensureStreamLoaded();
 		return this.payload.payload ?? '';
 	}
 
-	get text() {
+	get text(): string {
 		this.ensureStreamLoaded();
 		return this.data.toString('utf-8');
 	}
 
-	get json() {
+	get json(): any {
 		const text = this.text;
 		const res = safeParse(text, invalidJsonSymbol);
 		if (res === invalidJsonSymbol) {
@@ -113,7 +113,7 @@ export class DataHandler implements Data {
 		return res as T;
 	}
 
-	get binary() {
+	get binary(): Uint8Array {
 		const data = this.data;
 		return new Uint8Array(data);
 	}
