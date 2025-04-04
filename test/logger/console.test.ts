@@ -132,8 +132,8 @@ describe("ConsoleLogger", () => {
     it("should handle formatting errors gracefully", () => {
       const logger = new ConsoleLogger();
       
-      const originalFormatMessage = logger["formatMessage"];
-      logger["formatMessage"] = function() {
+      const originalFormatMessage = logger["formatMessage" as keyof typeof logger] as () => string;
+      (logger["formatMessage" as keyof typeof logger] as unknown) = () => {
         throw new Error("Test formatting error");
       };
       

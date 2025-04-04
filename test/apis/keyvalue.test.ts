@@ -39,6 +39,7 @@ describe("KeyValueAPI", () => {
       },
       trace: {
         setSpan: (ctx: unknown, span: unknown) => ctx,
+        getTracer: () => mockTracer,
       },
       SpanStatusCode: {
         OK: 1,
@@ -80,7 +81,7 @@ describe("KeyValueAPI", () => {
         DataHandler: mock(() => mockData),
       }));
 
-      keyValueAPI.get = async function(name: string, key: string): Promise<DataResult> {
+      keyValueAPI.get = async (name: string, key: string): Promise<DataResult> => {
         const result: DataResultFound = {
           exists: true,
           data: mockData
@@ -105,7 +106,7 @@ describe("KeyValueAPI", () => {
         GET: mock(() => Promise.resolve(mockResponse)),
       }));
 
-      keyValueAPI.get = async function(name: string, key: string): Promise<DataResult> {
+      keyValueAPI.get = async (name: string, key: string): Promise<DataResult> => {
         const result: DataResultNotFound = {
           exists: false,
           data: undefined as never
@@ -131,7 +132,7 @@ describe("KeyValueAPI", () => {
         GET: mock(() => Promise.resolve(mockResponse)),
       }));
 
-      keyValueAPI.get = async function(name: string, key: string): Promise<DataResult> {
+      keyValueAPI.get = async (name: string, key: string): Promise<DataResult> => {
         throw new Error("Internal Server Error");
       };
 
