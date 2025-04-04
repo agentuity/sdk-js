@@ -74,6 +74,7 @@ export class DataHandler implements Data {
 		return {
 			contentType: this.contentType,
 			base64: this.base64,
+			payload: this.base64,
 		};
 	}
 

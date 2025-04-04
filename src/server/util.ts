@@ -28,6 +28,9 @@ export function safeStringify(obj: unknown) {
 
 export function safeParse(text: string, defaultValue?: unknown) {
 	try {
+		if (!text || text.trim() === '') {
+			return defaultValue;
+		}
 		return JSON.parse(text);
 	} catch (error) {
 		return defaultValue;
