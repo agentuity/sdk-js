@@ -7,6 +7,7 @@ import {
   Base64StreamHelper 
 } from "../../src/server/util";
 import type { ServerRoute } from "../../src/server/types";
+import type { ReadableDataType } from "../../src/types";
 
 describe("Utility Functions", () => {
   describe("safeStringify", () => {
@@ -135,7 +136,7 @@ describe("Utility Functions", () => {
     });
 
     it("should throw error for invalid input", async () => {
-      await expect(toBuffer(123 as any)).rejects.toThrow("Invalid data type");
+      await expect(toBuffer(123 as unknown as ReadableDataType)).rejects.toThrow("Invalid data type");
     });
   });
 
