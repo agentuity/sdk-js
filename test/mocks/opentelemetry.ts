@@ -87,7 +87,6 @@ export const mockOpenTelemetry = () => {
       extract() { return {}; }
     },
     CompositePropagator: class MockCompositePropagator {
-      constructor() {}
       inject() {}
       extract() { return {}; }
     },
@@ -100,7 +99,6 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/sdk-node', () => ({
     NodeSDK: class MockNodeSDK {
-      constructor() {}
       start() { return this; }
       shutdown() { return Promise.resolve(); }
     }
@@ -108,7 +106,6 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/resources', () => ({
     Resource: class MockResource {
-      constructor() {}
       static default() { return new MockResource(); }
       merge() { return this; }
     },
@@ -117,7 +114,6 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/sdk-metrics', () => ({
     MeterProvider: class MockMeterProvider {
-      constructor() {}
       addMetricReader() { return this; }
       shutdown() { return Promise.resolve(); }
     },
@@ -125,7 +121,6 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/exporter-trace-otlp-http', () => ({
     OTLPTraceExporter: class MockOTLPTraceExporter {
-      constructor() {}
       export() { return Promise.resolve({ code: 0 }); }
       shutdown() { return Promise.resolve(); }
     }
@@ -133,7 +128,6 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/exporter-metrics-otlp-http', () => ({
     OTLPMetricExporter: class MockOTLPMetricExporter {
-      constructor() {}
       export() { return Promise.resolve({ code: 0 }); }
       shutdown() { return Promise.resolve(); }
     }
@@ -141,7 +135,6 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/exporter-logs-otlp-http', () => ({
     OTLPLogExporter: class MockOTLPLogExporter {
-      constructor() {}
       export() { return Promise.resolve({ code: 0 }); }
       shutdown() { return Promise.resolve(); }
     }
@@ -149,12 +142,10 @@ export const mockOpenTelemetry = () => {
   
   mock.module('@opentelemetry/sdk-logs', () => ({
     LoggerProvider: class MockLoggerProvider {
-      constructor() {}
       addLogRecordProcessor() { return this; }
       shutdown() { return Promise.resolve(); }
     },
     SimpleLogRecordProcessor: class MockSimpleLogRecordProcessor {
-      constructor() {}
       forceFlush() { return Promise.resolve(); }
       shutdown() { return Promise.resolve(); }
     }
