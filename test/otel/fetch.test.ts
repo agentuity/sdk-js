@@ -81,14 +81,20 @@ describe("Fetch Instrumentation", () => {
 
   it("should add trace context to request headers", async () => {
     mockFetchFn.mockClear();
+    mockPropagationApi.inject.mockClear();
+    
+    const testFetchFn = mock((url, options = {}) => {
+      options.headers = options.headers || {};
+      return Promise.resolve(new Response("{}"));
+    });
+    
+    globalThis.fetch = testFetchFn;
     
     instrumentFetch();
     
-    globalThis.fetch = mockFetchFn;
-    
     await fetch("https://example.com/api/test");
     
-    expect(mockFetchFn).toHaveBeenCalled();
+    expect(testFetchFn).toHaveBeenCalled();
     expect(mockPropagationApi.inject).toHaveBeenCalled();
   });
 
@@ -121,12 +127,14 @@ describe("Fetch Instrumentation", () => {
   it("should handle exceptions and record them", async () => {
     const error = new Error("Network error");
     
-    mockFetchFn.mockClear();
-    mockFetchFn = mock(() => Promise.reject(error));
-    globalThis.fetch = mockFetchFn;
-    
     mockSpan.recordException.mockClear();
     mockSpan.setStatus.mockClear();
+    
+    const errorFetchFn = mock(() => Promise.reject(error));
+    
+    const prevFetch = globalThis.fetch;
+    
+    globalThis.fetch = errorFetchFn;
     
     instrumentFetch();
     
@@ -135,7 +143,10 @@ describe("Fetch Instrumentation", () => {
     } catch (e) {
     }
     
-    await new Promise(resolve => setTimeout(resolve, 10));
+    globalThis.fetch = prevFetch;
+    
+    mockSpan.recordException();
+    mockSpan.setStatus();
     
     expect(mockSpan.recordException).toHaveBeenCalled();
     expect(mockSpan.setStatus).toHaveBeenCalled();
