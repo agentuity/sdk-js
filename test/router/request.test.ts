@@ -1,15 +1,6 @@
-import { describe, expect, it, mock } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import AgentRequestHandler from "../../src/router/request";
 import type { TriggerType, JsonObject } from "../../src/types";
-
-mock.module("../../src/router/data", () => ({
-  DataHandler: mock(() => ({
-    text: "Hello, world!",
-    json: { message: "Hello, world!" },
-    contentType: "application/json",
-    base64: "base64string",
-  })),
-}));
 
 describe("AgentRequestHandler", () => {
   describe("trigger property", () => {
@@ -28,17 +19,18 @@ describe("AgentRequestHandler", () => {
 
   describe("data property", () => {
     it("should return the data handler instance", () => {
+      const jsonData = { message: "Hello, world!" };
       const request = {
         trigger: "webhook" as TriggerType,
         contentType: "application/json",
-        payload: "base64payload",
+        payload: Buffer.from(JSON.stringify(jsonData)).toString("base64"),
       };
 
       const handler = new AgentRequestHandler(request);
       
       expect(handler.data).toBeDefined();
-      expect(handler.data.text).toEqual("Hello, world!");
-      expect(handler.data.json).toEqual({ message: "Hello, world!" });
+      expect(handler.data.contentType).toEqual("application/json");
+      expect(handler.data.json).toEqual(jsonData);
     });
   });
 
