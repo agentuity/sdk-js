@@ -33,7 +33,7 @@ export class DataHandler implements Data {
 		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
 	) {
 		this.payload = payload;
-		this.type = payload.contentType ?? 'application/octet-stream';
+		this.type = payload.contentType === undefined || payload.contentType === null ? 'application/octet-stream' : payload.contentType;
 		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
 		this.readstream = stream;
 	}
