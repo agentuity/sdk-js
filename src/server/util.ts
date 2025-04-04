@@ -218,7 +218,7 @@ export async function fromDataType(
 			return {
 				data: new DataHandler({
 					contentType: contentType ?? 'application/octet-stream',
-					payload: data.toString('base64'),
+					payload: Buffer.from(await data.arrayBuffer()).toString('base64'),
 				}),
 				metadata,
 			};

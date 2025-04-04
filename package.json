@@ -31,7 +31,8 @@
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
 		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
-		"start": "npm run node:start"
+		"start": "npm run node:start",
+		"test": "bun test"
 	},
 	"exports": {
 		"./package.json": "./package.json",

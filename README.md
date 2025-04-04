@@ -92,6 +92,13 @@ npm run build
 
 The build output will be in the `dist` directory.
 
+### Testing
+
+Run tests using Bun's built-in test runner:
+
+```
+bun test
+```
 
 ## License
 

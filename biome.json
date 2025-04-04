@@ -17,7 +17,12 @@
 	"organizeImports": { "enabled": true },
 	"linter": {
 		"enabled": true,
-		"rules": { "recommended": true },
+		"rules": { 
+			"recommended": true,
+			"complexity": {
+				"useLiteralKeys": "off"
+			}
+		},
 		"ignore": ["dist/**", "**/package-lock.json"]
 	},
 	"javascript": {

@@ -1,7 +1,7 @@
 import { readFileSync, existsSync, createReadStream } from 'node:fs';
 import { ReadableStream } from 'node:stream/web';
 import path from 'node:path';
-import type { Data, DataPayload, ReadableDataType } from '../types';
+import type { Data, DataPayload, ReadableDataType, Json } from '../types';
 import { safeParse } from '../server/util';
 
 const invalidJsonSymbol = Symbol('invalid json');
@@ -32,8 +32,8 @@ export class DataHandler implements Data {
 		payload: Arguments,
 		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
 	) {
-		this.payload = payload;
-		this.type = payload.contentType ?? 'application/octet-stream';
+		this.payload = payload || { contentType: 'application/octet-stream', payload: '' };
+		this.type = payload?.contentType === undefined || payload?.contentType === null ? 'application/octet-stream' : payload.contentType;
 		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
 		this.readstream = stream;
 	}
@@ -77,35 +77,35 @@ export class DataHandler implements Data {
 		};
 	}
 
-	private get data() {
-		if (!this.payload.payload) {
+	private get data(): Buffer {
+		if (!this.payload || this.payload.payload === undefined || this.payload.payload === null) {
 			return Buffer.from([]);
 		}
 		this.ensureStreamLoaded();
 		return Buffer.from(this.payload.payload, 'base64');
 	}
 
-	get contentType() {
+	get contentType(): string {
 		return this.type;
 	}
 
-	get base64() {
+	get base64(): string {
 		this.ensureStreamLoaded();
-		return this.payload.payload ?? '';
+		return this.payload?.payload ?? '';
 	}
 
-	get text() {
+	get text(): string {
 		this.ensureStreamLoaded();
 		return this.data.toString('utf-8');
 	}
 
-	get json() {
+	get json(): Json {
 		const text = this.text;
 		const res = safeParse(text, invalidJsonSymbol);
 		if (res === invalidJsonSymbol) {
 			throw new Error('The content type is not valid JSON');
 		}
-		return res;
+		return res as Json;
 	}
 
 	object<T>(): T {
@@ -113,19 +113,19 @@ export class DataHandler implements Data {
 		return res as T;
 	}
 
-	get binary() {
+	get binary(): Uint8Array {
 		const data = this.data;
 		return new Uint8Array(data);
 	}
 
-	get blob() {
+	get blob(): Blob {
 		const data = this.data;
 		return new Blob([data], { type: this.contentType });
 	}
 
-	get arrayBuffer() {
+	get arrayBuffer(): ArrayBuffer {
 		const data = this.data;
-		return data.buffer;
+		return data.buffer as ArrayBuffer;
 	}
 
 	get stream(): ReadableStream<ReadableDataType> {
