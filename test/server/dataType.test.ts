@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { toDataType, fromDataType } from "../../src/server/util";
-import { DataHandler } from "../../src/router/data";
 import type { TriggerType, JsonObject } from "../../src/types";
 
 describe("Data Type Conversion Functions", () => {
@@ -191,8 +190,7 @@ describe("Data Type Conversion Functions", () => {
     
     it("should handle invalid data type gracefully", async () => {
       try {
-        // @ts-expect-error Testing invalid data type
-        await fromDataType(123);
+        await fromDataType(123 as unknown as Buffer);
         // If we reach here, it didn't throw, which is fine
         expect(true).toBe(true);
       } catch (error) {
