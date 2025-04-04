@@ -61,9 +61,10 @@ describe("API Client", () => {
       const [url, options] = fetchCalls[0];
       
       expect(url.toString()).toEqual("https://test.agentuity.ai/test");
-      expect(options?.headers?.Authorization).toEqual("Bearer test-api-key");
-      expect(options?.headers?.["User-Agent"]).toEqual("Agentuity JS SDK/1.0.0");
-      expect(options?.headers?.["Content-Type"]).toEqual("application/json");
+      const headers = options?.headers as Record<string, string>;
+      expect(headers?.Authorization).toEqual("Bearer test-api-key");
+      expect(headers?.["User-Agent"]).toEqual("Agentuity JS SDK/1.0.0");
+      expect(headers?.["Content-Type"]).toEqual("application/json");
     });
     
     it("should handle custom headers", async () => {
@@ -77,7 +78,8 @@ describe("API Client", () => {
       });
       
       const [, options] = fetchCalls[0];
-      expect(options?.headers?.["X-Custom-Header"]).toEqual("custom-value");
+      const headers = options?.headers as Record<string, string>;
+      expect(headers?.["X-Custom-Header"]).toEqual("custom-value");
     });
     
     it("should retry on 429 status", async () => {
