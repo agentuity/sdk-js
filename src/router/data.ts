@@ -1,7 +1,7 @@
 import { readFileSync, existsSync, createReadStream } from 'node:fs';
 import { ReadableStream } from 'node:stream/web';
 import path from 'node:path';
-import type { Data, DataPayload, ReadableDataType } from '../types';
+import type { Data, DataPayload, ReadableDataType, Json } from '../types';
 import { safeParse } from '../server/util';
 
 const invalidJsonSymbol = Symbol('invalid json');
@@ -99,13 +99,13 @@ export class DataHandler implements Data {
 		return this.data.toString('utf-8');
 	}
 
-	get json(): any {
+	get json(): Json {
 		const text = this.text;
 		const res = safeParse(text, invalidJsonSymbol);
 		if (res === invalidJsonSymbol) {
 			throw new Error('The content type is not valid JSON');
 		}
-		return res;
+		return res as Json;
 	}
 
 	object<T>(): T {
@@ -123,9 +123,9 @@ export class DataHandler implements Data {
 		return new Blob([data], { type: this.contentType });
 	}
 
-	get arrayBuffer(): any {
+	get arrayBuffer(): ArrayBuffer {
 		const data = this.data;
-		return data.buffer;
+		return data.buffer as ArrayBuffer;
 	}
 
 	get stream(): ReadableStream<ReadableDataType> {
