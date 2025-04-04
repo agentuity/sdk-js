@@ -38,7 +38,7 @@ describe("Router", () => {
     });
 
     it("should create binary response correctly", async () => {
-      const binaryData = new Uint8Array(new TextEncoder().encode("Hello, world!")).buffer;
+      const binaryData = new ArrayBuffer(8);
       const metadata: JsonObject = { key: "value" };
       
       const response = await responseHandler.binary(binaryData, metadata);
