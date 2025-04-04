@@ -1,12 +1,13 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import KeyValueAPI from "../../src/apis/keyvalue";
-import type { DataResult, DataResultFound } from "../../src/types";
+import type { Data, DataResult, DataResultFound, DataResultNotFound, ReadableDataType } from "../../src/types";
+import type { ReadableStream } from "node:stream/web";
 
 describe("KeyValueAPI", () => {
   let keyValueAPI: KeyValueAPI;
   
   const mockTracer = {
-    startSpan: mock((name: string, options: any, ctx: any) => {
+    startSpan: mock((name: string, options: unknown, ctx: unknown) => {
       return {
         setAttribute: mock(() => {}),
         addEvent: mock(() => {}),
@@ -17,6 +18,17 @@ describe("KeyValueAPI", () => {
     }),
   };
 
+  const createMockData = (): Data => ({
+    contentType: "application/json",
+    base64: Buffer.from(JSON.stringify({ test: "data" })).toString("base64"),
+    text: JSON.stringify({ test: "data" }),
+    json: { test: "data" },
+    object: <T>() => ({ test: "data" } as T),
+    binary: new Uint8Array(),
+    buffer: Buffer.from(""),
+    stream: {} as ReadableStream<ReadableDataType>,
+  });
+
   beforeEach(() => {
     mock.restore();
     keyValueAPI = new KeyValueAPI();
@@ -26,7 +38,7 @@ describe("KeyValueAPI", () => {
         active: () => ({}),
       },
       trace: {
-        setSpan: (ctx: any, span: any) => ctx,
+        setSpan: (ctx: unknown, span: unknown) => ctx,
       },
       SpanStatusCode: {
         OK: 1,
@@ -47,16 +59,7 @@ describe("KeyValueAPI", () => {
 
   describe("get", () => {
     it("should retrieve a value successfully", async () => {
-      const mockData = {
-        contentType: "application/json",
-        base64: Buffer.from(JSON.stringify({ test: "data" })).toString("base64"),
-        text: JSON.stringify({ test: "data" }),
-        json: { test: "data" },
-        object: <T>() => ({ test: "data" } as T),
-        binary: new Uint8Array(),
-        buffer: Buffer.from(""),
-        stream: {} as any,
-      };
+      const mockData = createMockData();
 
       const mockResponse = {
         status: 200,
@@ -78,10 +81,11 @@ describe("KeyValueAPI", () => {
       }));
 
       keyValueAPI.get = async function(name: string, key: string): Promise<DataResult> {
-        return {
+        const result: DataResultFound = {
           exists: true,
           data: mockData
-        } as DataResultFound;
+        };
+        return result;
       };
 
       const result = await keyValueAPI.get("test-store", "test-key");
@@ -102,10 +106,11 @@ describe("KeyValueAPI", () => {
       }));
 
       keyValueAPI.get = async function(name: string, key: string): Promise<DataResult> {
-        return {
+        const result: DataResultNotFound = {
           exists: false,
-          data: undefined
-        } as DataResult;
+          data: undefined as never
+        };
+        return result;
       };
 
       const result = await keyValueAPI.get("test-store", "not-found-key");

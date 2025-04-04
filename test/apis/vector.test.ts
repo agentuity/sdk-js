@@ -5,7 +5,7 @@ import type { VectorSearchResult } from "../../src/types";
 describe("VectorAPI", () => {
   let vectorAPI: VectorAPI;
   const mockTracer = {
-    startSpan: mock((name: string, options: any, ctx: any) => {
+    startSpan: mock((name: string, options: unknown, ctx: unknown) => {
       return {
         setAttribute: mock(() => {}),
         addEvent: mock(() => {}),
@@ -25,7 +25,7 @@ describe("VectorAPI", () => {
         active: () => ({}),
       },
       trace: {
-        setSpan: (ctx: any, span: any) => ctx,
+        setSpan: (ctx: unknown, span: unknown) => ctx,
       },
       SpanStatusCode: {
         OK: 1,
@@ -60,7 +60,7 @@ describe("VectorAPI", () => {
       }));
 
       const originalSearch = vectorAPI.search;
-      vectorAPI.search = async function(name: string, params: any): Promise<VectorSearchResult[]> {
+      vectorAPI.search = async function(name: string, params: unknown): Promise<VectorSearchResult[]> {
         return mockSearchResults;
       };
 
@@ -82,7 +82,7 @@ describe("VectorAPI", () => {
       }));
 
       const originalSearch = vectorAPI.search;
-      vectorAPI.search = async function(name: string, params: any): Promise<VectorSearchResult[]> {
+      vectorAPI.search = async function(name: string, params: unknown): Promise<VectorSearchResult[]> {
         return [];
       };
 
