@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import AgentRequestHandler from "../../src/router/request";
-import { DataHandler } from "../../src/router/data";
 import type { TriggerType, JsonObject } from "../../src/types";
 
 describe("AgentRequestHandler", () => {
@@ -38,7 +37,7 @@ describe("AgentRequestHandler", () => {
       expect(handler.data.contentType).toEqual("application/json");
       expect(handler.data.base64).toBe(base64Payload);
       
-      expect(handler.data.json).toEqual(jsonData);
+      expect(handler.data.object()).toEqual(jsonData);
     });
   });
 
