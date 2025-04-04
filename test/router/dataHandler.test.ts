@@ -13,7 +13,9 @@ describe("DataHandler", () => {
     });
     
     it("should default to application/octet-stream if no content type provided", () => {
+      // Create with explicit undefined to test default behavior
       const handler = new DataHandler({
+        contentType: undefined,
         payload: Buffer.from("test").toString("base64")
       });
       
