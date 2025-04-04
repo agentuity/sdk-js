@@ -3,7 +3,7 @@ import { send, GET, POST, PUT, DELETE } from "../../src/apis/api";
 
 describe("API Client", () => {
   let originalEnv: NodeJS.ProcessEnv;
-  let mockFetch: any;
+  let mockFetch: ReturnType<typeof mock>;
   
   beforeEach(() => {
     originalEnv = { ...process.env };
@@ -34,7 +34,7 @@ describe("API Client", () => {
   
   describe("send", () => {
     it("should throw error if API key is not set", async () => {
-      delete process.env.AGENTUITY_API_KEY;
+      process.env.AGENTUITY_API_KEY = undefined;
       
       await expect(send({
         method: "GET",
