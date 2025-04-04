@@ -42,15 +42,15 @@ jobs:
 
       - name: Install dependencies
         if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
-        run: npm i
+        run: bun install
 
       - name: Run lint
         if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
-        run: npm run lint
+        run: bun run lint
 
       - name: Release to NPM
         if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
-        run: npm run release
+        run: bun run release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
