@@ -95,14 +95,10 @@ describe("DataHandler", () => {
         payload: Buffer.from("invalid json").toString("base64")
       });
       
-      if (handler.json !== undefined) {
-        try {
-          void handler.json;
-          expect(false).toBe(true);
-        } catch (error) {
-          expect(error).toBeDefined();
-        }
-      }
+      expect(() => {
+        const json = handler.json;
+        console.log(json); // This line should not execute
+      }).toThrow();
     });
   });
   
@@ -134,23 +130,14 @@ describe("DataHandler", () => {
         count: number;
       }
       
-      const jsonData: TestData = { message: "Hello, world!", count: 42 };
+      const jsonData = { message: "Hello, world!", count: 42 };
       const handler = new DataHandler({
         contentType: "application/json",
         payload: Buffer.from(JSON.stringify(jsonData)).toString("base64")
       });
       
-      if (handler.json !== undefined) {
-        expect(handler.json).toEqual(jsonData);
-      }
-      
-      try {
-        const result = handler.object<TestData>();
-        if (result !== undefined) {
-          expect(result).toEqual(jsonData);
-        }
-      } catch (error) {
-      }
+      const result = handler.object<TestData>();
+      expect(result).toEqual(jsonData);
     });
   });
 });

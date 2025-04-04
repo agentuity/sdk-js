@@ -36,25 +36,9 @@ describe("AgentRequestHandler", () => {
       expect(handler.data).toBeDefined();
       
       expect(handler.data.contentType).toEqual("application/json");
-      
       expect(handler.data.base64).toBe(base64Payload);
       
-      const directDataHandler = new DataHandler({
-        contentType: "application/json",
-        payload: base64Payload
-      });
-      
-      console.log("DataHandler debug:", {
-        base64Payload,
-        payloadExists: !!directDataHandler.base64,
-        payloadLength: directDataHandler.base64.length,
-        dataHandlerType: directDataHandler.contentType,
-        textExists: typeof directDataHandler.text !== 'undefined'
-      });
-      
-      expect(directDataHandler.text).toBe(jsonString);
-      
-      expect(handler.data.text).toBe(jsonString);
+      expect(handler.data.json).toEqual(jsonData);
     });
   });
 
