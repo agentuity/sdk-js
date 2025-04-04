@@ -24,10 +24,10 @@ describe("API Client", () => {
     };
     
     // Override global.fetch with our tracking function
-    global.fetch = function(url: URL | RequestInfo, options?: RequestInit) {
+    global.fetch = ((url: URL | RequestInfo, options?: RequestInit) => {
       fetchCalls.push([url, options]);
       return Promise.resolve(mockResponse);
-    } as any;
+    }) as unknown as typeof fetch;
     
     // Mock the router module
     mock.module("../../src/router/router", () => ({
@@ -87,7 +87,7 @@ describe("API Client", () => {
       const originalFetch = global.fetch;
       let callCount = 0;
       
-      global.fetch = function(url: URL | RequestInfo, options?: RequestInit) {
+      global.fetch = ((url: URL | RequestInfo, options?: RequestInit) => {
         fetchCalls.push([url, options]);
         callCount++;
         
@@ -105,7 +105,7 @@ describe("API Client", () => {
           }),
           json: () => Promise.resolve({ success: true }),
         });
-      } as any;
+      }) as unknown as typeof fetch;
       
       const result = await send({
         method: "GET",

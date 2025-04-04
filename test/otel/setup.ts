@@ -5,8 +5,8 @@ export function setupOtelMocks() {
     createContextKey: (name: string) => ({ _name: name }),
     context: {
       active: () => ({}),
-      bind: (context: any, target: any) => target,
-      with: (context: any, fn: any) => fn(),
+      bind: (context: unknown, target: unknown) => target,
+      with: (context: unknown, fn: unknown) => typeof fn === 'function' ? fn() : undefined,
     },
     trace: {
       getTracer: () => ({
@@ -32,7 +32,6 @@ export function setupOtelMocks() {
   
   mock.module('@opentelemetry/sdk-node', () => ({
     NodeSDK: class MockNodeSDK {
-      constructor() {}
       start() { return this; }
       shutdown() { return Promise.resolve(); }
     }

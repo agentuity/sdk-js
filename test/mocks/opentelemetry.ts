@@ -22,8 +22,8 @@ export const mockOpenTelemetry = () => {
     },
     context: {
       active: () => ({}),
-      bind: (context: any, target: any) => target,
-      with: (context: any, fn: any) => fn(),
+      bind: (context: unknown, target: unknown) => target,
+      with: (context: unknown, fn: unknown) => typeof fn === 'function' ? fn() : undefined,
     },
     trace: {
       getTracer: () => ({
@@ -33,7 +33,7 @@ export const mockOpenTelemetry = () => {
           setStatus: () => {},
           recordException: () => {},
         }),
-        startActiveSpan: (_name: string, _options: any, fn: any) => {
+        startActiveSpan: (_name: string, _options: unknown, fn: unknown) => {
           if (typeof fn === 'function') {
             return fn({
               end: () => {},
