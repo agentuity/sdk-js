@@ -12,25 +12,13 @@
 		"lineWidth": 80,
 		"attributePosition": "auto",
 		"bracketSpacing": true,
-		"ignore": [
-			"dist/**",
-			"node_modules/**",
-			"package-lock.json",
-			"package.json",
-			"bun.lock"
-		]
+		"ignore": ["dist/**", "**/package-lock.json"]
 	},
 	"organizeImports": { "enabled": true },
 	"linter": {
-		"enabled": false,
+		"enabled": true,
 		"rules": { "recommended": true },
-		"ignore": [
-			"dist/**",
-			"node_modules/**",
-			"package-lock.json",
-			"package.json",
-			"bun.lock"
-		]
+		"ignore": ["dist/**", "**/package-lock.json"]
 	},
 	"javascript": {
 		"formatter": {

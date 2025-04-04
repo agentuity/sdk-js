@@ -1,30 +1,37 @@
 import type { Logger } from '../logger';
-import type { AgentRequestType, AgentResponseType } from '../types';
+import type { AgentConfig, DataPayload, AgentResponseData } from '../types';
 
-export interface IncomingRequest extends AgentRequestType {
+/**
+ * Represents an incoming request to the server
+ */
+export interface IncomingRequest extends DataPayload {
 	runId: string;
 }
 
+/**
+ * Represents a server request with URL, headers, and the incoming request
+ */
 export interface ServerRequest {
 	url: string;
 	request: IncomingRequest;
 	headers: Record<string, string>;
+	setTimeout: (val: number) => void;
+	controller?: ReadableStreamDefaultController;
 }
 
-export interface ServerAgent {
-	id: string;
-	path: string;
-	name: string;
-	description?: string;
-}
-
+/**
+ * Represents a route in the server
+ */
 export interface ServerRoute {
 	path: string;
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-	handler: (req: ServerRequest) => Promise<AgentResponseType>;
-	agent: ServerAgent;
+	handler: (req: ServerRequest) => Promise<AgentResponseData>;
+	agent: AgentConfig;
 }
 
+/**
+ * Configuration for the unified server
+ */
 export interface UnifiedServerConfig {
 	port: number;
 	routes: ServerRoute[];
@@ -32,6 +39,9 @@ export interface UnifiedServerConfig {
 	sdkVersion: string;
 }
 
+/**
+ * Interface for server implementations
+ */
 export interface Server {
 	start(): Promise<void>;
 	stop(): Promise<void>;

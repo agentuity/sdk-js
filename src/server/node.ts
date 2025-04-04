@@ -5,17 +5,27 @@ import type {
 	UnifiedServerConfig,
 } from './types';
 import type { Logger } from '../logger';
-import { createServer as createHttpServer, IncomingMessage } from 'node:http';
-import type { AgentResponseType } from '../types';
-import { callbackAgentHandler } from './agents';
 import {
-	context,
-	propagation,
-	trace,
-	SpanKind,
-	SpanStatusCode,
-} from '@opentelemetry/api';
+	createServer as createHttpServer,
+	type IncomingMessage,
+} from 'node:http';
+import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
+import {
+	extractTraceContextFromNodeRequest,
+	injectTraceContextToNodeResponse,
+} from './otel';
+import {
+	safeStringify,
+	safeParse,
+	getRoutesHelpText,
+	createStreamingResponse,
+} from './util';
 
+export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
+
+/**
+ * Node.js implementation of the Server interface
+ */
 export class NodeServer implements Server {
 	private readonly logger: Logger;
 	private readonly port: number;
@@ -23,6 +33,11 @@ export class NodeServer implements Server {
 	private server: ReturnType<typeof createHttpServer> | null = null;
 	private readonly sdkVersion: string;
 
+	/**
+	 * Creates a new Node.js server
+	 *
+	 * @param config - The server configuration
+	 */
 	constructor({ logger, port, routes, sdkVersion }: UnifiedServerConfig) {
 		this.logger = logger;
 		this.port = port;
@@ -30,6 +45,9 @@ export class NodeServer implements Server {
 		this.sdkVersion = sdkVersion;
 	}
 
+	/**
+	 * Stops the server
+	 */
 	async stop(): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if (this.server) {
@@ -52,7 +70,7 @@ export class NodeServer implements Server {
 			req.on('data', (chunk) => chunks.push(chunk));
 			req.on('end', async () => {
 				const body = Buffer.concat(chunks);
-				const payload = JSON.parse(body.toString());
+				const payload = safeParse(body.toString());
 				resolve(payload as T);
 			});
 			req.on('error', (err) => {
@@ -61,64 +79,153 @@ export class NodeServer implements Server {
 		});
 	}
 
+	private getBuffer(req: IncomingMessage): Promise<Buffer> {
+		return new Promise((resolve, reject) => {
+			const chunks: Buffer[] = [];
+			req.on('data', (chunk) => chunks.push(chunk));
+			req.on('end', async () => {
+				const body = Buffer.concat(chunks);
+				resolve(body);
+			});
+			req.on('error', (err) => {
+				reject(err);
+			});
+		});
+	}
+	/**
+	 * Gets the headers from the request
+	 */
 	private getHeaders(req: IncomingMessage) {
-		return Object.fromEntries(
-			Object.entries(req.headers).map(([k, v]) => [
-				k,
-				Array.isArray(v) ? v.join(', ') : (v ?? ''),
-			])
-		);
+		const headers: Record<string, string> = {};
+		for (const [key, value] of Object.entries(req.headers)) {
+			if (typeof value === 'string') {
+				headers[key] = value;
+			} else if (Array.isArray(value)) {
+				headers[key] = value[0] || '';
+			}
+		}
+		return headers;
 	}
 
+	/**
+	 * Starts the server
+	 */
 	async start(): Promise<void> {
 		const { sdkVersion } = this;
 		this.server = createHttpServer(async (req, res) => {
+			if (req.method === 'GET' && req.url === '/_health') {
+				res.writeHead(200);
+				res.end();
+				return;
+			}
+			if (req.method === 'GET' && req.url === '/') {
+				res.writeHead(200, {
+					'Content-Type': 'text/plain',
+				});
+				res.end(
+					getRoutesHelpText(req.headers.host ?? 'localhost:3500', this.routes)
+				);
+				return;
+			}
+			if (req.method !== 'POST') {
+				res.writeHead(405);
+				res.end();
+				return;
+			}
+
+			if (req.url?.startsWith('/run/agent_')) {
+				const id = req.url.slice(5);
+				const body = await this.getBuffer(req);
+				const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
+					method: 'POST',
+					body: safeStringify({
+						trigger: 'manual',
+						payload: body.toString('base64'),
+						contentType:
+							req.headers['content-type'] || 'application/octet-stream',
+						metadata: { headers: this.getHeaders(req) },
+					}),
+					headers: {
+						'Content-Type': 'application/json',
+						'User-Agent': req.headers['user-agent'] || '',
+					},
+				});
+				const respBody = (await response.json()) as {
+					contentType: string;
+					payload: string;
+				};
+				res.writeHead(response.status, {
+					'Content-Type': respBody.contentType,
+					Server: response.headers.get('Server') || '',
+				});
+				const output = Buffer.from(respBody.payload, 'base64');
+				res.write(output);
+				res.end();
+				return;
+			}
+
+			if (!req.headers?.['content-type']?.includes('json')) {
+				res.writeHead(400);
+				res.write('Invalid content type, expected application/json');
+				res.end();
+				return;
+			}
+
+			let payload: IncomingRequest;
+			try {
+				payload = await this.getJSON<IncomingRequest>(req);
+			} catch (err) {
+				this.logger.error('Error parsing request body as json: %s', err);
+				res.writeHead(400);
+				res.end();
+			}
+
 			// Extract trace context from headers
-			const extractedContext = this.extractTraceContext(req);
+			const extractedContext = extractTraceContextFromNodeRequest(req);
 
 			// Execute the request handler within the extracted context
 			await context.with(extractedContext, async () => {
 				// Create a span for this incoming request
-				return trace.getTracer('http-server').startActiveSpan(
-					`${req.method} ${req.url}`,
+				await trace.getTracer('http-server').startActiveSpan(
+					`HTTP ${req.method}`,
 					{
 						kind: SpanKind.SERVER,
 						attributes: {
 							'http.method': req.method || 'UNKNOWN',
-							'http.url': req.url || '',
+							'http.path': req.url,
+							'http.url': req.url || '', // FIXME should be full url
 							'http.host': req.headers.host || '',
 							'http.user_agent': req.headers['user-agent'] || '',
 						},
 					},
 					async (span) => {
 						try {
-							if (req.method === 'GET' && req.url === '/_health') {
-								res.writeHead(200);
-								res.end();
-								span.setStatus({ code: SpanStatusCode.OK });
-								return;
-							}
-
 							if (req.method === 'POST' && req.url?.startsWith('/_reply/')) {
-								const id = req.url.slice(8);
-								const body = await this.getJSON<AgentResponseType>(req);
-								callbackAgentHandler.received(id, body);
-								span.setStatus({ code: SpanStatusCode.OK });
-								return new Response('OK', { status: 202 });
+								span.setAttribute('http.status_code', '202');
+								// FIXME:
+								// const id = req.url.slice(8);
+								// const body = await this.getJSON<RemoteAgentResponse>(req);
+								// callbackAgentHandler.received(id, body);
+								// span.setStatus({ code: SpanStatusCode.OK });
+								// injectTraceContextToNodeResponse(res);
+								res.writeHead(202);
+								res.end('OK');
+								return;
 							}
 
 							const route = this.routes.find((r) => r.path === req.url);
 							if (!route) {
 								this.logger.error(
-									'route not found: %s for: %s',
+									'agent not found: %s for: %s',
 									req.method,
 									req.url
 								);
+								span.setAttribute('http.status_code', '404');
 								res.writeHead(404);
 								res.end();
 								span.setStatus({
 									code: SpanStatusCode.ERROR,
-									message: `Route not found: ${req.method} ${req.url}`,
+									message: `No Agent found at ${req.url}`,
 								});
 								return;
 							}
@@ -129,6 +236,7 @@ export class NodeServer implements Server {
 									req.method,
 									req.url
 								);
+								span.setAttribute('http.status_code', '405');
 								res.writeHead(405);
 								res.end();
 								span.setStatus({
@@ -138,28 +246,46 @@ export class NodeServer implements Server {
 								return;
 							}
 
-							const payload = await this.getJSON<IncomingRequest>(req);
-							const agentReq = {
-								request: payload as IncomingRequest,
-								url: req.url ?? '',
-								headers: this.getHeaders(req),
-							};
-							const response = await route.handler(agentReq);
-							res.writeHead(200, {
-								'Content-Type': 'application/json',
-								Server: `Agentuity NodeJS/${sdkVersion}`,
-							});
-							res.end(JSON.stringify(response));
-							span.setStatus({ code: SpanStatusCode.OK });
-						} catch (err) {
-							this.logger.error('Server error', err);
-							res.writeHead(500);
-							res.end();
-							span.recordException(err as Error);
-							span.setStatus({
-								code: SpanStatusCode.ERROR,
-								message: (err as Error).message,
-							});
+							span.setAttribute('@agentuity/agentName', route.agent.name);
+							span.setAttribute('@agentuity/agentId', route.agent.id);
+
+							try {
+								const agentReq = {
+									request: payload as IncomingRequest,
+									url: req.url ?? '',
+									headers: this.getHeaders(req),
+									setTimeout: (val: number) => req.setTimeout(val),
+								};
+								const routeResult = route.handler(agentReq);
+								const [headers, stream] = createStreamingResponse(
+									`Agentuity NodeJS/${sdkVersion}`,
+									new Headers(req.headers as Record<string, string>),
+									span,
+									routeResult
+								);
+								res.writeHead(200, headers);
+								// Ensure headers are sent before streaming
+								res.flushHeaders();
+								// Pipe the stream to the response
+								const reader = stream.getReader();
+								while (true) {
+									const { done, value } = await reader.read();
+									if (done) break;
+									res.write(value);
+								}
+								res.end();
+							} catch (err) {
+								this.logger.error('Server error', err);
+								injectTraceContextToNodeResponse(res);
+								res.writeHead(500);
+								res.end();
+								span.recordException(err as Error);
+								span.setAttribute('http.status_code', '500');
+								span.setStatus({
+									code: SpanStatusCode.ERROR,
+									message: (err as Error).message,
+								});
+							}
 						} finally {
 							span.end();
 						}
@@ -170,31 +296,12 @@ export class NodeServer implements Server {
 
 		return new Promise((resolve) => {
 			const server = this.server as ReturnType<typeof createHttpServer>;
+			server.requestTimeout = MAX_REQUEST_TIMEOUT;
+			server.timeout = MAX_REQUEST_TIMEOUT;
 			server.listen(this.port, () => {
 				this.logger.info(`Node server listening on port ${this.port}`);
 				resolve();
 			});
 		});
-	}
-
-	/**
-	 * Extract trace context from incoming request headers
-	 */
-	private extractTraceContext(req: IncomingMessage) {
-		// Create a carrier object from the headers
-		const carrier: Record<string, string> = {};
-
-		// Convert headers to the format expected by the propagator
-		Object.entries(req.headers).forEach(([key, value]) => {
-			if (typeof value === 'string') {
-				carrier[key] = value;
-			} else if (Array.isArray(value)) {
-				carrier[key] = value[0] || '';
-			}
-		});
-
-		// Extract the context using the global propagator
-		const activeContext = context.active();
-		return propagation.extract(activeContext, carrier);
 	}
 }

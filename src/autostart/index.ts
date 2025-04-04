@@ -1,15 +1,19 @@
 import { join } from 'node:path';
+import yml from 'js-yaml';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
+import type { AgentConfig } from '../types';
 
+/**
+ * Configuration for auto-starting the Agentuity SDK
+ */
 interface AutostartConfig {
 	basedir: string;
 	distdir?: string;
 	orgId?: string;
 	projectId?: string;
 	deploymentId?: string;
-	runId?: string;
 	port?: number;
 	devmode?: boolean;
 	environment?: string;
@@ -18,30 +22,60 @@ interface AutostartConfig {
 		url?: string;
 		bearerToken?: string;
 	};
+	agents: AgentConfig[];
 }
 
+/**
+ * Runs the Agentuity SDK with the specified configuration
+ *
+ * @param config - The configuration for auto-starting the SDK
+ * @throws Error if the project directory does not exist or if projectId is not provided
+ */
 export async function run(config: AutostartConfig) {
-	const { basedir, distdir, port = 3000 } = config;
-	let directory = distdir;
-	if (!directory) {
-		const insideDist = join(basedir, 'src/agents');
-		if (existsSync(insideDist)) {
-			directory = insideDist;
-		} else {
-			directory = join(basedir, 'dist/src/agents');
-		}
-	}
-	if (!existsSync(directory)) {
-		throw new Error(`${directory} does not exist`);
-	}
-	if (process.env.AGENTUITY_ENVIRONMENT !== 'production' && !config.projectId) {
-		// this path only works in local dev mode
-		const yml = join(basedir, '..', 'agentuity.yaml');
-		if (existsSync(yml)) {
-			const ymlData = readFileSync(yml, 'utf8').toString();
-			const match = ymlData.match(/project_id: (\w+)/);
-			if (match?.length) {
-				config.projectId = match[1];
+	let { port } = config;
+	const { basedir } = config;
+	if (process.env.AGENTUITY_ENVIRONMENT !== 'production') {
+		// check to see if we should attempt to load the config from the local file
+		const shouldAttemptLoad =
+			!config.projectId ||
+			!config.agents ||
+			!config.agents.length ||
+			(!config.port && !process.env.AGENTUITY_CLOUD_PORT && !process.env.PORT);
+		if (shouldAttemptLoad) {
+			// this path only works in local dev mode
+			let ymlfile = join(basedir, 'agentuity.yaml');
+			if (!existsSync(ymlfile)) {
+				ymlfile = join(basedir, '..', 'agentuity.yaml');
+			}
+			if (!existsSync(ymlfile)) {
+				console.error(
+					'[ERROR] Failed to find the agentuity.yaml file in the current directory'
+				);
+				process.exit(1);
+			}
+			const ymlData = readFileSync(ymlfile, 'utf8').toString();
+			const data = yml.load(ymlData);
+			if (!config.projectId && data?.project_id) {
+				config.projectId = data.project_id;
+			}
+			if (data?.development?.port && !process.env.AGENTUITY_CLOUD_PORT && !process.env.PORT) {
+				port = data.development.port;
+			}
+			if (!config.agents || config.agents.length === 0) {
+				const agentdir = data?.bundler?.agents?.dir;
+				if (agentdir && existsSync(agentdir)) {
+					config.agents = data.agents
+						.map((agent: { id: string; name: string }) => {
+							const filename = join(agentdir, agent.name, 'index.ts');
+							if (existsSync(filename)) {
+								return {
+									...agent,
+									filename,
+								};
+							}
+						})
+						.filter(Boolean);
+				}
 			}
 		}
 	}
@@ -58,10 +92,10 @@ export async function run(config: AutostartConfig) {
 		version,
 		sdkVersion,
 		cliVersion: config.cliVersion,
+		devmode: config.devmode,
 		orgId: config.orgId,
 		projectId: config.projectId,
 		deploymentId: config.deploymentId,
-		runId: config.runId,
 		bearerToken: config?.otlp?.bearerToken,
 		url: config?.otlp?.url,
 		environment: config.devmode ? 'development' : config.environment,
@@ -69,16 +103,16 @@ export async function run(config: AutostartConfig) {
 	const server = await createServer({
 		context: createServerContext({
 			devmode: config.devmode,
-			runId: config.runId,
 			deploymentId: config.deploymentId,
 			projectId: config.projectId,
 			orgId: config.orgId,
 			logger: otel.logger,
 			tracer: otel.tracer,
 			sdkVersion,
+			agents: config.agents,
 		}),
-		directory,
-		port,
+		directory: basedir,
+		port: process.env.AGENTUITY_CLOUD_PORT ? Number.parseInt(process.env.AGENTUITY_CLOUD_PORT) : (process.env.PORT ? Number.parseInt(process.env.PORT) : (port ?? 3500)),
 		logger: otel.logger,
 	});
 	await server.start();

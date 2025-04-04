@@ -9,6 +9,6 @@ export default defineConfig([
 		sourcemap: true,
 		treeshake: false,
 		splitting: false,
-		external: ['bun', '@agentuity/sdk', '@grpc/grpc-js'],
+		external: ['bun'],
 	},
 ]);
