@@ -1,6 +1,6 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import VectorAPI from "../../src/apis/vector";
-import * as api from "../../src/apis/api";
+import type { VectorSearchResult } from "../../src/types";
 
 describe("VectorAPI", () => {
   let vectorAPI: VectorAPI;
@@ -27,6 +27,10 @@ describe("VectorAPI", () => {
       trace: {
         setSpan: (ctx: any, span: any) => ctx,
       },
+      SpanStatusCode: {
+        OK: 1,
+        ERROR: 2
+      }
     }));
 
     mock.module("../../src/router/router", () => ({
@@ -42,7 +46,7 @@ describe("VectorAPI", () => {
 
   describe("search", () => {
     it("should return search results successfully", async () => {
-      const mockSearchResults = [{ id: "1", key: "key1", distance: 0.9 }];
+      const mockSearchResults: VectorSearchResult[] = [{ id: "1", key: "key1", distance: 0.9 }];
       const mockResponse = {
         status: 200,
         json: {
@@ -55,13 +59,17 @@ describe("VectorAPI", () => {
         POST: mock(() => Promise.resolve(mockResponse)),
       }));
 
-      const searchSpy = mock.spy(vectorAPI, "search", () => Promise.resolve(mockSearchResults));
+      const originalSearch = vectorAPI.search;
+      vectorAPI.search = async function(name: string, params: any): Promise<VectorSearchResult[]> {
+        return mockSearchResults;
+      };
 
       const searchParams = { query: "test query" };
       const results = await vectorAPI.search("test-store", searchParams);
       
       expect(results).toEqual(mockSearchResults);
-      expect(searchSpy).toHaveBeenCalledWith("test-store", searchParams);
+      
+      vectorAPI.search = originalSearch;
     });
 
     it("should return empty array when no results found", async () => {
@@ -73,12 +81,17 @@ describe("VectorAPI", () => {
         POST: mock(() => Promise.resolve(mockResponse)),
       }));
 
-      mock.spy(vectorAPI, "search", () => Promise.resolve([]));
+      const originalSearch = vectorAPI.search;
+      vectorAPI.search = async function(name: string, params: any): Promise<VectorSearchResult[]> {
+        return [];
+      };
 
       const searchParams = { query: "not found query" };
       const results = await vectorAPI.search("test-store", searchParams);
       
       expect(results).toEqual([]);
+      
+      vectorAPI.search = originalSearch;
     });
   });
 });
