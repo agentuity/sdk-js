@@ -130,20 +130,19 @@ describe("ConsoleLogger", () => {
     });
     
     it("should handle formatting errors gracefully", () => {
-      // Create a logger that will throw during formatting
       const logger = new ConsoleLogger();
       
-      // Force the formatMessage method to throw
-      const originalFormatMessage = logger['formatMessage'];
-      logger['formatMessage'] = function() {
-        throw new Error("Test formatting error");
-      };
+      const circular: any = {};
+      circular.self = circular;
+      
+      mock.module("node:util", () => ({
+        formatWithOptions: () => {
+          throw new Error("Circular reference");
+        }
+      }));
       
       // This should use the fallback path
-      logger.info("Test message");
-      
-      // Restore original method
-      logger['formatMessage'] = originalFormatMessage;
+      logger.info("Test message with %o", circular);
       
       // Should have called info with the raw message
       expect(mockConsole.info).toHaveBeenCalled();
