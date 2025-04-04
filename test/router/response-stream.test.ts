@@ -37,7 +37,9 @@ describe("AgentResponseHandler Streaming", () => {
       const testData = ["Hello", "World"];
       const stream = new ReadableStream({
         start(controller) {
-          testData.forEach(chunk => controller.enqueue(chunk));
+          for (const chunk of testData) {
+            controller.enqueue(chunk);
+          }
           controller.close();
         }
       });
@@ -53,7 +55,9 @@ describe("AgentResponseHandler Streaming", () => {
       const testData = ["Hello", "World"];
       const stream = new ReadableStream({
         start(controller) {
-          testData.forEach(chunk => controller.enqueue(chunk));
+          for (const chunk of testData) {
+            controller.enqueue(chunk);
+          }
           controller.close();
         }
       });
