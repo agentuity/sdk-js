@@ -132,14 +132,14 @@ describe("ConsoleLogger", () => {
     it("should handle formatting errors gracefully", () => {
       const logger = new ConsoleLogger();
       
-      const originalFormatMessage = logger['formatMessage'];
-      logger['formatMessage'] = function() {
+      const originalFormatMessage = logger["formatMessage"];
+      logger["formatMessage"] = function() {
         throw new Error("Test formatting error");
       };
       
       logger.info("Test message");
       
-      logger['formatMessage'] = originalFormatMessage;
+      logger["formatMessage"] = originalFormatMessage;
       
       expect(mockConsole.info).toHaveBeenCalled();
       expect(mockConsole.error).toHaveBeenCalled();
