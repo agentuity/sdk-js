@@ -1,72 +1,8 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import type { DataPayload } from "../../src/types";
-import type { ReadableStream } from "node:stream/web";
-import type { ReadableDataType } from "../../src/types";
-
-// Create a mock implementation of DataHandler for testing
-class MockDataHandler {
-  private readonly payload: DataPayload;
-  private readonly contentTypeValue: string;
-
-  constructor(payload: DataPayload) {
-    this.payload = payload;
-    this.contentTypeValue = payload.contentType || 'application/octet-stream';
-  }
-
-  get contentType() {
-    return this.contentTypeValue;
-  }
-
-  get text() {
-    if (!this.payload.payload) {
-      return '';
-    }
-    return Buffer.from(this.payload.payload, 'base64').toString('utf-8');
-  }
-
-  get json() {
-    const text = this.text;
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      throw new Error('Invalid JSON');
-    }
-  }
-
-  get binary() {
-    if (!this.payload.payload) {
-      return new Uint8Array();
-    }
-    const buffer = Buffer.from(this.payload.payload, 'base64');
-    return new Uint8Array(buffer);
-  }
-
-  object<T>() {
-    return this.json as T;
-  }
-
-  get buffer() {
-    return Buffer.from(this.payload.payload || '', 'base64');
-  }
-
-  get stream(): ReadableStream<ReadableDataType> {
-    const buffer = this.buffer;
-    return new ReadableStream({
-      start(controller) {
-        controller.enqueue(buffer);
-        controller.close();
-      }
-    });
-  }
-}
-
-// Mock the DataHandler import
-const DataHandler = MockDataHandler;
+import { DataHandler } from "../../src/router/data";
 
 describe("DataHandler", () => {
-  beforeEach(() => {
-    mock.restore();
-  });
 
   describe("constructor", () => {
     it("should initialize with payload and content type", () => {
