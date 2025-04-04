@@ -130,24 +130,27 @@ describe("ConsoleLogger", () => {
     });
     
     it("should handle formatting errors gracefully", () => {
-      const logger = new ConsoleLogger();
+      const testError = new Error("Test formatting error");
       
-      const circular: Record<string, unknown> = {};
-      circular.self = circular;
+      const formatWithOptionsModule = require("node:util");
+      const originalFormatWithOptions = formatWithOptionsModule.formatWithOptions;
+      formatWithOptionsModule.formatWithOptions = () => {
+        throw testError;
+      };
       
-      mock.module("node:util", () => ({
-        formatWithOptions: () => {
-          throw new Error("Circular reference");
-        }
-      }));
-      
-      // This should use the fallback path
-      logger.info("Test message with %o", circular);
-      
-      // Should have called info with the raw message
-      expect(mockConsole.info).toHaveBeenCalled();
-      // Should have logged the error
-      expect(mockConsole.error).toHaveBeenCalled();
+      try {
+        const logger = new ConsoleLogger();
+        
+        logger.info("Test message");
+        
+        expect(mockConsole.info).toHaveBeenCalled();
+        expect(mockConsole.error).toHaveBeenCalledWith(
+          'Error formatting log message:',
+          expect.any(Error)
+        );
+      } finally {
+        formatWithOptionsModule.formatWithOptions = originalFormatWithOptions;
+      }
     });
   });
   
