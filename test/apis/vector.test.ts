@@ -26,6 +26,7 @@ describe("VectorAPI", () => {
       },
       trace: {
         setSpan: (ctx: unknown, span: unknown) => ctx,
+        getTracer: () => mockTracer,
       },
       SpanStatusCode: {
         OK: 1,
@@ -60,9 +61,7 @@ describe("VectorAPI", () => {
       }));
 
       const originalSearch = vectorAPI.search;
-      vectorAPI.search = async function(name: string, params: unknown): Promise<VectorSearchResult[]> {
-        return mockSearchResults;
-      };
+      vectorAPI.search = async (name: string, params: unknown): Promise<VectorSearchResult[]> => mockSearchResults;
 
       const searchParams = { query: "test query" };
       const results = await vectorAPI.search("test-store", searchParams);
@@ -82,9 +81,7 @@ describe("VectorAPI", () => {
       }));
 
       const originalSearch = vectorAPI.search;
-      vectorAPI.search = async function(name: string, params: unknown): Promise<VectorSearchResult[]> {
-        return [];
-      };
+      vectorAPI.search = async (name: string, params: unknown): Promise<VectorSearchResult[]> => [];
 
       const searchParams = { query: "not found query" };
       const results = await vectorAPI.search("test-store", searchParams);

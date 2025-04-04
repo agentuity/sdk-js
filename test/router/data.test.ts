@@ -77,7 +77,7 @@ describe("DataHandler", () => {
   });
   
   describe("json property", () => {
-    it.skip("should parse JSON payload correctly", () => {
+    it("should parse JSON payload correctly", () => {
       const jsonData = { message: "Hello, world!" };
       const jsonString = JSON.stringify(jsonData);
       const base64Payload = Buffer.from(jsonString).toString("base64");
@@ -132,7 +132,7 @@ describe("DataHandler", () => {
   });
   
   describe("object method", () => {
-    it.skip("should return typed object from JSON payload", () => {
+    it("should return typed object from JSON payload", () => {
       interface TestData {
         message: string;
         count: number;

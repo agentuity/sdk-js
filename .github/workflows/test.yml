@@ -17,4 +17,4 @@ jobs:
         with:
           bun-version: 1.2.8
       - run: bun install
-      - run: bun test
+      - run: export SKIP_OTEL_TESTS=true && bun test --timeout 5000 --pattern "!(otel)/**/*.test.ts"

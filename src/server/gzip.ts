@@ -13,7 +13,7 @@ const gunzipPromise = promisify(gunzip);
  */
 export async function gzipString(data: string): Promise<Buffer> {
 	if (!data) {
-		return Buffer.from([]);
+		return Buffer.alloc(0);
 	}
 
 	// Convert string to Buffer and compress

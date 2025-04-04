@@ -74,6 +74,7 @@ export class DataHandler implements Data {
 		return {
 			contentType: this.contentType,
 			base64: this.base64,
+			payload: this.base64,
 		};
 	}
 
@@ -109,8 +110,12 @@ export class DataHandler implements Data {
 	}
 
 	object<T>(): T {
-		const res = this.json;
-		return res as T;
+		try {
+			const res = this.json;
+			return res as T;
+		} catch (error) {
+			throw new Error(`Failed to parse object: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	get binary(): Uint8Array {
