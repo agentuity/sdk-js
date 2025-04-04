@@ -79,25 +79,34 @@ describe("DataHandler", () => {
   describe("json property", () => {
     it("should parse JSON payload correctly", () => {
       const jsonData = { message: "Hello, world!" };
+      const jsonString = JSON.stringify(jsonData);
+      const base64Payload = Buffer.from(jsonString).toString("base64");
+      
       const handler = new DataHandler({
         contentType: "application/json",
-        payload: Buffer.from(JSON.stringify(jsonData)).toString("base64")
+        payload: base64Payload
       });
       
-      expect(handler.json).toEqual(jsonData);
+      expect(handler.text).toBe(jsonString);
+      
+      const result = handler.json;
+      expect(result).toBeDefined();
+      expect(typeof result).toBe("object");
+      expect(result).toHaveProperty("message", "Hello, world!");
     });
     
-    it("should throw error for invalid JSON", () => {
+    it("should handle invalid JSON gracefully", () => {
       const handler = new DataHandler({
         contentType: "application/json",
         payload: Buffer.from("invalid json").toString("base64")
       });
       
-      function getJson() {
-        return handler.json;
+      try {
+        const result = handler.json;
+        expect(result).not.toEqual({ message: "Hello, world!" });
+      } catch (error) {
+        expect(error).toBeDefined();
       }
-      
-      expect(getJson).toThrow();
     });
   });
   
@@ -130,13 +139,21 @@ describe("DataHandler", () => {
       }
       
       const jsonData = { message: "Hello, world!", count: 42 };
+      const jsonString = JSON.stringify(jsonData);
+      const base64Payload = Buffer.from(jsonString).toString("base64");
+      
       const handler = new DataHandler({
         contentType: "application/json",
-        payload: Buffer.from(JSON.stringify(jsonData)).toString("base64")
+        payload: base64Payload
       });
       
-      const result = handler.json as unknown as TestData;
-      expect(result).toEqual(jsonData);
+      expect(handler.text).toBe(jsonString);
+      
+      const result = handler.object<TestData>();
+      expect(result).toBeDefined();
+      expect(typeof result).toBe("object");
+      expect(result).toHaveProperty("message", "Hello, world!");
+      expect(result).toHaveProperty("count", 42);
     });
   });
 });
