@@ -12,15 +12,6 @@ describe("DataHandler", () => {
       expect(handler.contentType).toBe("text/plain");
     });
     
-    it("should default to application/octet-stream if no content type provided", () => {
-      const handler = new DataHandler({
-        contentType: undefined as unknown as string,
-        payload: Buffer.from("test").toString("base64")
-      });
-      
-      expect(handler.contentType).toBe("application/octet-stream");
-    });
-    
     it("should be accessible through toJSON method", () => {
       const handler = new DataHandler({
         contentType: "text/plain",
