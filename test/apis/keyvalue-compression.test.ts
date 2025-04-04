@@ -3,9 +3,9 @@ import KeyValueAPI from "../../src/apis/keyvalue";
 
 describe("KeyValue API Compression", () => {
   let keyValueAPI: KeyValueAPI;
-  let mockGzipString: any;
-  let mockPUT: any;
-  let mockGET: any;
+  let mockGzipString: ReturnType<typeof mock>;
+  let mockPUT: ReturnType<typeof mock>;
+  let mockGET: ReturnType<typeof mock>;
 
   beforeEach(() => {
     keyValueAPI = new KeyValueAPI();
@@ -14,7 +14,7 @@ describe("KeyValue API Compression", () => {
       return Promise.resolve(Buffer.from(`compressed:${data}`));
     });
     
-    mockPUT = mock((url: string, data: any, headers: any) => {
+    mockPUT = mock((url: string, data: unknown, headers: Record<string, string>) => {
       return Promise.resolve({
         status: 201,
         response: {
@@ -61,7 +61,7 @@ describe("KeyValue API Compression", () => {
     mock.module("@opentelemetry/api", () => ({
       context: {
         active: () => ({}),
-        with: (ctx: any, fn: Function) => fn()
+        with: (ctx: unknown, fn: () => unknown) => fn()
       },
       trace: {
         setSpan: () => ({})
@@ -72,7 +72,7 @@ describe("KeyValue API Compression", () => {
     }));
     
     mock.module("../../src/server/util", () => ({
-      fromDataType: (data: any, contentType?: string) => Promise.resolve({
+      fromDataType: (data: unknown, contentType?: string) => Promise.resolve({
         data: {
           contentType: contentType || "application/json",
           base64: typeof data === "string" ? Buffer.from(data).toString("base64") : "base64data",
@@ -87,7 +87,7 @@ describe("KeyValue API Compression", () => {
         base64: string;
         text: string;
         
-        constructor(options: any) {
+        constructor(options: { contentType: string; payload: string }) {
           this.contentType = options.contentType;
           this.base64 = options.payload;
           this.text = Buffer.from(options.payload || "", "base64").toString();
