@@ -27,24 +27,30 @@ jobs:
           CURRENT_VERSION=$(jq -r .version package.json)
           if [ "$PREV_VERSION" = "$CURRENT_VERSION" ]; then
             echo "No version change detected, skipping release"
-            exit 78
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
           fi
-          echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: '22'
+          bun-version: latest
           registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
-        run: npm i
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
+        run: bun install
 
       - name: Run lint
-        run: npm run lint
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
+        run: bun run lint
 
       - name: Release to NPM
-        run: npm run release
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
+        run: bun run release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
