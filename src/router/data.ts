@@ -108,9 +108,11 @@ export class DataHandler implements Data {
 		return res;
 	}
 
-	object<T>(): T {
-		const res = this.json;
-		return res as T;
+	get object(): <T>() => T {
+		return <T>() => {
+			const res = this.json;
+			return res as T;
+		};
 	}
 
 	get binary(): Uint8Array {

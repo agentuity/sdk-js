@@ -109,8 +109,8 @@ describe("DataHandler", () => {
     });
   });
   
-  describe("object method", () => {
-    it("should return typed object from JSON payload", () => {
+  describe("object getter", () => {
+    it("should return a function that returns typed object from JSON payload", () => {
       interface TestData {
         message: string;
         count: number;
@@ -122,7 +122,10 @@ describe("DataHandler", () => {
         payload: Buffer.from(JSON.stringify(jsonData)).toString("base64")
       });
       
-      const result = handler.object<TestData>();
+      const objectFn = handler.object;
+      expect(typeof objectFn).toBe("function");
+      
+      const result = objectFn<TestData>();
       
       expect(result).toEqual(jsonData);
       expect(result.message).toBe("Hello, world!");
