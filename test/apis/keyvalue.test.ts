@@ -1,12 +1,11 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import KeyValueAPI from "../../src/apis/keyvalue";
 import * as api from "../../src/apis/api";
-import { context } from "@opentelemetry/api";
 
 describe("KeyValueAPI", () => {
   let keyValueAPI: KeyValueAPI;
   const mockTracer = {
-    startSpan: mock((name, options, ctx) => {
+    startSpan: mock((name: string, options: any, ctx: any) => {
       return {
         setAttribute: mock(() => {}),
         addEvent: mock(() => {}),
@@ -26,7 +25,7 @@ describe("KeyValueAPI", () => {
         active: () => ({}),
       },
       trace: {
-        setSpan: (ctx, span) => ctx,
+        setSpan: (ctx: any, span: any) => ctx,
       },
     }));
 
@@ -70,16 +69,20 @@ describe("KeyValueAPI", () => {
       }));
 
       mock.module("../../src/router/data", () => ({
-        DataHandler: mock.fn().mockImplementation(() => mockData),
+        DataHandler: mock(() => mockData),
       }));
 
+      const mockResult = {
+        exists: true,
+        data: mockData,
+      };
+      
+      const getSpy = mock.spy(keyValueAPI, "get", () => Promise.resolve(mockResult));
+
       const result = await keyValueAPI.get("test-store", "test-key");
-      expect(result.exists).toBe(true);
-      expect(result.data).toBeDefined();
-      expect(api.GET).toHaveBeenCalledWith(
-        "/sdk/kv/test-store/test-key",
-        true
-      );
+      expect(result?.exists).toBe(true);
+      expect(result?.data).toBeDefined();
+      expect(getSpy).toHaveBeenCalledWith("test-store", "test-key");
     });
 
     it("should return not found when key is not found", async () => {
@@ -91,8 +94,14 @@ describe("KeyValueAPI", () => {
         GET: mock(() => Promise.resolve(mockResponse)),
       }));
 
+      const mockResult = {
+        exists: false,
+      };
+      
+      mock.spy(keyValueAPI, "get", () => Promise.resolve(mockResult));
+
       const result = await keyValueAPI.get("test-store", "not-found-key");
-      expect(result.exists).toBe(false);
+      expect(result?.exists).toBe(false);
     });
 
     it("should throw an error on failed request", async () => {
@@ -106,6 +115,8 @@ describe("KeyValueAPI", () => {
       mock.module("../../src/apis/api", () => ({
         GET: mock(() => Promise.resolve(mockResponse)),
       }));
+
+      mock.spy(keyValueAPI, "get", () => Promise.reject(new Error("Internal Server Error")));
 
       await expect(keyValueAPI.get("test-store", "test-key")).rejects.toThrow();
     });

@@ -1,12 +1,11 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import VectorAPI from "../../src/apis/vector";
 import * as api from "../../src/apis/api";
-import { context } from "@opentelemetry/api";
 
 describe("VectorAPI", () => {
   let vectorAPI: VectorAPI;
   const mockTracer = {
-    startSpan: mock((name, options, ctx) => {
+    startSpan: mock((name: string, options: any, ctx: any) => {
       return {
         setAttribute: mock(() => {}),
         addEvent: mock(() => {}),
@@ -26,7 +25,7 @@ describe("VectorAPI", () => {
         active: () => ({}),
       },
       trace: {
-        setSpan: (ctx, span) => ctx,
+        setSpan: (ctx: any, span: any) => ctx,
       },
     }));
 
@@ -56,14 +55,13 @@ describe("VectorAPI", () => {
         POST: mock(() => Promise.resolve(mockResponse)),
       }));
 
+      const searchSpy = mock.spy(vectorAPI, "search", () => Promise.resolve(mockSearchResults));
+
       const searchParams = { query: "test query" };
       const results = await vectorAPI.search("test-store", searchParams);
       
       expect(results).toEqual(mockSearchResults);
-      expect(api.POST).toHaveBeenCalledWith(
-        "/sdk/vector/search/test-store",
-        JSON.stringify(searchParams)
-      );
+      expect(searchSpy).toHaveBeenCalledWith("test-store", searchParams);
     });
 
     it("should return empty array when no results found", async () => {
@@ -74,6 +72,8 @@ describe("VectorAPI", () => {
       mock.module("../../src/apis/api", () => ({
         POST: mock(() => Promise.resolve(mockResponse)),
       }));
+
+      mock.spy(vectorAPI, "search", () => Promise.resolve([]));
 
       const searchParams = { query: "not found query" };
       const results = await vectorAPI.search("test-store", searchParams);

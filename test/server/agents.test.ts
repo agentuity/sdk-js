@@ -17,13 +17,13 @@ describe("AgentResolver", () => {
         id: "agent-id-1",
         name: "Agent 1",
         path: "agent-path-1",
-        filename: "agent1.ts",
+        description: "Agent 1 description",
       },
       {
         id: "agent-id-2",
         name: "Agent 2",
         path: "agent-path-2",
-        filename: "agent2.ts",
+        description: "Agent 2 description",
       },
     ];
 
@@ -49,13 +49,13 @@ describe("AgentResolver", () => {
         id: "agent-id-1",
         name: "Agent 1",
         path: "agent-path-1",
-        filename: "agent1.ts",
+        description: "Agent 1 description",
       },
       {
         id: "agent-id-2",
         name: "Agent 2",
         path: "agent-path-2",
-        filename: "agent2.ts",
+        description: "Agent 2 description",
       },
     ];
 
@@ -81,7 +81,7 @@ describe("AgentResolver", () => {
         id: "current-agent-id",
         name: "Current Agent",
         path: "agent-path",
-        filename: "agent.ts",
+        description: "Current Agent description",
       },
     ];
 

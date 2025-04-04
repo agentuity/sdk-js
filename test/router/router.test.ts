@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
 import { getSDKVersion } from "../../src/router/router";
 import AgentResponseHandler from "../../src/router/response";
 import type { JsonObject } from "../../src/types";
@@ -38,7 +38,7 @@ describe("Router", () => {
     });
 
     it("should create binary response correctly", async () => {
-      const binaryData = new TextEncoder().encode("Hello, world!").buffer;
+      const binaryData = new Uint8Array(new TextEncoder().encode("Hello, world!")).buffer;
       const metadata: JsonObject = { key: "value" };
       
       const response = await responseHandler.binary(binaryData, metadata);

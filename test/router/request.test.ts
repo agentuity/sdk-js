@@ -1,10 +1,9 @@
 import { describe, expect, it, mock } from "bun:test";
 import AgentRequestHandler from "../../src/router/request";
-import { DataHandler } from "../../src/router/data";
 import type { TriggerType, JsonObject } from "../../src/types";
 
 mock.module("../../src/router/data", () => ({
-  DataHandler: mock.fn().mockImplementation(() => ({
+  DataHandler: mock(() => ({
     text: "Hello, world!",
     json: { message: "Hello, world!" },
     contentType: "application/json",
