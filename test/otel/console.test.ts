@@ -2,6 +2,7 @@ import { describe, expect, it, mock, beforeEach } from "bun:test";
 import { ConsoleLogRecordExporter } from "../../src/otel/console";
 import { ExportResultCode } from "@opentelemetry/core";
 import { SeverityNumber } from "@opentelemetry/api-logs";
+import type { ReadableLogRecord } from "@opentelemetry/sdk-logs";
 
 describe("ConsoleLogRecordExporter", () => {
   let mockConsoleLogger: {
@@ -23,7 +24,6 @@ describe("ConsoleLogRecordExporter", () => {
     
     mock.module("../../src/logger/console", () => ({
       default: class MockConsoleLogger {
-        constructor() {}
         debug = mockConsoleLogger.debug;
         info = mockConsoleLogger.info;
         warn = mockConsoleLogger.warn;
@@ -43,7 +43,7 @@ describe("ConsoleLogRecordExporter", () => {
         body: "Debug message"
       }];
       
-      exporter.export(logs as any, mockCallback);
+      exporter.export(logs as ReadableLogRecord[], mockCallback);
       
       expect(mockConsoleLogger.debug).toHaveBeenCalledWith("Debug message");
       expect(mockCallback).toHaveBeenCalledWith({ code: ExportResultCode.SUCCESS });
@@ -58,7 +58,7 @@ describe("ConsoleLogRecordExporter", () => {
         body: "Info message"
       }];
       
-      exporter.export(logs as any, mockCallback);
+      exporter.export(logs as ReadableLogRecord[], mockCallback);
       
       expect(mockConsoleLogger.info).toHaveBeenCalledWith("Info message");
       expect(mockCallback).toHaveBeenCalledWith({ code: ExportResultCode.SUCCESS });
@@ -73,7 +73,7 @@ describe("ConsoleLogRecordExporter", () => {
         body: "Warning message"
       }];
       
-      exporter.export(logs as any, mockCallback);
+      exporter.export(logs as ReadableLogRecord[], mockCallback);
       
       expect(mockConsoleLogger.warn).toHaveBeenCalledWith("Warning message");
       expect(mockCallback).toHaveBeenCalledWith({ code: ExportResultCode.SUCCESS });
@@ -88,7 +88,7 @@ describe("ConsoleLogRecordExporter", () => {
         body: "Error message"
       }];
       
-      exporter.export(logs as any, mockCallback);
+      exporter.export(logs as ReadableLogRecord[], mockCallback);
       
       expect(mockConsoleLogger.error).toHaveBeenCalledWith("Error message");
       expect(mockCallback).toHaveBeenCalledWith({ code: ExportResultCode.SUCCESS });
@@ -103,7 +103,7 @@ describe("ConsoleLogRecordExporter", () => {
         body: "Unknown severity message"
       }];
       
-      exporter.export(logs as any, mockCallback);
+      exporter.export(logs as ReadableLogRecord[], mockCallback);
       
       expect(mockConsoleLogger.info).toHaveBeenCalledWith("Unknown severity message");
       expect(mockCallback).toHaveBeenCalledWith({ code: ExportResultCode.SUCCESS });
@@ -132,7 +132,7 @@ describe("ConsoleLogRecordExporter", () => {
         }
       ];
       
-      exporter.export(logs as any, mockCallback);
+      exporter.export(logs as ReadableLogRecord[], mockCallback);
       
       expect(mockConsoleLogger.debug).toHaveBeenCalledWith("Debug message");
       expect(mockConsoleLogger.info).toHaveBeenCalledWith("Info message");
