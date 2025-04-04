@@ -32,8 +32,8 @@ export class DataHandler implements Data {
 		payload: Arguments,
 		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
 	) {
-		this.payload = payload;
-		this.type = payload.contentType === undefined || payload.contentType === null ? 'application/octet-stream' : payload.contentType;
+		this.payload = payload || { contentType: 'application/octet-stream', payload: '' };
+		this.type = payload?.contentType === undefined || payload?.contentType === null ? 'application/octet-stream' : payload.contentType;
 		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
 		this.readstream = stream;
 	}
@@ -77,7 +77,7 @@ export class DataHandler implements Data {
 		};
 	}
 
-	private get data() {
+	private get data(): Buffer {
 		if (!this.payload || this.payload.payload === undefined || this.payload.payload === null) {
 			return Buffer.from([]);
 		}
@@ -91,7 +91,7 @@ export class DataHandler implements Data {
 
 	get base64(): string {
 		this.ensureStreamLoaded();
-		return this.payload.payload ?? '';
+		return this.payload?.payload ?? '';
 	}
 
 	get text(): string {
@@ -118,12 +118,12 @@ export class DataHandler implements Data {
 		return new Uint8Array(data);
 	}
 
-	get blob() {
+	get blob(): Blob {
 		const data = this.data;
 		return new Blob([data], { type: this.contentType });
 	}
 
-	get arrayBuffer() {
+	get arrayBuffer(): any {
 		const data = this.data;
 		return data.buffer;
 	}
