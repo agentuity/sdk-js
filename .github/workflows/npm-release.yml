@@ -27,23 +27,29 @@ jobs:
           CURRENT_VERSION=$(jq -r .version package.json)
           if [ "$PREV_VERSION" = "$CURRENT_VERSION" ]; then
             echo "No version change detected, skipping release"
-            exit 78
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
           fi
-          echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
 
       - name: Setup Node.js
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
         run: npm i
 
       - name: Run lint
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
         run: npm run lint
 
       - name: Release to NPM
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
         run: npm run release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
