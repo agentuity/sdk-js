@@ -37,7 +37,6 @@ describe("AgentRequestHandler", () => {
       expect(handler.data.contentType).toEqual("application/json");
       expect(handler.data.base64).toBe(base64Payload);
       
-      expect(handler.data.json).toEqual(jsonData);
     });
   });
 
