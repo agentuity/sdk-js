@@ -1,10 +1,23 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
 import { DataHandler } from "../../src/router/data";
 import type { DataPayload } from "../../src/types";
+
 
 describe("DataHandler", () => {
   
   beforeEach(() => {
+    mock.restore();
+    
+    mock.module("../../src/server/util", () => ({
+      safeParse: (text: string, defaultValue?: unknown) => {
+        try {
+          return JSON.parse(text);
+        } catch (error) {
+          return defaultValue;
+        }
+      }
+    }));
+    
     mock.module("node:fs", () => ({
       readFileSync: mock((path: string, encoding: string) => {
         if (path.includes("test-file")) {
@@ -40,6 +53,17 @@ describe("DataHandler", () => {
         return stream;
       })
     }));
+  });
+  
+  let originalEnv: NodeJS.ProcessEnv;
+  
+  beforeEach(() => {
+    originalEnv = { ...process.env };
+    process.env.AGENTUITY_IO_INPUT_DIR = "/tmp";
+  });
+  
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   describe("constructor", () => {
