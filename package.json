@@ -38,7 +38,8 @@
 		"format": "npx @biomejs/biome format --write",
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
-		"release": "rm -rf dist && npm run build && npx @changesets/cli publish && git push --follow-tags"
+		"release": "rm -rf dist && npm run build && npx @changesets/cli publish && git push --follow-tags",
+		"test": "bun test"
 	},
 	"exports": {
 		"./package.json": "./package.json",

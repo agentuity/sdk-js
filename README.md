@@ -16,3 +16,11 @@
 bun run build
 npm run build
 ```
+
+### Testing
+
+Run tests using Bun's built-in test runner:
+
+```
+bun test
+```
