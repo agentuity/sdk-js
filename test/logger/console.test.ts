@@ -132,7 +132,7 @@ describe("ConsoleLogger", () => {
     it("should handle formatting errors gracefully", () => {
       const logger = new ConsoleLogger();
       
-      const circular: any = {};
+      const circular: Record<string, unknown> = {};
       circular.self = circular;
       
       mock.module("node:util", () => ({
