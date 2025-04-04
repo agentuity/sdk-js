@@ -18,10 +18,18 @@ describe.skip("Fetch Instrumentation", () => {
   };
 
   const originalFetch = globalThis.fetch;
-  let mockFetchFn: any;
-  let mockTraceApi: any;
-  let mockContextApi: any;
-  let mockPropagationApi: any;
+  let mockFetchFn: ReturnType<typeof mock>;
+  let mockTraceApi: {
+    getActiveSpan: ReturnType<typeof mock>;
+    getTracer: ReturnType<typeof mock>;
+    setSpan: ReturnType<typeof mock>;
+  };
+  let mockContextApi: {
+    active: ReturnType<typeof mock>;
+  };
+  let mockPropagationApi: {
+    inject: ReturnType<typeof mock>;
+  };
 
   beforeEach(() => {
     mock.restore();
@@ -29,7 +37,7 @@ describe.skip("Fetch Instrumentation", () => {
     mockTraceApi = {
       getActiveSpan: mock(() => mockActiveSpan),
       getTracer: mock(() => mockTracer),
-      setSpan: mock((ctx: any, span: any) => ctx),
+      setSpan: mock((ctx: Record<string, unknown>, span: unknown) => ctx),
     };
     
     mockContextApi = {
@@ -37,7 +45,7 @@ describe.skip("Fetch Instrumentation", () => {
     };
     
     mockPropagationApi = {
-      inject: mock((ctx: any, carrier: any) => {
+      inject: mock((ctx: Record<string, unknown>, carrier: Record<string, string>) => {
         carrier["traceparent"] = "00-1234567890abcdef1234567890abcdef-1234567890abcdef-01";
       }),
     };
