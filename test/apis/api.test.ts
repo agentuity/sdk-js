@@ -3,25 +3,46 @@ import { send, GET, POST, PUT, DELETE } from "../../src/apis/api";
 
 describe("API Client", () => {
   let originalEnv: NodeJS.ProcessEnv;
-  let mockFetch: ReturnType<typeof mock>;
+  let mockFetch: any;
   
   beforeEach(() => {
     originalEnv = { ...process.env };
     process.env.AGENTUITY_API_KEY = "test-api-key";
     process.env.AGENTUITY_TRANSPORT_URL = "https://test.agentuity.ai/";
     
-    mockFetch = mock(() => 
-      Promise.resolve({
-        status: 200,
-        headers: new Headers({
-          "content-type": "application/json",
-        }),
-        json: () => Promise.resolve({ success: true }),
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
-      })
-    );
+    const mockResponse = {
+      status: 200,
+      headers: new Headers({
+        "content-type": "application/json",
+      }),
+      json: () => Promise.resolve({ success: true }),
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    };
     
-    global.fetch = mockFetch;
+    mockFetch = {
+      mock: {
+        calls: [] as any[][]
+      },
+      mockImplementation: function(impl: any) {
+        this.implementation = impl;
+        return this;
+      },
+      implementation: () => Promise.resolve(mockResponse),
+      mockClear: function() {
+        this.mock.calls = [];
+      },
+      toHaveBeenCalled: function() {
+        return this.mock.calls.length > 0;
+      },
+      toHaveBeenCalledTimes: function(times: number) {
+        return this.mock.calls.length === times;
+      }
+    };
+    
+    global.fetch = function(url: any, options: any) {
+      mockFetch.mock.calls.push([url, options]);
+      return mockFetch.implementation(url, options);
+    } as any;
     
     mock.module("../../src/router/router", () => ({
       getSDKVersion: () => "1.0.0",
