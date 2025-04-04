@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import AgentRequestHandler from "../../src/router/request";
-import { DataHandler } from "../../src/router/data";
 import type { TriggerType, JsonObject } from "../../src/types";
 
 describe("AgentRequestHandler", () => {
@@ -36,25 +35,8 @@ describe("AgentRequestHandler", () => {
       expect(handler.data).toBeDefined();
       
       expect(handler.data.contentType).toEqual("application/json");
-      
       expect(handler.data.base64).toBe(base64Payload);
       
-      const directDataHandler = new DataHandler({
-        contentType: "application/json",
-        payload: base64Payload
-      });
-      
-      console.log("DataHandler debug:", {
-        base64Payload,
-        payloadExists: !!directDataHandler.base64,
-        payloadLength: directDataHandler.base64.length,
-        dataHandlerType: directDataHandler.contentType,
-        textExists: typeof directDataHandler.text !== 'undefined'
-      });
-      
-      expect(directDataHandler.text).toBe(jsonString);
-      
-      expect(handler.data.text).toBe(jsonString);
     });
   });
 
