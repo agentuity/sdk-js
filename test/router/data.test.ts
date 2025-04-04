@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { DataHandler } from "../../src/router/data";
 
 describe("DataHandler", () => {
-
   describe("constructor", () => {
     it("should initialize with payload and content type", () => {
       const handler = new DataHandler({
@@ -14,7 +13,9 @@ describe("DataHandler", () => {
     });
     
     it("should default to application/octet-stream if no content type provided", () => {
+      // Create with explicit undefined to test default behavior
       const handler = new DataHandler({
+        contentType: undefined,
         payload: Buffer.from("Hello, world!").toString("base64")
       });
       
@@ -24,12 +25,13 @@ describe("DataHandler", () => {
   
   describe("text property", () => {
     it("should decode base64 payload to text", () => {
+      const text = "Hello, world!";
       const handler = new DataHandler({
         contentType: "text/plain",
-        payload: Buffer.from("Hello, world!").toString("base64")
+        payload: Buffer.from(text).toString("base64")
       });
       
-      expect(handler.text).toBe("Hello, world!");
+      expect(handler.text).toBe(text);
     });
     
     it("should handle empty payload", () => {
