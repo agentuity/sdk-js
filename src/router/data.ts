@@ -78,7 +78,7 @@ export class DataHandler implements Data {
 	}
 
 	private get data() {
-		if (!this.payload.payload) {
+		if (!this.payload || this.payload.payload === undefined || this.payload.payload === null) {
 			return Buffer.from([]);
 		}
 		this.ensureStreamLoaded();
