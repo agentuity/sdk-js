@@ -1,70 +1,50 @@
-import { describe, expect, it } from "bun:test";
-import { toAgentResponseJSON } from "../../src/router/router";
-import type { AgentResponseType } from "../../src/types";
+import { describe, expect, it, mock } from "bun:test";
+import { getSDKVersion } from "../../src/router/router";
+import AgentResponseHandler from "../../src/router/response";
+import type { JsonObject } from "../../src/types";
 
 describe("Router", () => {
-  describe("toAgentResponseJSON", () => {
-    it("should handle string payload correctly", () => {
-      const result = toAgentResponseJSON(
-        "agent",
-        "Hello, world!",
-        "utf-8"
-      );
-      
-      expect(result).toEqual({
-        trigger: "agent",
-        contentType: "text/plain",
-        payload: "Hello, world!",
-      } as AgentResponseType);
+  describe("getSDKVersion", () => {
+    it("should throw error when no store is found", () => {
+      expect(() => getSDKVersion()).toThrow("no store");
+    });
+  });
+
+  describe("AgentResponseHandler", () => {
+    let responseHandler: AgentResponseHandler;
+
+    beforeEach(() => {
+      responseHandler = new AgentResponseHandler();
     });
 
-    it("should handle JSON payload correctly", () => {
-      const jsonPayload = { message: "Hello, world!" };
-      const result = toAgentResponseJSON(
-        "agent",
-        jsonPayload,
-        "utf-8"
-      );
+    it("should create text response correctly", async () => {
+      const textData = "Hello, world!";
+      const metadata: JsonObject = { key: "value" };
       
-      expect(result).toEqual({
-        trigger: "agent",
-        contentType: "application/json",
-        payload: JSON.stringify(jsonPayload),
-      } as AgentResponseType);
+      const response = await responseHandler.text(textData, metadata);
+      
+      expect(response.data).toBeDefined();
+      expect(response.metadata).toEqual(metadata);
     });
 
-    it("should handle ArrayBuffer payload correctly", () => {
-      const buffer = new TextEncoder().encode("Hello, world!").buffer as ArrayBuffer;
-      const result = toAgentResponseJSON(
-        "agent",
-        buffer,
-        "utf-8",
-        "application/octet-stream"
-      );
+    it("should create JSON response correctly", async () => {
+      const jsonData = { message: "Hello, world!" };
+      const metadata: JsonObject = { key: "value" };
       
-      expect(result).toEqual({
-        trigger: "agent",
-        contentType: "application/octet-stream",
-        payload: Buffer.from(buffer).toString("utf-8"),
-      } as AgentResponseType);
+      const response = await responseHandler.json(jsonData, metadata);
+      
+      expect(response.data).toBeDefined();
+      expect(response.metadata).toEqual(metadata);
     });
 
-    it("should include metadata when provided", () => {
-      const metadata = { key: "value" };
-      const result = toAgentResponseJSON(
-        "agent",
-        "Hello, world!",
-        "utf-8",
-        "text/plain",
-        metadata
-      );
+    it("should create binary response correctly", async () => {
+      const binaryData = new TextEncoder().encode("Hello, world!").buffer;
+      const metadata: JsonObject = { key: "value" };
       
-      expect(result).toEqual({
-        trigger: "agent",
-        contentType: "text/plain",
-        payload: "Hello, world!",
-        metadata,
-      } as AgentResponseType);
+      const response = await responseHandler.binary(binaryData, metadata);
+      
+      expect(response.data).toBeDefined();
+      expect(response.metadata).toEqual(metadata);
     });
   });
 });

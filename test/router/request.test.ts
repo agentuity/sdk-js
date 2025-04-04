@@ -1,84 +1,102 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import AgentRequestHandler from "../../src/router/request";
-import type { AgentRequestType } from "../../src/types";
+import { DataHandler } from "../../src/router/data";
+import type { TriggerType, JsonObject } from "../../src/types";
+
+mock.module("../../src/router/data", () => ({
+  DataHandler: mock.fn().mockImplementation(() => ({
+    text: "Hello, world!",
+    json: { message: "Hello, world!" },
+    contentType: "application/json",
+    base64: "base64string",
+  })),
+}));
 
 describe("AgentRequestHandler", () => {
-  describe("json method", () => {
-    it("should parse JSON payload correctly", () => {
-      const jsonData = { message: "Hello, world!" };
-      const jsonString = JSON.stringify(jsonData);
-      const base64Payload = Buffer.from(jsonString).toString("base64");
-
-      const request: AgentRequestType = {
-        trigger: "test",
+  describe("trigger property", () => {
+    it("should return the trigger from the request", () => {
+      const request = {
+        trigger: "webhook" as TriggerType,
         contentType: "application/json",
-        payload: base64Payload,
-      };
-
-      const handler = new AgentRequestHandler(request);
-      const result = handler.json();
-      
-      expect(result).toEqual(jsonData);
-    });
-
-    it("should throw error if content type is not application/json", () => {
-      const request: AgentRequestType = {
-        trigger: "test",
-        contentType: "text/plain",
-        payload: Buffer.from("plain text").toString("base64"),
+        payload: "base64payload",
       };
 
       const handler = new AgentRequestHandler(request);
       
-      expect(() => handler.json()).toThrow();
+      expect(handler.trigger).toEqual("webhook");
     });
   });
 
-  describe("text method", () => {
-    it("should parse text payload correctly", () => {
-      const text = "Hello, world!";
-      const base64Payload = Buffer.from(text).toString("base64");
-
-      const request: AgentRequestType = {
-        trigger: "test",
-        contentType: "text/plain",
-        payload: base64Payload,
+  describe("data property", () => {
+    it("should return the data handler instance", () => {
+      const request = {
+        trigger: "webhook" as TriggerType,
+        contentType: "application/json",
+        payload: "base64payload",
       };
 
       const handler = new AgentRequestHandler(request);
-      const result = handler.text();
       
-      expect(result).toEqual(text);
+      expect(handler.data).toBeDefined();
+      expect(handler.data.text).toEqual("Hello, world!");
+      expect(handler.data.json).toEqual({ message: "Hello, world!" });
     });
   });
 
-  describe("metadata method", () => {
-    it("should return metadata value when present", () => {
-      const request: AgentRequestType = {
-        trigger: "test",
-        contentType: "text/plain",
-        metadata: {
-          key: "value",
-        },
+  describe("metadata property", () => {
+    it("should return metadata object when present", () => {
+      const metadata: JsonObject = { key: "value" };
+      const request = {
+        trigger: "webhook" as TriggerType,
+        contentType: "application/json",
+        payload: "base64payload",
+        metadata,
       };
 
       const handler = new AgentRequestHandler(request);
-      const result = handler.metadata("key");
       
-      expect(result).toEqual("value");
+      expect(handler.metadata).toEqual(metadata);
     });
 
-    it("should return default value when metadata key is not present", () => {
-      const request: AgentRequestType = {
-        trigger: "test",
-        contentType: "text/plain",
+    it("should return empty object when metadata is not present", () => {
+      const request = {
+        trigger: "webhook" as TriggerType,
+        contentType: "application/json",
+        payload: "base64payload",
+      };
+
+      const handler = new AgentRequestHandler(request);
+      
+      expect(handler.metadata).toEqual({});
+    });
+  });
+
+  describe("get method", () => {
+    it("should return metadata value when key is present", () => {
+      const metadata: JsonObject = { key: "value" };
+      const request = {
+        trigger: "webhook" as TriggerType,
+        contentType: "application/json",
+        payload: "base64payload",
+        metadata,
+      };
+
+      const handler = new AgentRequestHandler(request);
+      
+      expect(handler.get("key")).toEqual("value");
+    });
+
+    it("should return default value when key is not present", () => {
+      const request = {
+        trigger: "webhook" as TriggerType,
+        contentType: "application/json",
+        payload: "base64payload",
         metadata: {},
       };
 
       const handler = new AgentRequestHandler(request);
-      const result = handler.metadata("missing-key", "default-value");
       
-      expect(result).toEqual("default-value");
+      expect(handler.get("missing-key", "default-value")).toEqual("default-value");
     });
   });
 });

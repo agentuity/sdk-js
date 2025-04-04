@@ -1,17 +1,19 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import VectorAPI from "../../src/apis/vector";
-import * as router from "../../src/router/router";
 import * as api from "../../src/apis/api";
+import { context } from "@opentelemetry/api";
 
 describe("VectorAPI", () => {
   let vectorAPI: VectorAPI;
   const mockTracer = {
-    startActiveSpan: mock((name, fn) => {
-      return fn({
+    startSpan: mock((name, options, ctx) => {
+      return {
         setAttribute: mock(() => {}),
         addEvent: mock(() => {}),
         end: mock(() => {}),
-      });
+        setStatus: mock(() => {}),
+        recordException: mock(() => {}),
+      };
     }),
   };
 
@@ -19,15 +21,29 @@ describe("VectorAPI", () => {
     mock.restore();
     vectorAPI = new VectorAPI();
     
+    mock.module("@opentelemetry/api", () => ({
+      context: {
+        active: () => ({}),
+      },
+      trace: {
+        setSpan: (ctx, span) => ctx,
+      },
+    }));
+
     mock.module("../../src/router/router", () => ({
       getTracer: () => mockTracer,
       recordException: mock(() => {}),
+      asyncStorage: {
+        getStore: () => ({
+          tracer: mockTracer,
+        }),
+      },
     }));
   });
 
   describe("search", () => {
     it("should return search results successfully", async () => {
-      const mockSearchResults = [{ id: "1", distance: 0.9 }];
+      const mockSearchResults = [{ id: "1", key: "key1", distance: 0.9 }];
       const mockResponse = {
         status: 200,
         json: {
