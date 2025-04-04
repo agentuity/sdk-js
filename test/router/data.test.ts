@@ -14,7 +14,7 @@ describe("DataHandler", () => {
     
     it("should default to application/octet-stream if no content type provided", () => {
       const handler = new DataHandler({
-        contentType: "",
+        contentType: null as unknown as string,
         payload: Buffer.from("Hello, world!").toString("base64")
       });
       
