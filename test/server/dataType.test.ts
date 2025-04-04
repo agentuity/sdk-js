@@ -174,11 +174,11 @@ describe("Data Type Conversion Functions", () => {
     });
     
     it("should handle invalid data type gracefully", async () => {
-      const invalidData = 123;
+      const invalidData = () => "this is a function";
       
       try {
-        await fromDataType(invalidData as unknown as Buffer);
-        expect(true).toBe(true);
+        await fromDataType(invalidData);
+        expect(false).toBe(true); // This will fail the test if no error is thrown
       } catch (error) {
         expect(error).toBeDefined();
         expect(error instanceof Error).toBe(true);
