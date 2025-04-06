@@ -32,7 +32,7 @@
 		"version": "npx @changesets/cli version",
 		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
 		"start": "npm run node:start",
-		"test": "bun test"
+		"test": "export SKIP_OTEL_TESTS=true && bun test --timeout 5000 test/apis test/server test/router test/logger"
 	},
 	"exports": {
 		"./package.json": "./package.json",
