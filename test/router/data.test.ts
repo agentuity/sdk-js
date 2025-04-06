@@ -78,20 +78,15 @@ describe('DataHandler', () => {
 	});
 
 	describe('json property', () => {
-		it.skip('should parse JSON payload correctly', () => {
+	it('should parse JSON payload correctly', () => {
 			const jsonData = { message: 'Hello, world!' };
 			const jsonString = JSON.stringify(jsonData);
 			const base64Payload = Buffer.from(jsonString).toString('base64');
-
-			console.log('JSON Test - Base64 payload:', base64Payload);
 
 			const handler = new DataHandler({
 				contentType: 'application/json',
 				payload: base64Payload,
 			});
-
-			console.log('JSON Test - Handler base64:', handler.base64);
-			console.log('JSON Test - Handler text:', handler.text);
 
 			const text = handler.text;
 			expect(text).toBeDefined();
