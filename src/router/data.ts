@@ -102,10 +102,14 @@ export class DataHandler implements Data {
 				Math.ceil(base64String.length / 4) * 4,
 				'='
 			);
+			if (!/^[A-Za-z0-9+/=]+$/.test(paddedBase64)) {
+				console.warn('Invalid base64 string:', paddedBase64);
+				return Buffer.from(base64String, 'utf-8');
+			}
 			return Buffer.from(paddedBase64, 'base64');
 		} catch (error) {
 			console.error('Error decoding base64:', error);
-			return Buffer.from([]);
+			return Buffer.from(this.payload.payload || '', 'utf-8');
 		}
 	}
 
