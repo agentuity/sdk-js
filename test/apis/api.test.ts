@@ -181,10 +181,13 @@ describe("API Client", () => {
       expect(options?.method).toEqual("DELETE");
     });
     
-    it.skip("should send DELETE request with body", async () => {
+    it("should send DELETE request with body", async () => {
+      fetchCalls.length = 0;
+      
       const body = JSON.stringify({ test: "data" });
       await DELETE("/test", body);
       
+      expect(fetchCalls.length).toBeGreaterThan(0);
       const [, options] = fetchCalls[0];
       expect(options?.method).toEqual("DELETE");
       expect(options?.body).toEqual(body);
