@@ -171,7 +171,7 @@ export async function fromDataType(
 	metadata?: JsonObject
 ): Promise<AgentResponseData> {
 	const response: AgentResponseData = {
-		data: null as any, // Will be set in each case
+		data: null as unknown as DataHandler, // Will be set in each case
 		metadata, // Always include metadata
 	};
 
