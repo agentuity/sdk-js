@@ -1,6 +1,7 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import VectorAPI from "../../src/apis/vector";
 import type { VectorSearchResult } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("VectorAPI", () => {
   let vectorAPI: VectorAPI;
