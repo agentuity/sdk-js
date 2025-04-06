@@ -128,6 +128,9 @@ export class DataHandler implements Data {
 
 	get json(): Json {
 		const text = this.text;
+		if (!text || text.trim() === '') {
+			throw new Error('Cannot parse empty JSON');
+		}
 		const res = safeParse(text, invalidJsonSymbol);
 		if (res === invalidJsonSymbol) {
 			throw new Error('The content type is not valid JSON');
