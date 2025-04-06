@@ -39,7 +39,7 @@ describe('DataHandler', () => {
 			}
 		});
 
-		it.skip('should be accessible through toJSON method', () => {
+		it('should be accessible through toJSON method', () => {
 			const handler = new DataHandler({
 				contentType: 'text/plain',
 				payload: Buffer.from('test').toString('base64'),
