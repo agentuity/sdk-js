@@ -170,71 +170,69 @@ export async function fromDataType(
 	contentType?: string,
 	metadata?: JsonObject
 ): Promise<AgentResponseData> {
+	const response: AgentResponseData = {
+		data: null as any, // Will be set in each case
+		metadata, // Always include metadata
+	};
+
 	if (data === null || data === undefined) {
-		return {
-			data: new DataHandler({
-				contentType: contentType ?? 'text/plain',
-				payload: '',
-			}),
-			metadata,
-		};
+		response.data = new DataHandler({
+			contentType: contentType ?? 'text/plain',
+			payload: '',
+		});
+		return response;
 	}
+	
 	if (typeof data === 'string') {
-		return {
-			data: new DataHandler({
-				contentType: contentType ?? 'text/plain',
-				payload: Buffer.from(data).toString('base64'),
-			}),
-			metadata,
-		};
+		response.data = new DataHandler({
+			contentType: contentType ?? 'text/plain',
+			payload: Buffer.from(data).toString('base64'),
+		});
+		return response;
 	}
+	
 	if (typeof data === 'object') {
 		if ('contentType' in data) {
 			const value = data as Data;
-			return {
-				data: new DataHandler({
-					contentType: value.contentType,
-					payload: value.base64,
-				}),
-				metadata,
-			};
+			response.data = new DataHandler({
+				contentType: value.contentType,
+				payload: value.base64,
+			});
+			return response;
 		}
+		
 		if (data instanceof ArrayBuffer) {
-			return {
-				data: new DataHandler({
-					contentType: contentType ?? 'application/octet-stream',
-					payload: Buffer.from(data).toString('base64'),
-				}),
-				metadata,
-			};
+			response.data = new DataHandler({
+				contentType: contentType ?? 'application/octet-stream',
+				payload: Buffer.from(data).toString('base64'),
+			});
+			return response;
 		}
+		
 		if (data instanceof Buffer) {
-			return {
-				data: new DataHandler({
-					contentType: contentType ?? 'application/octet-stream',
-					payload: data.toString('base64'),
-				}),
-				metadata,
-			};
+			response.data = new DataHandler({
+				contentType: contentType ?? 'application/octet-stream',
+				payload: data.toString('base64'),
+			});
+			return response;
 		}
+		
 		if (data instanceof Blob) {
-			return {
-				data: new DataHandler({
-					contentType: contentType ?? 'application/octet-stream',
-					payload: Buffer.from(await data.arrayBuffer()).toString('base64'),
-				}),
-				metadata,
-			};
+			response.data = new DataHandler({
+				contentType: contentType ?? 'application/octet-stream',
+				payload: Buffer.from(await data.arrayBuffer()).toString('base64'),
+			});
+			return response;
 		}
+		
 		if (data instanceof Uint8Array) {
-			return {
-				data: new DataHandler({
-					contentType: contentType ?? 'application/octet-stream',
-					payload: Buffer.from(data).toString('base64'),
-				}),
-				metadata,
-			};
+			response.data = new DataHandler({
+				contentType: contentType ?? 'application/octet-stream',
+				payload: Buffer.from(data).toString('base64'),
+			});
+			return response;
 		}
+		
 		if (data instanceof ReadableStream) {
 			const reader = data.getReader();
 			let buffer: Uint8Array = new Uint8Array();
@@ -243,21 +241,18 @@ export async function fromDataType(
 				if (done) break;
 				buffer = new Uint8Array([...buffer, ...value]);
 			}
-			return {
-				data: new DataHandler({
-					contentType: contentType ?? 'application/octet-stream',
-					payload: Buffer.from(buffer).toString('base64'),
-				}),
-				metadata,
-			};
+			response.data = new DataHandler({
+				contentType: contentType ?? 'application/octet-stream',
+				payload: Buffer.from(buffer).toString('base64'),
+			});
+			return response;
 		}
-		return {
-			data: new DataHandler({
-				contentType: contentType ?? 'application/json',
-				payload: Buffer.from(safeStringify(data)).toString('base64'),
-			}),
-			metadata,
-		};
+		
+		response.data = new DataHandler({
+			contentType: contentType ?? 'application/json',
+			payload: Buffer.from(safeStringify(data)).toString('base64'),
+		});
+		return response;
 	}
 
 	throw new Error('Invalid data type');
