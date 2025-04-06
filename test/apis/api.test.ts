@@ -161,7 +161,7 @@ describe("API Client", () => {
       expect(options?.body).toEqual(body);
     });
     
-    it.skip("should send DELETE request", async () => {
+    it("should send DELETE request", async () => {
       await DELETE("/test");
       
       const [, options] = fetchCalls[0];
