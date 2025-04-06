@@ -136,7 +136,7 @@ describe("API Client", () => {
   });
   
   describe("HTTP methods", () => {
-    it.skip("should send GET request", async () => {
+    it("should send GET request", async () => {
       await GET("/test");
       
       const [, options] = fetchCalls[0];
