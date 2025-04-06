@@ -78,7 +78,7 @@ describe('DataHandler', () => {
 	});
 
 	describe('json property', () => {
-	it('should parse JSON payload correctly', () => {
+		it('should parse JSON payload correctly', () => {
 			const jsonData = { message: 'Hello, world!' };
 			const jsonString = JSON.stringify(jsonData);
 			const base64Payload = Buffer.from(jsonString).toString('base64');
@@ -98,7 +98,7 @@ describe('DataHandler', () => {
 			expect(result).toHaveProperty('message', 'Hello, world!');
 		});
 
-		it.skip('should handle invalid JSON gracefully', () => {
+		it('should handle invalid JSON gracefully', () => {
 			const handler = new DataHandler({
 				contentType: 'application/json',
 				payload: Buffer.from('invalid json').toString('base64'),
