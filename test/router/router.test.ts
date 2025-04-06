@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from "bun:test";
 import { getSDKVersion } from "../../src/router/router";
 import AgentResponseHandler from "../../src/router/response";
 import type { JsonObject } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("Router", () => {
   describe("getSDKVersion", () => {
