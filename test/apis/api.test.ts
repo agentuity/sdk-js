@@ -137,8 +137,11 @@ describe("API Client", () => {
   
   describe("HTTP methods", () => {
     it("should send GET request", async () => {
+      fetchCalls.length = 0;
+      
       await GET("/test");
       
+      expect(fetchCalls.length).toBeGreaterThan(0);
       const [, options] = fetchCalls[0];
       expect(options?.method).toEqual("GET");
     });
