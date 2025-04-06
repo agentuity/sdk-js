@@ -135,7 +135,7 @@ describe('DataHandler', () => {
 	});
 
 	describe('object method', () => {
-	it('should return typed object from JSON payload', () => {
+		it('should return typed object from JSON payload', () => {
 			interface TestData {
 				message: string;
 				count: number;
