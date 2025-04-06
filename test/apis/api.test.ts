@@ -154,15 +154,18 @@ describe("API Client", () => {
       await POST("/test", body);
       
       expect(fetchCalls.length).toBeGreaterThan(0);
-      const [url, options] = fetchCalls[0];
+      const [, options] = fetchCalls[0];
       expect(options?.method).toEqual("POST");
       expect(options?.body).toEqual(body);
     });
     
-    it.skip("should send PUT request with body", async () => {
+    it("should send PUT request with body", async () => {
+      fetchCalls.length = 0;
+      
       const body = JSON.stringify({ test: "data" });
       await PUT("/test", body);
       
+      expect(fetchCalls.length).toBeGreaterThan(0);
       const [, options] = fetchCalls[0];
       expect(options?.method).toEqual("PUT");
       expect(options?.body).toEqual(body);
