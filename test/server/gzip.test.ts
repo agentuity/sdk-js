@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { gzipString, gunzipBuffer } from "../../src/server/gzip";
+import "../setup"; // Import global test setup
 
 describe("Compression Utilities", () => {
   describe("gzipString", () => {

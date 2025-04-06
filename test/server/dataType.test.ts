@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { toDataType, fromDataType } from "../../src/server/util";
 import type { TriggerType, JsonObject } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("Data Type Conversion Functions", () => {
   const trigger: TriggerType = "webhook";
@@ -174,7 +175,7 @@ describe("Data Type Conversion Functions", () => {
     });
     
     it("should handle invalid data type gracefully", async () => {
-      const invalidData = Symbol('invalid data') as unknown as any;
+      const invalidData = {} as unknown as string;
       
       try {
         await fromDataType(invalidData);
