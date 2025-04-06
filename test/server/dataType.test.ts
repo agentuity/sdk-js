@@ -163,7 +163,7 @@ describe('Data Type Conversion Functions', () => {
 			expect(result.data).toBeDefined();
 		});
 
-		it.skip('should include metadata when provided', async () => {
+		it('should include metadata when provided', async () => {
 			const data = 'Hello, world!';
 			const metadata: JsonObject = { key: 'value' };
 			const result = await fromDataType(data, undefined, metadata);
