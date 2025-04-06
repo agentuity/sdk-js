@@ -97,6 +97,9 @@ export class DataHandler implements Data {
 
 	get text(): string {
 		this.ensureStreamLoaded();
+		if (!this.data || this.data.length === 0) {
+			return '';
+		}
 		return this.data.toString('utf-8');
 	}
 
