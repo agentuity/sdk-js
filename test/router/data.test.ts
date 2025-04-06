@@ -88,7 +88,10 @@ describe('DataHandler', () => {
 				payload: base64Payload,
 			});
 
+			console.log(handler);
 			const text = handler.text;
+			console.log(handler.text);
+
 			expect(text).toBeDefined();
 			expect(text).toBe(jsonString);
 
