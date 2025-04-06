@@ -174,7 +174,7 @@ describe("Data Type Conversion Functions", () => {
     });
     
     it("should handle invalid data type gracefully", async () => {
-      const invalidData = () => "this is a function";
+      const invalidData = Symbol('invalid data') as unknown as any;
       
       try {
         await fromDataType(invalidData);

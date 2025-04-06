@@ -1,33 +1,20 @@
 import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
 import { send, GET, POST, PUT, DELETE } from "../../src/apis/api";
+import { createMockFetch } from "../setup";
 
 describe("API Client", () => {
   let originalEnv: NodeJS.ProcessEnv;
-  const fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]> = [];
+  let fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]>;
+  let mockFetch: ReturnType<typeof mock>;
   
   beforeEach(() => {
     originalEnv = { ...process.env };
     process.env.AGENTUITY_API_KEY = "test-api-key";
     process.env.AGENTUITY_TRANSPORT_URL = "https://test.agentuity.ai/";
     
-    // Reset fetch calls tracking
-    fetchCalls.length = 0;
-    
-    // Create a mock response object
-    const mockResponse = {
-      status: 200,
-      headers: new Headers({
-        "content-type": "application/json",
-      }),
-      json: () => Promise.resolve({ success: true }),
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
-    };
-    
-    // Override global.fetch with our tracking function
-    const mockFetch = mock((url: URL | RequestInfo, options?: RequestInit) => {
-      fetchCalls.push([url, options]);
-      return Promise.resolve(mockResponse);
-    });
+    const mockSetup = createMockFetch();
+    fetchCalls = mockSetup.fetchCalls;
+    mockFetch = mockSetup.mockFetch;
     
     global.fetch = mockFetch as unknown as typeof fetch;
     
@@ -39,6 +26,7 @@ describe("API Client", () => {
   
   afterEach(() => {
     process.env = originalEnv;
+    mock.restore();
   });
   
   describe("send", () => {
