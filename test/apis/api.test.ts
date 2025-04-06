@@ -3,7 +3,7 @@ import { send, GET, POST, PUT, DELETE } from "../../src/apis/api";
 
 describe("API Client", () => {
   let originalEnv: NodeJS.ProcessEnv;
-  let fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]> = [];
+  const fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]> = [];
   
   beforeEach(() => {
     originalEnv = { ...process.env };
@@ -11,7 +11,7 @@ describe("API Client", () => {
     process.env.AGENTUITY_TRANSPORT_URL = "https://test.agentuity.ai/";
     
     // Reset fetch calls tracking
-    fetchCalls = [];
+    fetchCalls.length = 0;
     
     // Create a mock response object
     const mockResponse = {
@@ -24,10 +24,12 @@ describe("API Client", () => {
     };
     
     // Override global.fetch with our tracking function
-    global.fetch = ((url: URL | RequestInfo, options?: RequestInit) => {
+    const mockFetch = mock((url: URL | RequestInfo, options?: RequestInit) => {
       fetchCalls.push([url, options]);
       return Promise.resolve(mockResponse);
-    }) as unknown as typeof fetch;
+    });
+    
+    global.fetch = mockFetch as unknown as typeof fetch;
     
     // Mock the router module
     mock.module("../../src/router/router", () => ({
@@ -83,11 +85,11 @@ describe("API Client", () => {
     });
     
     it("should retry on 429 status", async () => {
-      // Override fetch for this test only
-      const originalFetch = global.fetch;
+      fetchCalls.length = 0;
+      
       let callCount = 0;
       
-      global.fetch = ((url: URL | RequestInfo, options?: RequestInit) => {
+      const retryMockFetch = mock((url: URL | RequestInfo, options?: RequestInit) => {
         fetchCalls.push([url, options]);
         callCount++;
         
@@ -105,7 +107,10 @@ describe("API Client", () => {
           }),
           json: () => Promise.resolve({ success: true }),
         });
-      }) as unknown as typeof fetch;
+      });
+      
+      const originalFetch = global.fetch;
+      global.fetch = retryMockFetch as unknown as typeof fetch;
       
       const result = await send({
         method: "GET",
