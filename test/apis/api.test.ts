@@ -152,7 +152,7 @@ describe("API Client", () => {
       expect(options?.body).toEqual(body);
     });
     
-    it.skip("should send PUT request with body", async () => {
+    it("should send PUT request with body", async () => {
       const body = JSON.stringify({ test: "data" });
       await PUT("/test", body);
       
