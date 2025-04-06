@@ -1,6 +1,13 @@
 import { describe, expect, it, mock } from "bun:test";
 import AgentResolver from "../../src/server/agents";
-import type { ServerAgent } from "../../src/server/types";
+import "../setup"; // Import global test setup
+
+interface ServerAgent {
+  id: string;
+  name: string;
+  filename: string;
+  description?: string;
+}
 
 describe("AgentResolver", () => {
   const mockLogger = {
@@ -16,13 +23,13 @@ describe("AgentResolver", () => {
       {
         id: "agent-id-1",
         name: "Agent 1",
-        path: "agent-path-1",
+        filename: "agent-path-1",
         description: "Agent 1 description",
       },
       {
         id: "agent-id-2",
         name: "Agent 2",
-        path: "agent-path-2",
+        filename: "agent-path-2",
         description: "Agent 2 description",
       },
     ];
@@ -48,13 +55,13 @@ describe("AgentResolver", () => {
       {
         id: "agent-id-1",
         name: "Agent 1",
-        path: "agent-path-1",
+        filename: "agent-path-1",
         description: "Agent 1 description",
       },
       {
         id: "agent-id-2",
         name: "Agent 2",
-        path: "agent-path-2",
+        filename: "agent-path-2",
         description: "Agent 2 description",
       },
     ];
@@ -80,7 +87,7 @@ describe("AgentResolver", () => {
       {
         id: "current-agent-id",
         name: "Current Agent",
-        path: "agent-path",
+        filename: "agent-path",
         description: "Current Agent description",
       },
     ];
