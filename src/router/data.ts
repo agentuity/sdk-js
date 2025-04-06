@@ -32,8 +32,14 @@ export class DataHandler implements Data {
 		payload: Arguments,
 		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
 	) {
-		this.payload = payload || { contentType: 'application/octet-stream', payload: '' };
-		this.type = payload?.contentType === undefined || payload?.contentType === null ? 'application/octet-stream' : payload.contentType;
+		this.payload = payload || {
+			contentType: 'application/octet-stream',
+			payload: '',
+		};
+		this.type =
+			payload?.contentType === undefined || payload?.contentType === null
+				? 'application/octet-stream'
+				: payload.contentType;
 		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
 		this.readstream = stream;
 	}
@@ -79,7 +85,11 @@ export class DataHandler implements Data {
 	}
 
 	private get data(): Buffer {
-		if (!this.payload || this.payload.payload === undefined || this.payload.payload === null) {
+		if (
+			!this.payload ||
+			this.payload.payload === undefined ||
+			this.payload.payload === null
+		) {
 			return Buffer.from([]);
 		}
 		this.ensureStreamLoaded();
@@ -88,7 +98,10 @@ export class DataHandler implements Data {
 			if (!base64String) {
 				return Buffer.from([]);
 			}
-			const paddedBase64 = base64String.padEnd(Math.ceil(base64String.length / 4) * 4, '=');
+			const paddedBase64 = base64String.padEnd(
+				Math.ceil(base64String.length / 4) * 4,
+				'='
+			);
 			return Buffer.from(paddedBase64, 'base64');
 		} catch (error) {
 			console.error('Error decoding base64:', error);
@@ -127,7 +140,9 @@ export class DataHandler implements Data {
 			const res = this.json;
 			return res as T;
 		} catch (error) {
-			throw new Error(`Failed to parse object: ${error instanceof Error ? error.message : String(error)}`);
+			throw new Error(
+				`Failed to parse object: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 

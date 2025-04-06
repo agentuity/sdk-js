@@ -1,5 +1,13 @@
 import { getSDKVersion } from '../router/router';
 
+// allow the fetch function to be overridden
+let apiFetch = globalThis.fetch;
+
+// only used in tests
+export function setFetch(f: typeof fetch) {
+	apiFetch = f;
+}
+
 interface BaseApiRequest {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
 	path: string;
@@ -81,7 +89,7 @@ export async function send<K>(
 	}
 	// this shouldn't be overridden
 	headers.Authorization = `Bearer ${apiKey}`;
-	const resp = await fetch(url, {
+	const resp = await apiFetch(url, {
 		method: request.method,
 		body: request.body,
 		headers,

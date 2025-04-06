@@ -207,7 +207,10 @@ export default class AgentResponseHandler implements AgentResponse {
 	/**
 	 * return a markdown response with optional metadata
 	 */
-	async markdown(content: string, metadata?: JsonObject): Promise<AgentResponseData> {
+	async markdown(
+		content: string,
+		metadata?: JsonObject
+	): Promise<AgentResponseData> {
 		return {
 			data: new DataHandler({
 				contentType: 'text/markdown',
