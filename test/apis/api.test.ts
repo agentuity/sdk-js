@@ -144,12 +144,34 @@ describe("API Client", () => {
     });
     
     it("should send POST request with body", async () => {
-      const body = JSON.stringify({ test: "data" });
-      await POST("/test", body);
+      fetchCalls.length = 0;
       
-      const [, options] = fetchCalls[0];
-      expect(options?.method).toEqual("POST");
-      expect(options?.body).toEqual(body);
+      const testMockFetch = mock((url: URL | RequestInfo, options?: RequestInit) => {
+        fetchCalls.push([url, options]);
+        return Promise.resolve({
+          status: 200,
+          headers: new Headers({
+            "content-type": "application/json",
+          }),
+          json: () => Promise.resolve({ success: true }),
+        });
+      });
+      
+      const originalFetch = global.fetch;
+      global.fetch = testMockFetch as unknown as typeof fetch;
+      
+      try {
+        const body = JSON.stringify({ test: "data" });
+        await POST("/test", body);
+        
+        expect(fetchCalls.length).toBeGreaterThan(0);
+        const [, options] = fetchCalls[0];
+        expect(options?.method).toEqual("POST");
+        expect(options?.body).toEqual(body);
+      } finally {
+        // Restore original fetch
+        global.fetch = originalFetch;
+      }
     });
     
     it.skip("should send PUT request with body", async () => {
