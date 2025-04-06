@@ -171,9 +171,12 @@ describe("API Client", () => {
       expect(options?.body).toEqual(body);
     });
     
-    it.skip("should send DELETE request", async () => {
+    it("should send DELETE request", async () => {
+      fetchCalls.length = 0;
+      
       await DELETE("/test");
       
+      expect(fetchCalls.length).toBeGreaterThan(0);
       const [, options] = fetchCalls[0];
       expect(options?.method).toEqual("DELETE");
     });
