@@ -1,6 +1,7 @@
 import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
 import ConsoleLogger from "../../src/logger/console";
 import type { Json } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("ConsoleLogger", () => {
   let originalConsole: Console;
