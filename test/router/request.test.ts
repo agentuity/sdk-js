@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import AgentRequestHandler from "../../src/router/request";
 import type { TriggerType, JsonObject } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("AgentRequestHandler", () => {
   describe("trigger property", () => {
