@@ -83,12 +83,19 @@ describe("DataHandler", () => {
       const jsonString = JSON.stringify(jsonData);
       const base64Payload = Buffer.from(jsonString).toString("base64");
       
+      console.log("JSON Test - Base64 payload:", base64Payload);
+      
       const handler = new DataHandler({
         contentType: "application/json",
         payload: base64Payload
       });
       
-      expect(handler.text).toBe(jsonString);
+      console.log("JSON Test - Handler base64:", handler.base64);
+      console.log("JSON Test - Handler text:", handler.text);
+      
+      const text = handler.text;
+      expect(text).toBeDefined();
+      expect(text).toBe(jsonString);
       
       const result = handler.json;
       expect(result).toBeDefined();
@@ -143,12 +150,19 @@ describe("DataHandler", () => {
       const jsonString = JSON.stringify(jsonData);
       const base64Payload = Buffer.from(jsonString).toString("base64");
       
+      console.log("Object Test - Base64 payload:", base64Payload);
+      
       const handler = new DataHandler({
         contentType: "application/json",
         payload: base64Payload
       });
       
-      expect(handler.text).toBe(jsonString);
+      console.log("Object Test - Handler base64:", handler.base64);
+      console.log("Object Test - Handler text:", handler.text);
+      
+      const text = handler.text;
+      expect(text).toBeDefined();
+      expect(text).toBe(jsonString);
       
       const result = handler.object<TestData>();
       expect(result).toBeDefined();

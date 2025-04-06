@@ -83,7 +83,12 @@ export class DataHandler implements Data {
 			return Buffer.from([]);
 		}
 		this.ensureStreamLoaded();
-		return Buffer.from(this.payload.payload, 'base64');
+		try {
+			return Buffer.from(this.payload.payload, 'base64');
+		} catch (error) {
+			console.error('Error decoding base64:', error);
+			return Buffer.from([]);
+		}
 	}
 
 	get contentType(): string {
