@@ -139,11 +139,30 @@ describe("API Client", () => {
     it("should send GET request", async () => {
       fetchCalls.length = 0;
       
-      await GET("/test");
+      const testMockFetch = mock((url: URL | RequestInfo, options?: RequestInit) => {
+        fetchCalls.push([url, options]);
+        return Promise.resolve({
+          status: 200,
+          headers: new Headers({
+            "content-type": "application/json",
+          }),
+          json: () => Promise.resolve({ success: true }),
+        });
+      });
       
-      expect(fetchCalls.length).toBeGreaterThan(0);
-      const [, options] = fetchCalls[0];
-      expect(options?.method).toEqual("GET");
+      const originalFetch = global.fetch;
+      global.fetch = testMockFetch as unknown as typeof fetch;
+      
+      try {
+        await GET("/test");
+        
+        expect(fetchCalls.length).toBeGreaterThan(0);
+        const [, options] = fetchCalls[0];
+        expect(options?.method).toEqual("GET");
+      } finally {
+        // Restore original fetch
+        global.fetch = originalFetch;
+      }
     });
     
     it.skip("should send POST request with body", async () => {
