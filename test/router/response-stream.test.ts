@@ -8,35 +8,6 @@ describe('AgentResponseHandler Streaming', () => {
 
 	beforeEach(() => {
 		responseHandler = new AgentResponseHandler();
-
-		mock.module('../../src/router/data', () => ({
-			DataHandler: mock((payload, stream) => ({
-				contentType: payload?.contentType,
-				base64: payload?.payload,
-				stream: stream,
-				toString: () => payload?.payload,
-				toJSON: () => ({
-					contentType: payload?.contentType,
-					base64: payload?.payload,
-				}),
-			})),
-		}));
-
-		mock.module('../../src/server/util', () => ({
-			safeStringify: mock((data) => JSON.stringify(data)),
-			fromDataType: mock((data, contentType, metadata) => {
-				return Promise.resolve({
-					data: {
-						contentType,
-						base64:
-							typeof data === 'string'
-								? Buffer.from(data).toString('base64')
-								: 'mock-base64',
-					},
-					metadata,
-				});
-			}),
-		}));
 	});
 
 	describe('stream method', () => {
