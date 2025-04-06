@@ -114,7 +114,7 @@ describe('DataHandler', () => {
 	});
 
 	describe('binary property', () => {
-	it('should return Uint8Array from payload', () => {
+		it('should return Uint8Array from payload', () => {
 			const binaryData = new Uint8Array([1, 2, 3, 4]);
 			const handler = new DataHandler({
 				contentType: 'application/octet-stream',
@@ -135,7 +135,7 @@ describe('DataHandler', () => {
 	});
 
 	describe('object method', () => {
-		it.skip('should return typed object from JSON payload', () => {
+	it('should return typed object from JSON payload', () => {
 			interface TestData {
 				message: string;
 				count: number;
@@ -145,15 +145,10 @@ describe('DataHandler', () => {
 			const jsonString = JSON.stringify(jsonData);
 			const base64Payload = Buffer.from(jsonString).toString('base64');
 
-			console.log('Object Test - Base64 payload:', base64Payload);
-
 			const handler = new DataHandler({
 				contentType: 'application/json',
 				payload: base64Payload,
 			});
-
-			console.log('Object Test - Handler base64:', handler.base64);
-			console.log('Object Test - Handler text:', handler.text);
 
 			const text = handler.text;
 			expect(text).toBeDefined();
