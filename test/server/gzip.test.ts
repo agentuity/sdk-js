@@ -12,14 +12,14 @@ describe('Compression Utilities', () => {
 			expect(compressed.length).toBeGreaterThan(0);
 		});
 
-		it.skip('should return an empty buffer for empty string', async () => {
+		it('should return an empty buffer for empty string', async () => {
 			const compressed = await gzipString('');
 
 			expect(compressed).toBeInstanceOf(Buffer);
 			expect(compressed.length).toBe(0);
 		});
 
-		it.skip('should handle null or undefined input', async () => {
+		it('should handle null or undefined input', async () => {
 			const compressedNull = await gzipString(null as unknown as string);
 			const compressedUndefined = await gzipString(
 				undefined as unknown as string
@@ -31,7 +31,7 @@ describe('Compression Utilities', () => {
 			expect(compressedUndefined.length).toBe(0);
 		});
 
-		it.skip('should compress a large string', async () => {
+		it('should compress a large string', async () => {
 			const largeString = 'abcdefghijklmnopqrstuvwxyz'.repeat(1000);
 			const compressed = await gzipString(largeString);
 
@@ -58,7 +58,7 @@ describe('Compression Utilities', () => {
 	});
 
 	describe('gunzipBuffer', () => {
-		it.skip('should decompress a compressed buffer', async () => {
+		it('should decompress a compressed buffer', async () => {
 			const testString = 'Hello, world!';
 			const compressed = await gzipString(testString);
 			const decompressed = await gunzipBuffer(compressed);
@@ -90,7 +90,7 @@ describe('Compression Utilities', () => {
 	});
 
 	describe('Roundtrip Tests', () => {
-		it.skip('should correctly roundtrip a simple string', async () => {
+		it('should correctly roundtrip a simple string', async () => {
 			const testString = 'Hello, world!';
 			const compressed = await gzipString(testString);
 			const decompressed = await gunzipBuffer(compressed);
@@ -98,7 +98,7 @@ describe('Compression Utilities', () => {
 			expect(decompressed).toBe(testString);
 		});
 
-		it.skip('should correctly roundtrip a large string', async () => {
+		it('should correctly roundtrip a large string', async () => {
 			const largeString = 'abcdefghijklmnopqrstuvwxyz'.repeat(1000);
 			const compressed = await gzipString(largeString);
 			const decompressed = await gunzipBuffer(compressed);
@@ -106,7 +106,7 @@ describe('Compression Utilities', () => {
 			expect(decompressed).toBe(largeString);
 		});
 
-		it.skip('should correctly roundtrip a JSON string', async () => {
+		it('should correctly roundtrip a JSON string', async () => {
 			const jsonObject = {
 				name: 'Test Object',
 				properties: {
@@ -124,7 +124,7 @@ describe('Compression Utilities', () => {
 			expect(JSON.parse(decompressed)).toEqual(jsonObject);
 		});
 
-		it.skip('should correctly roundtrip Unicode strings', async () => {
+		it('should correctly roundtrip Unicode strings', async () => {
 			const unicodeString = 'Unicode: 你好, 世界! ñ Ö ß';
 			const compressed = await gzipString(unicodeString);
 			const decompressed = await gunzipBuffer(compressed);
