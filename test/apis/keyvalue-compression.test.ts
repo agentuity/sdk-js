@@ -1,5 +1,6 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import KeyValueAPI from "../../src/apis/keyvalue";
+import "../setup"; // Import global test setup
 
 describe("KeyValue API Compression", () => {
   let keyValueAPI: KeyValueAPI;

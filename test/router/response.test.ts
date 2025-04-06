@@ -1,6 +1,7 @@
 import { describe, expect, it, mock, beforeEach } from "bun:test";
 import AgentResponseHandler from "../../src/router/response";
 import type { JsonObject } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("AgentResponseHandler", () => {
   let responseHandler: AgentResponseHandler;

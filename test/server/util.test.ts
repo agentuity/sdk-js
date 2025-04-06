@@ -8,6 +8,7 @@ import {
 } from "../../src/server/util";
 import type { ServerRoute } from "../../src/server/types";
 import type { ReadableDataType } from "../../src/types";
+import "../setup"; // Import global test setup
 
 describe("Utility Functions", () => {
   describe("safeStringify", () => {

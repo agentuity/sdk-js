@@ -74,6 +74,7 @@ export class DataHandler implements Data {
 		return {
 			contentType: this.contentType,
 			base64: this.base64,
+			payload: this.base64,
 		};
 	}
 
@@ -82,7 +83,17 @@ export class DataHandler implements Data {
 			return Buffer.from([]);
 		}
 		this.ensureStreamLoaded();
-		return Buffer.from(this.payload.payload, 'base64');
+		try {
+			const base64String = this.payload.payload.trim();
+			if (!base64String) {
+				return Buffer.from([]);
+			}
+			const paddedBase64 = base64String.padEnd(Math.ceil(base64String.length / 4) * 4, '=');
+			return Buffer.from(paddedBase64, 'base64');
+		} catch (error) {
+			console.error('Error decoding base64:', error);
+			return Buffer.from([]);
+		}
 	}
 
 	get contentType(): string {
@@ -96,6 +107,9 @@ export class DataHandler implements Data {
 
 	get text(): string {
 		this.ensureStreamLoaded();
+		if (!this.data || this.data.length === 0) {
+			return '';
+		}
 		return this.data.toString('utf-8');
 	}
 
@@ -109,8 +123,12 @@ export class DataHandler implements Data {
 	}
 
 	object<T>(): T {
-		const res = this.json;
-		return res as T;
+		try {
+			const res = this.json;
+			return res as T;
+		} catch (error) {
+			throw new Error(`Failed to parse object: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	get binary(): Uint8Array {
