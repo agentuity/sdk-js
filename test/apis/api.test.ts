@@ -147,11 +147,14 @@ describe("API Client", () => {
       expect(url.toString()).toContain("/test");
     });
     
-    it.skip("should send POST request with body", async () => {
+    it("should send POST request with body", async () => {
+      fetchCalls.length = 0;
+      
       const body = JSON.stringify({ test: "data" });
       await POST("/test", body);
       
-      const [, options] = fetchCalls[0];
+      expect(fetchCalls.length).toBeGreaterThan(0);
+      const [url, options] = fetchCalls[0];
       expect(options?.method).toEqual("POST");
       expect(options?.body).toEqual(body);
     });
