@@ -32,7 +32,7 @@ export class DataHandler implements Data {
 		payload: Arguments,
 		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
 	) {
-		this.payload = payload || {
+		this.payload = payload ?? {
 			contentType: 'application/octet-stream',
 			payload: '',
 		};
