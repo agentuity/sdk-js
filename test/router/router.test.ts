@@ -6,7 +6,7 @@ import '../setup'; // Import global test setup
 
 describe('Router', () => {
 	describe('getSDKVersion', () => {
-		it.skip('should throw error when no store is found', () => {
+		it('should throw error when no store is found', () => {
 			expect(() => getSDKVersion()).toThrow('no store');
 		});
 	});
@@ -38,7 +38,7 @@ describe('Router', () => {
 			expect(response.metadata).toEqual(metadata);
 		});
 
-		it.skip('should create binary response correctly', async () => {
+		it('should create binary response correctly', async () => {
 			const binaryData = new ArrayBuffer(8);
 			const metadata: JsonObject = { key: 'value' };
 
