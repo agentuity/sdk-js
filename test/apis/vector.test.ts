@@ -1,95 +1,103 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
-import VectorAPI from "../../src/apis/vector";
-import type { VectorSearchResult } from "../../src/types";
-import "../setup"; // Import global test setup
+import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import VectorAPI from '../../src/apis/vector';
+import type { VectorSearchResult } from '../../src/types';
+import '../setup'; // Import global test setup
 
-describe("VectorAPI", () => {
-  let vectorAPI: VectorAPI;
-  const mockTracer = {
-    startSpan: mock((name: string, options: unknown, ctx: unknown) => {
-      return {
-        setAttribute: mock(() => {}),
-        addEvent: mock(() => {}),
-        end: mock(() => {}),
-        setStatus: mock(() => {}),
-        recordException: mock(() => {}),
-      };
-    }),
-  };
+describe('VectorAPI', () => {
+	let vectorAPI: VectorAPI;
+	const mockTracer = {
+		startSpan: mock((name: string, options: unknown, ctx: unknown) => {
+			return {
+				setAttribute: mock(() => {}),
+				addEvent: mock(() => {}),
+				end: mock(() => {}),
+				setStatus: mock(() => {}),
+				recordException: mock(() => {}),
+			};
+		}),
+	};
 
-  beforeEach(() => {
-    mock.restore();
-    vectorAPI = new VectorAPI();
-    
-    mock.module("@opentelemetry/api", () => ({
-      context: {
-        active: () => ({}),
-      },
-      trace: {
-        setSpan: (ctx: unknown, span: unknown) => ctx,
-        getTracer: () => mockTracer,
-      },
-      SpanStatusCode: {
-        OK: 1,
-        ERROR: 2
-      }
-    }));
+	beforeEach(() => {
+		mock.restore();
+		vectorAPI = new VectorAPI();
 
-    mock.module("../../src/router/router", () => ({
-      getTracer: () => mockTracer,
-      recordException: mock(() => {}),
-      asyncStorage: {
-        getStore: () => ({
-          tracer: mockTracer,
-        }),
-      },
-    }));
-  });
+		mock.module('@opentelemetry/api', () => ({
+			context: {
+				active: () => ({}),
+			},
+			trace: {
+				setSpan: (ctx: unknown, span: unknown) => ctx,
+				getTracer: () => mockTracer,
+			},
+			SpanStatusCode: {
+				OK: 1,
+				ERROR: 2,
+			},
+		}));
 
-  describe("search", () => {
-    it("should return search results successfully", async () => {
-      const mockSearchResults: VectorSearchResult[] = [{ id: "1", key: "key1", distance: 0.9 }];
-      const mockResponse = {
-        status: 200,
-        json: {
-          success: true,
-          data: mockSearchResults,
-        },
-      };
-      
-      mock.module("../../src/apis/api", () => ({
-        POST: mock(() => Promise.resolve(mockResponse)),
-      }));
+		mock.module('../../src/router/router', () => ({
+			getTracer: () => mockTracer,
+			recordException: mock(() => {}),
+			asyncStorage: {
+				getStore: () => ({
+					tracer: mockTracer,
+				}),
+			},
+		}));
+	});
 
-      const originalSearch = vectorAPI.search;
-      vectorAPI.search = async (name: string, params: unknown): Promise<VectorSearchResult[]> => mockSearchResults;
+	describe('search', () => {
+		it('should return search results successfully', async () => {
+			const mockSearchResults: VectorSearchResult[] = [
+				{ id: '1', key: 'key1', distance: 0.9 },
+			];
+			const mockResponse = {
+				status: 200,
+				json: {
+					success: true,
+					data: mockSearchResults,
+				},
+			};
 
-      const searchParams = { query: "test query" };
-      const results = await vectorAPI.search("test-store", searchParams);
-      
-      expect(results).toEqual(mockSearchResults);
-      
-      vectorAPI.search = originalSearch;
-    });
+			mock.module('../../src/apis/api', () => ({
+				POST: mock(() => Promise.resolve(mockResponse)),
+			}));
 
-    it("should return empty array when no results found", async () => {
-      const mockResponse = {
-        status: 404,
-      };
-      
-      mock.module("../../src/apis/api", () => ({
-        POST: mock(() => Promise.resolve(mockResponse)),
-      }));
+			const originalSearch = vectorAPI.search;
+			vectorAPI.search = async (
+				name: string,
+				params: unknown
+			): Promise<VectorSearchResult[]> => mockSearchResults;
 
-      const originalSearch = vectorAPI.search;
-      vectorAPI.search = async (name: string, params: unknown): Promise<VectorSearchResult[]> => [];
+			const searchParams = { query: 'test query' };
+			const results = await vectorAPI.search('test-store', searchParams);
 
-      const searchParams = { query: "not found query" };
-      const results = await vectorAPI.search("test-store", searchParams);
-      
-      expect(results).toEqual([]);
-      
-      vectorAPI.search = originalSearch;
-    });
-  });
+			expect(results).toEqual(mockSearchResults);
+
+			vectorAPI.search = originalSearch;
+		});
+
+		it('should return empty array when no results found', async () => {
+			const mockResponse = {
+				status: 404,
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				POST: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			const originalSearch = vectorAPI.search;
+			vectorAPI.search = async (
+				name: string,
+				params: unknown
+			): Promise<VectorSearchResult[]> => [];
+
+			const searchParams = { query: 'not found query' };
+			const results = await vectorAPI.search('test-store', searchParams);
+
+			expect(results).toEqual([]);
+
+			vectorAPI.search = originalSearch;
+		});
+	});
 });

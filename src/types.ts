@@ -564,8 +564,12 @@ export interface AgentResponse {
 	/**
 	 * return a response with specific data and content type with optional metadata
 	 */
-	data(data: DataType, contentType: string, metadata?: JsonObject): Promise<AgentResponseData>;
-	
+	data(
+		data: DataType,
+		contentType: string,
+		metadata?: JsonObject
+	): Promise<AgentResponseData>;
+
 	/**
 	 * return a markdown response with optional metadata
 	 */

@@ -182,7 +182,7 @@ export async function fromDataType(
 		});
 		return response;
 	}
-	
+
 	if (typeof data === 'string') {
 		response.data = new DataHandler({
 			contentType: contentType ?? 'text/plain',
@@ -190,7 +190,7 @@ export async function fromDataType(
 		});
 		return response;
 	}
-	
+
 	if (typeof data === 'object') {
 		if ('contentType' in data) {
 			const value = data as Data;
@@ -200,7 +200,7 @@ export async function fromDataType(
 			});
 			return response;
 		}
-		
+
 		if (data instanceof ArrayBuffer) {
 			response.data = new DataHandler({
 				contentType: contentType ?? 'application/octet-stream',
@@ -208,7 +208,7 @@ export async function fromDataType(
 			});
 			return response;
 		}
-		
+
 		if (data instanceof Buffer) {
 			response.data = new DataHandler({
 				contentType: contentType ?? 'application/octet-stream',
@@ -216,7 +216,7 @@ export async function fromDataType(
 			});
 			return response;
 		}
-		
+
 		if (data instanceof Blob) {
 			response.data = new DataHandler({
 				contentType: contentType ?? 'application/octet-stream',
@@ -224,7 +224,7 @@ export async function fromDataType(
 			});
 			return response;
 		}
-		
+
 		if (data instanceof Uint8Array) {
 			response.data = new DataHandler({
 				contentType: contentType ?? 'application/octet-stream',
@@ -232,7 +232,7 @@ export async function fromDataType(
 			});
 			return response;
 		}
-		
+
 		if (data instanceof ReadableStream) {
 			const reader = data.getReader();
 			let buffer: Uint8Array = new Uint8Array();
@@ -247,7 +247,7 @@ export async function fromDataType(
 			});
 			return response;
 		}
-		
+
 		response.data = new DataHandler({
 			contentType: contentType ?? 'application/json',
 			payload: Buffer.from(safeStringify(data)).toString('base64'),

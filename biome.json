@@ -17,7 +17,7 @@
 	"organizeImports": { "enabled": true },
 	"linter": {
 		"enabled": true,
-		"rules": { 
+		"rules": {
 			"recommended": true,
 			"complexity": {
 				"useLiteralKeys": "off"

@@ -58,7 +58,11 @@ export async function run(config: AutostartConfig) {
 			if (!config.projectId && data?.project_id) {
 				config.projectId = data.project_id;
 			}
-			if (data?.development?.port && !process.env.AGENTUITY_CLOUD_PORT && !process.env.PORT) {
+			if (
+				data?.development?.port &&
+				!process.env.AGENTUITY_CLOUD_PORT &&
+				!process.env.PORT
+			) {
 				port = data.development.port;
 			}
 			if (!config.agents || config.agents.length === 0) {
@@ -112,7 +116,11 @@ export async function run(config: AutostartConfig) {
 			agents: config.agents,
 		}),
 		directory: basedir,
-		port: process.env.AGENTUITY_CLOUD_PORT ? Number.parseInt(process.env.AGENTUITY_CLOUD_PORT) : (process.env.PORT ? Number.parseInt(process.env.PORT) : (port ?? 3500)),
+		port: process.env.AGENTUITY_CLOUD_PORT
+			? Number.parseInt(process.env.AGENTUITY_CLOUD_PORT)
+			: process.env.PORT
+				? Number.parseInt(process.env.PORT)
+				: (port ?? 3500),
 		logger: otel.logger,
 	});
 	await server.start();
