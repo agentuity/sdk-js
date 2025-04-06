@@ -9,6 +9,7 @@ import type {
 } from '../../src/types';
 import type { ReadableStream } from 'node:stream/web';
 import '../setup'; // Import global test setup
+import { DataHandler } from '../../src/router/data';
 
 describe('KeyValueAPI', () => {
 	let keyValueAPI: KeyValueAPI;
@@ -24,17 +25,6 @@ describe('KeyValueAPI', () => {
 			};
 		}),
 	};
-
-	const createMockData = (): Data => ({
-		contentType: 'application/json',
-		base64: Buffer.from(JSON.stringify({ test: 'data' })).toString('base64'),
-		text: JSON.stringify({ test: 'data' }),
-		json: { test: 'data' },
-		object: <T>() => ({ test: 'data' }) as T,
-		binary: new Uint8Array(),
-		buffer: Buffer.from(''),
-		stream: {} as ReadableStream<ReadableDataType>,
-	});
 
 	beforeEach(() => {
 		mock.restore();
@@ -67,8 +57,6 @@ describe('KeyValueAPI', () => {
 
 	describe('get', () => {
 		it('should retrieve a value successfully', async () => {
-			const mockData = createMockData();
-
 			const mockResponse = {
 				status: 200,
 				headers: {
@@ -84,17 +72,18 @@ describe('KeyValueAPI', () => {
 				GET: mock(() => Promise.resolve(mockResponse)),
 			}));
 
-			mock.module('../../src/router/data', () => ({
-				DataHandler: mock(() => mockData),
-			}));
-
 			keyValueAPI.get = async (
 				name: string,
 				key: string
 			): Promise<DataResult> => {
 				const result: DataResultFound = {
 					exists: true,
-					data: mockData,
+					data: new DataHandler({
+						contentType: 'application/json',
+						payload: Buffer.from(JSON.stringify({ test: 'data' })).toString(
+							'base64'
+						),
+					}),
 				};
 				return result;
 			};

@@ -32,7 +32,7 @@ export class DataHandler implements Data {
 		payload: Arguments,
 		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
 	) {
-		this.payload = payload || {
+		this.payload = payload ?? {
 			contentType: 'application/octet-stream',
 			payload: '',
 		};
@@ -102,10 +102,14 @@ export class DataHandler implements Data {
 				Math.ceil(base64String.length / 4) * 4,
 				'='
 			);
+			if (!/^[A-Za-z0-9+/=]+$/.test(paddedBase64)) {
+				console.warn('Invalid base64 string:', paddedBase64);
+				return Buffer.from(base64String, 'utf-8');
+			}
 			return Buffer.from(paddedBase64, 'base64');
 		} catch (error) {
 			console.error('Error decoding base64:', error);
-			return Buffer.from([]);
+			return Buffer.from(this.payload.payload || '', 'utf-8');
 		}
 	}
 
@@ -128,6 +132,9 @@ export class DataHandler implements Data {
 
 	get json(): Json {
 		const text = this.text;
+		if (!text || text.trim() === '') {
+			throw new Error('Cannot parse empty JSON');
+		}
 		const res = safeParse(text, invalidJsonSymbol);
 		if (res === invalidJsonSymbol) {
 			throw new Error('The content type is not valid JSON');

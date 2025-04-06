@@ -77,34 +77,6 @@ describe('KeyValue API Compression', () => {
 				OK: 'ok',
 			},
 		}));
-
-		mock.module('../../src/server/util', () => ({
-			fromDataType: (data: unknown, contentType?: string) =>
-				Promise.resolve({
-					data: {
-						contentType: contentType || 'application/json',
-						base64:
-							typeof data === 'string'
-								? Buffer.from(data).toString('base64')
-								: 'base64data',
-						text: typeof data === 'string' ? data : JSON.stringify(data),
-					},
-				}),
-		}));
-
-		mock.module('../../src/router/data', () => ({
-			DataHandler: class MockDataHandler {
-				contentType: string;
-				base64: string;
-				text: string;
-
-				constructor(options: { contentType: string; payload: string }) {
-					this.contentType = options.contentType;
-					this.base64 = options.payload;
-					this.text = Buffer.from(options.payload || '', 'base64').toString();
-				}
-			},
-		}));
 	});
 
 	describe('set method with compression', () => {
