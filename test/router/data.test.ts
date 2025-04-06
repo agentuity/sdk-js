@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { DataHandler } from "../../src/router/data";
+import "../setup"; // Import global test setup
 
 describe("DataHandler", () => {
   describe("constructor", () => {
