@@ -143,7 +143,7 @@ describe("API Client", () => {
       expect(options?.method).toEqual("GET");
     });
     
-    it.skip("should send POST request with body", async () => {
+    it("should send POST request with body", async () => {
       const body = JSON.stringify({ test: "data" });
       await POST("/test", body);
       
