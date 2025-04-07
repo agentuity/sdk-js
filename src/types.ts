@@ -594,6 +594,11 @@ export type AgentHandler = (
 ) => Promise<AgentResponseData>;
 
 /**
+ * The inspect function for the agent
+ */
+export type AgentInspect = () => string | Promise<string>;
+
+/**
  * the config for the agent
  */
 export interface AgentConfig {

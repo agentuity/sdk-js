@@ -73,6 +73,47 @@ export class BunServer implements Server {
 					},
 				},
 				'/_health': new Response('OK'),
+				'/inspect': {
+					GET: async () => {
+						const result: Record<string, string> = {};
+						for (const route of this.config.routes) {
+							if (route.inspect) {
+								let r = route.inspect();
+								if (r instanceof Promise) {
+									r = await r;
+								}
+								result[route.agent.id] = r;
+							}
+						}
+						return new Response(JSON.stringify(result), {
+							headers: {
+								'Content-Type': 'application/json',
+							},
+						});
+					},
+				},
+				'/inspect/:id': {
+					GET: async (req) => {
+						const url = new URL(req.url);
+						const id = url.pathname.slice(5);
+						for (const route of this.config.routes) {
+							if (route.agent.id === id && route.inspect) {
+								let r = route.inspect();
+								if (r instanceof Promise) {
+									r = await r;
+								}
+								return new Response(JSON.stringify(r), {
+									headers: {
+										'Content-Type': 'application/json',
+									},
+								});
+							}
+						}
+						return new Response('Not Found', {
+							status: 404,
+						});
+					},
+				},
 				'/run/:id': {
 					POST: async (req) => {
 						this.server?.timeout(req, timeout);

@@ -127,6 +127,48 @@ export class NodeServer implements Server {
 				);
 				return;
 			}
+
+			if (req.method === 'GET' && req.url === '/inspect') {
+				res.writeHead(200, {
+					'Content-Type': 'application/json',
+				});
+				const result: Record<string, string> = {};
+				for (const route of this.routes) {
+					if (route.inspect) {
+						let r = route.inspect();
+						if (r instanceof Promise) {
+							r = await r;
+						}
+						result[route.agent.id] = r;
+					}
+				}
+				res.end(JSON.stringify(result));
+				return;
+			}
+
+			if (req.method === 'GET' && req.url === '/inspect/') {
+				let content: string | null = null;
+				for (const route of this.routes) {
+					if (route.inspect) {
+						let r = route.inspect();
+						if (r instanceof Promise) {
+							r = await r;
+						}
+						content = r;
+						break;
+					}
+				}
+				if (content) {
+					res.writeHead(200, {
+						'Content-Type': 'application/json',
+					});
+					res.end(JSON.stringify(content));
+					return;
+				}
+				res.writeHead(404);
+				res.end();
+			}
+
 			if (req.method !== 'POST') {
 				res.writeHead(405);
 				res.end();

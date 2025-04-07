@@ -2,7 +2,12 @@ import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import type { Tracer } from '@opentelemetry/api';
 import type { Server, UnifiedServerConfig } from './types';
-import type { AgentConfig, AgentContext, AgentHandler } from '../types';
+import type {
+	AgentConfig,
+	AgentContext,
+	AgentHandler,
+	AgentInspect,
+} from '../types';
 import type { Logger } from '../logger';
 import type { ServerRoute } from './types';
 import { createRouter } from '../router';
@@ -47,6 +52,7 @@ async function createRoute(
 ): Promise<ServerRoute> {
 	const mod = await import(filename);
 	let thehandler: AgentHandler | undefined;
+	let theinspect: AgentInspect | undefined;
 	if (mod.default) {
 		thehandler = mod.default;
 	} else {
@@ -57,19 +63,26 @@ async function createRoute(
 			}
 		}
 	}
+	for (const key in mod) {
+		if (key === 'inspect' && mod[key] instanceof Function) {
+			theinspect = mod[key];
+			break;
+		}
+	}
 	if (!thehandler) {
 		throw new Error(`No handler found in ${filename}`);
 	}
 	const handler = createRouter({
-		handler: thehandler,
 		context: { ...context, agent } as AgentContext,
+		handler: thehandler,
 		port,
 	});
 	return {
-		path,
-		method: 'POST',
-		handler,
 		agent,
+		handler,
+		inspect: theinspect,
+		method: 'POST',
+		path,
 	};
 }
 
