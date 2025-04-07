@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.93
+
+### Patch Changes
+
+- 8220ae0: Add support for agent inspection discovery
+
 ## 0.0.92
 
 ### Patch Changes
