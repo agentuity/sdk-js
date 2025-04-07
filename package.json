@@ -22,8 +22,16 @@
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
 	"keywords": ["ai", "agents", "agentuity", "ai agent", "agent"],
+	"tsup": {
+		"entry": ["src/index.ts"],
+		"format": "esm",
+		"splitting": false,
+		"sourcemap": true,
+		"clean": true
+	},
 	"scripts": {
-		"build": "rm -rf dist && bun run build.js",
+		"build": "rm -rf dist && tsup && npm run types",
+		"types": "tsc --emitDeclarationOnly --declaration",
 		"bun:start": "npm run build && bun run ./dist/index.js",
 		"node:start": "npm run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
@@ -44,7 +52,9 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@types/bun": "latest"
+		"@types/bun": "latest",
+		"@types/js-yaml": "^4.0.9",
+		"tsup": "^8.4.0"
 	},
 	"peerDependencies": {
 		"typescript": "^5"

@@ -1,5 +1,10 @@
 import type { Logger } from '../logger';
-import type { AgentConfig, DataPayload, AgentResponseData } from '../types';
+import type {
+	AgentConfig,
+	DataPayload,
+	AgentResponseData,
+	AgentWelcome,
+} from '../types';
 
 /**
  * Represents an incoming request to the server
@@ -27,6 +32,7 @@ export interface ServerRoute {
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE';
 	handler: (req: ServerRequest) => Promise<AgentResponseData>;
 	agent: AgentConfig;
+	welcome?: AgentWelcome;
 }
 
 /**

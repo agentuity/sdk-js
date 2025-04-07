@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import { describe, expect, it, beforeEach } from 'bun:test';
 import AgentResponseHandler from '../../src/router/response';
 import { ReadableStream } from 'node:stream/web';
 import '../setup'; // Import global test setup

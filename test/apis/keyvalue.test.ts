@@ -1,13 +1,10 @@
 import { describe, expect, it, mock, beforeEach } from 'bun:test';
 import KeyValueAPI from '../../src/apis/keyvalue';
 import type {
-	Data,
 	DataResult,
 	DataResultFound,
 	DataResultNotFound,
-	ReadableDataType,
 } from '../../src/types';
-import type { ReadableStream } from 'node:stream/web';
 import '../setup'; // Import global test setup
 import { DataHandler } from '../../src/router/data';
 
