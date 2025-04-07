@@ -3,7 +3,7 @@ import type {
 	AgentConfig,
 	DataPayload,
 	AgentResponseData,
-	AgentInspect,
+	AgentWelcome,
 } from '../types';
 
 /**
@@ -32,7 +32,7 @@ export interface ServerRoute {
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE';
 	handler: (req: ServerRequest) => Promise<AgentResponseData>;
 	agent: AgentConfig;
-	inspect?: AgentInspect;
+	welcome?: AgentWelcome;
 }
 
 /**

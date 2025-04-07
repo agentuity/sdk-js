@@ -15,7 +15,7 @@ import {
 	getRoutesHelpText,
 	createStreamingResponse,
 } from './util';
-
+import type { AgentWelcomeResult } from '../types';
 const idleTimeout = 255; // expressed in seconds
 const timeout = 600;
 
@@ -73,12 +73,12 @@ export class BunServer implements Server {
 					},
 				},
 				'/_health': new Response('OK'),
-				'/inspect': {
+				'/welcome': {
 					GET: async () => {
-						const result: Record<string, string> = {};
+						const result: Record<string, AgentWelcomeResult> = {};
 						for (const route of this.config.routes) {
-							if (route.inspect) {
-								let r = route.inspect();
+							if (route.welcome) {
+								let r = route.welcome();
 								if (r instanceof Promise) {
 									r = await r;
 								}
@@ -92,19 +92,19 @@ export class BunServer implements Server {
 						});
 					},
 				},
-				'/inspect/:id': {
+				'/welcome/:id': {
 					GET: async (req) => {
 						const url = new URL(req.url);
 						const id = url.pathname.slice(5);
 						for (const route of this.config.routes) {
-							if (route.agent.id === id && route.inspect) {
-								let r = route.inspect();
+							if (route.agent.id === id && route.welcome) {
+								let r = route.welcome();
 								if (r instanceof Promise) {
 									r = await r;
 								}
-								return new Response(r, {
+								return new Response(JSON.stringify(r), {
 									headers: {
-										'Content-Type': 'text/plain',
+										'Content-Type': 'application/json',
 									},
 								});
 							}

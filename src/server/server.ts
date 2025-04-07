@@ -6,7 +6,7 @@ import type {
 	AgentConfig,
 	AgentContext,
 	AgentHandler,
-	AgentInspect,
+	AgentWelcome,
 } from '../types';
 import type { Logger } from '../logger';
 import type { ServerRoute } from './types';
@@ -37,7 +37,6 @@ async function createUnifiedServer(
  * @param filename - The path to the module file
  * @param path - The URL path for the route
  * @param context - The agent context
- * @param agents - List of available server agents
  * @param port - The port the server is running on
  * @returns A promise that resolves to a server route
  * @throws Error if no handler is found in the module
@@ -47,12 +46,11 @@ async function createRoute(
 	path: string,
 	context: AgentContext,
 	agent: AgentConfig,
-	agents: AgentConfig[],
 	port: number
 ): Promise<ServerRoute> {
 	const mod = await import(filename);
 	let thehandler: AgentHandler | undefined;
-	let theinspect: AgentInspect | undefined;
+	let thewelcome: AgentWelcome | undefined;
 	if (mod.default) {
 		thehandler = mod.default;
 	} else {
@@ -64,8 +62,8 @@ async function createRoute(
 		}
 	}
 	for (const key in mod) {
-		if (key === 'inspect' && mod[key] instanceof Function) {
-			theinspect = mod[key];
+		if (key === 'welcome' && mod[key] instanceof Function) {
+			thewelcome = mod[key];
 			break;
 		}
 	}
@@ -80,7 +78,7 @@ async function createRoute(
 	return {
 		agent,
 		handler,
-		inspect: theinspect,
+		welcome: thewelcome,
 		method: 'POST',
 		path,
 	};
@@ -110,7 +108,6 @@ export async function createServer({
 	logger,
 }: ServerConfig) {
 	const routes: ServerRoute[] = [];
-	const agents: AgentConfig[] = [];
 	for (const agent of context.agents) {
 		const filepath = join(directory, agent.filename);
 		if (existsSync(filepath)) {
@@ -119,7 +116,6 @@ export async function createServer({
 				`/${agent.id}`,
 				context,
 				agent,
-				agents,
 				port
 			);
 			routes.push(route);

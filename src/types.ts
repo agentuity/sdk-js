@@ -593,10 +593,32 @@ export type AgentHandler = (
 	context: AgentContext
 ) => Promise<AgentResponseData>;
 
+export interface AgentWelcomeResult {
+	/**
+	 * The welcome prompt to display to the user
+	 */
+	welcome: string;
+	/**
+	 * The example prompts to display to the user
+	 */
+	prompts?: {
+		/**
+		 * The data in base64 format
+		 */
+		data: string;
+		/**
+		 * The data format
+		 */
+		contentType: string;
+	}[];
+}
+
 /**
- * The inspect function for the agent
+ * The welcome function for the agent
  */
-export type AgentInspect = () => string | Promise<string>;
+export type AgentWelcome = () =>
+	| AgentWelcomeResult
+	| Promise<AgentWelcomeResult>;
 
 /**
  * the config for the agent

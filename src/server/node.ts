@@ -20,6 +20,7 @@ import {
 	getRoutesHelpText,
 	createStreamingResponse,
 } from './util';
+import type { AgentWelcomeResult } from '../types';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
@@ -128,29 +129,29 @@ export class NodeServer implements Server {
 				return;
 			}
 
-			if (req.method === 'GET' && req.url === '/inspect') {
-				res.writeHead(200, {
-					'Content-Type': 'application/json',
-				});
-				const result: Record<string, string> = {};
+			if (req.method === 'GET' && req.url === '/welcome') {
+				const result: Record<string, AgentWelcomeResult> = {};
 				for (const route of this.routes) {
-					if (route.inspect) {
-						let r = route.inspect();
+					if (route.welcome) {
+						let r = route.welcome();
 						if (r instanceof Promise) {
 							r = await r;
 						}
 						result[route.agent.id] = r;
 					}
 				}
+				res.writeHead(200, {
+					'Content-Type': 'application/json',
+				});
 				res.end(JSON.stringify(result));
 				return;
 			}
 
-			if (req.method === 'GET' && req.url === '/inspect/') {
-				let content: string | null = null;
+			if (req.method === 'GET' && req.url === '/welcome/') {
+				let content: AgentWelcomeResult | null = null;
 				for (const route of this.routes) {
-					if (route.inspect) {
-						let r = route.inspect();
+					if (route.welcome) {
+						let r = route.welcome();
 						if (r instanceof Promise) {
 							r = await r;
 						}
