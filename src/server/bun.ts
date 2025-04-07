@@ -102,9 +102,9 @@ export class BunServer implements Server {
 								if (r instanceof Promise) {
 									r = await r;
 								}
-								return new Response(JSON.stringify(r), {
+								return new Response(r, {
 									headers: {
-										'Content-Type': 'application/json',
+										'Content-Type': 'text/plain',
 									},
 								});
 							}
