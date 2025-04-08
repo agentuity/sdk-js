@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.94
+
+### Patch Changes
+
+- addda11: Fix regression in otel traces missing for AI SDK by change in opentelemetry-api version change
+
 ## 0.0.93
 
 ### Patch Changes
