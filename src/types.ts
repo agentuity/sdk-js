@@ -1,4 +1,4 @@
-import type { Tracer } from '@opentelemetry/api';
+import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 
@@ -402,6 +402,11 @@ export interface AgentContext {
 	 * the tracer
 	 */
 	tracer: Tracer;
+
+	/**
+	 * the meter
+	 */
+	meter: Meter;
 
 	/**
 	 * return a list of all the agents in the project

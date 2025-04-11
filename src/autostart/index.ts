@@ -113,6 +113,7 @@ export async function run(config: AutostartConfig) {
 			orgId: config.orgId,
 			logger: otel.logger,
 			tracer: otel.tracer,
+			meter: otel.meter,
 			sdkVersion,
 			agents: config.agents,
 		}),

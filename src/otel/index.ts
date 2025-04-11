@@ -13,7 +13,12 @@ import {
 	ATTR_SERVICE_NAME,
 	ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import opentelemetry, { propagation, type Tracer } from '@opentelemetry/api';
+import opentelemetry, {
+	metrics,
+	propagation,
+	type Meter,
+	type Tracer,
+} from '@opentelemetry/api';
 import {
 	W3CTraceContextPropagator,
 	W3CBaggagePropagator,
@@ -31,7 +36,6 @@ import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { createLogger, patchConsole } from './logger';
 import { ConsoleLogRecordExporter } from './console';
 import { instrumentFetch } from './fetch';
-import AgentuityIdPropagator from './trace';
 
 /**
  * Configuration for OpenTelemetry initialization
@@ -55,6 +59,7 @@ interface OtelConfig {
  */
 interface OtelResponse {
 	tracer: Tracer;
+	meter: Meter;
 	logger: Logger;
 	shutdown: () => Promise<void>;
 }
@@ -188,6 +193,10 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 			})
 		: undefined;
 
+	if (meterProvider) {
+		metrics.setGlobalMeterProvider(meterProvider);
+	}
+
 	const hostMetrics = meterProvider
 		? new HostMetrics({ meterProvider })
 		: undefined;
@@ -198,7 +207,6 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	if (url) {
 		const propagator = new CompositePropagator({
 			propagators: [
-				new AgentuityIdPropagator(),
 				new W3CTraceContextPropagator(),
 				new W3CBaggagePropagator(),
 			],
@@ -220,6 +228,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	}
 
 	const tracer = opentelemetry.trace.getTracer(name, version);
+	const meter = metrics.getMeter(name, version);
 
 	const shutdown = async () => {
 		if (running) {
@@ -246,5 +255,5 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		logger.debug('connected to Agentuity Agent Cloud');
 	}
 
-	return { tracer, logger, shutdown };
+	return { tracer, meter, logger, shutdown };
 }

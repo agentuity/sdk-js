@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import type { Tracer } from '@opentelemetry/api';
+import type { Tracer, Meter } from '@opentelemetry/api';
 import type { Server, UnifiedServerConfig } from './types';
 import type {
 	AgentConfig,
@@ -140,6 +140,7 @@ export async function createServer({
  */
 interface ServerContextRequest {
 	tracer: Tracer;
+	meter: Meter;
 	logger: Logger;
 	orgId?: string;
 	projectId?: string;
@@ -168,6 +169,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		orgId: req.orgId,
 		logger: req.logger,
 		tracer: req.tracer,
+		meter: req.meter,
 		kv,
 		vector,
 		sdkVersion: req.sdkVersion,
