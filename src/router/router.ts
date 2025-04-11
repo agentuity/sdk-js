@@ -319,8 +319,6 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		} finally {
 			executingCount--;
 			executing.record(executingCount, {
-				'@agentuity/agentName': config.context.agent.name,
-				'@agentuity/agentId': agentId,
 				'@agentuity/projectId': config.context.projectId,
 				'@agentuity/deploymentId': config.context.deploymentId,
 				'@agentuity/orgId': config.context.orgId,
