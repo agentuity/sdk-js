@@ -219,16 +219,12 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 			executingCount++;
 
 			requests.add(1, {
-				'@agentuity/agentName': config.context.agent.name,
-				'@agentuity/agentId': agentId,
 				'@agentuity/projectId': config.context.projectId,
 				'@agentuity/deploymentId': config.context.deploymentId,
 				'@agentuity/orgId': config.context.orgId,
 			});
 
 			executing.record(executingCount, {
-				'@agentuity/agentName': config.context.agent.name,
-				'@agentuity/agentId': agentId,
 				'@agentuity/projectId': config.context.projectId,
 				'@agentuity/deploymentId': config.context.deploymentId,
 				'@agentuity/orgId': config.context.orgId,
