@@ -6,6 +6,8 @@ import {
 	type Span,
 	context,
 	trace,
+	type Meter,
+	ValueType,
 } from '@opentelemetry/api';
 import type { ServerRoute, ServerRequest } from '../server/types';
 import type {
@@ -48,6 +50,21 @@ export function getTracer(): Tracer {
 	}
 	const { tracer } = store as { tracer: Tracer };
 	return tracer;
+}
+
+/**
+ * Gets the meter from the async local storage
+ *
+ * @returns The meter instance
+ * @throws Error if no store is found
+ */
+export function getMeter(): Meter {
+	const store = asyncStorage.getStore();
+	if (!store) {
+		throw new Error('no store');
+	}
+	const { meter } = store as { meter: Meter };
+	return meter;
 }
 
 /**
@@ -122,6 +139,7 @@ async function agentRedirectRun(
 				agentId: remoteAgent.id,
 				logger,
 				tracer: config.context.tracer,
+				meter: config.context.meter,
 				sdkVersion: config.context.sdkVersion,
 			},
 			async () => {
@@ -149,6 +167,20 @@ async function agentRedirectRun(
  * @returns A handler function for server routes
  */
 export function createRouter(config: RouterConfig): ServerRoute['handler'] {
+	const requests = config.context.meter.createCounter('requests', {
+		description: 'The number of requests to the agent',
+		unit: 'requests',
+		valueType: ValueType.INT,
+	});
+
+	let executingCount = 0;
+
+	const executing = config.context.meter.createGauge('executing', {
+		description: 'The number of requests being processed',
+		unit: 'concurrent',
+		valueType: ValueType.INT,
+	});
+
 	return async (req: ServerRequest): Promise<AgentResponseData> => {
 		const agentId = config.context.agent.id;
 		const runId = req.request.runId;
@@ -156,6 +188,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 			'@agentuity/agentId': agentId,
 			'@agentuity/agentName': config.context.agent.name,
 		});
+
 		const resolver = new AgentResolver(
 			logger,
 			config.context.agents,
@@ -183,6 +216,24 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
 
+			executingCount++;
+
+			requests.add(1, {
+				'@agentuity/agentName': config.context.agent.name,
+				'@agentuity/agentId': agentId,
+				'@agentuity/projectId': config.context.projectId,
+				'@agentuity/deploymentId': config.context.deploymentId,
+				'@agentuity/orgId': config.context.orgId,
+			});
+
+			executing.record(executingCount, {
+				'@agentuity/agentName': config.context.agent.name,
+				'@agentuity/agentId': agentId,
+				'@agentuity/projectId': config.context.projectId,
+				'@agentuity/deploymentId': config.context.deploymentId,
+				'@agentuity/orgId': config.context.orgId,
+			});
+
 			// Execute the operation within the new context
 			return await asyncStorage.run(
 				{
@@ -194,6 +245,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 					agentId,
 					logger,
 					tracer: config.context.tracer,
+					meter: config.context.meter,
 					sdkVersion: config.context.sdkVersion,
 				},
 				async () => {
@@ -269,6 +321,14 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 				}
 			);
 		} finally {
+			executingCount--;
+			executing.record(executingCount, {
+				'@agentuity/agentName': config.context.agent.name,
+				'@agentuity/agentId': agentId,
+				'@agentuity/projectId': config.context.projectId,
+				'@agentuity/deploymentId': config.context.deploymentId,
+				'@agentuity/orgId': config.context.orgId,
+			});
 			span.end();
 		}
 	};
