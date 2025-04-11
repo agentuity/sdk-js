@@ -31,7 +31,6 @@ import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { createLogger, patchConsole } from './logger';
 import { ConsoleLogRecordExporter } from './console';
 import { instrumentFetch } from './fetch';
-import AgentuityIdPropagator from './trace';
 
 /**
  * Configuration for OpenTelemetry initialization
@@ -198,7 +197,6 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 	if (url) {
 		const propagator = new CompositePropagator({
 			propagators: [
-				new AgentuityIdPropagator(),
 				new W3CTraceContextPropagator(),
 				new W3CBaggagePropagator(),
 			],

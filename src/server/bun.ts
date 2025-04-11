@@ -116,43 +116,49 @@ export class BunServer implements Server {
 				},
 				'/run/:id': {
 					POST: async (req) => {
-						this.server?.timeout(req, timeout);
-						const url = new URL(req.url);
-						const id = url.pathname.slice(5);
-						const body = await req.arrayBuffer();
-						const headers = req.headers.toJSON();
-						const resp = await fetch(
-							`http://127.0.0.1:${this.config.port}/${id}`,
-							{
-								method: 'POST',
-								body: safeStringify({
-									trigger: 'manual',
-									payload: Buffer.from(body).toString('base64'),
-									contentType:
-										req.headers.get('content-type') ??
-										'application/octet-stream',
-									metadata: { headers },
-								}),
-								headers: {
-									'Content-Type': 'application/json',
-								},
+						// Extract trace context from headers
+						const extractedContext = extractTraceContextFromBunRequest(req);
+
+						// Execute the request handler within the extracted context
+						return context.with(extractedContext, async () => {
+							this.server?.timeout(req, timeout);
+							const url = new URL(req.url);
+							const id = url.pathname.slice(5);
+							const body = await req.arrayBuffer();
+							const headers = req.headers.toJSON();
+							const resp = await fetch(
+								`http://127.0.0.1:${this.config.port}/${id}`,
+								{
+									method: 'POST',
+									body: safeStringify({
+										trigger: 'manual',
+										payload: Buffer.from(body).toString('base64'),
+										contentType:
+											req.headers.get('content-type') ??
+											'application/octet-stream',
+										metadata: { headers },
+									}),
+									headers: {
+										'Content-Type': 'application/json',
+									},
+								}
+							);
+							if (resp.ok) {
+								const response = await resp.json();
+								const buf = Buffer.from(response.payload, 'base64');
+								return new Response(buf, {
+									status: resp.status,
+									headers: {
+										...injectTraceContextToHeaders(resp.headers),
+										'Content-Type': response.contentType,
+										'Content-Length': buf.byteLength.toString(),
+									},
+								});
 							}
-						);
-						if (resp.ok) {
-							const response = await resp.json();
-							const buf = Buffer.from(response.payload, 'base64');
-							return new Response(buf, {
+							return new Response(resp.body, {
 								status: resp.status,
-								headers: {
-									...resp.headers,
-									'Content-Type': response.contentType,
-									'Content-Length': buf.byteLength.toString(),
-								},
+								headers: injectTraceContextToHeaders(resp.headers),
 							});
-						}
-						return new Response(resp.body, {
-							status: resp.status,
-							headers: resp.headers,
 						});
 					},
 				},
@@ -164,6 +170,7 @@ export class BunServer implements Server {
 						if (method !== 'POST') {
 							return new Response('Method not allowed', {
 								status: 405,
+								headers: injectTraceContextToHeaders(),
 							});
 						}
 						if (!req.headers.get('content-type')?.includes('json')) {
@@ -171,6 +178,7 @@ export class BunServer implements Server {
 								'Invalid Content-Type, Expected application/json',
 								{
 									status: 400,
+									headers: injectTraceContextToHeaders(),
 								}
 							);
 						}
@@ -255,7 +263,7 @@ export class BunServer implements Server {
 
 											return new Response(stream, {
 												status: 200,
-												headers,
+												headers: injectTraceContextToHeaders(headers),
 											});
 										} catch (error) {
 											span.recordException(error as Error);
