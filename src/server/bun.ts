@@ -82,6 +82,9 @@ export class BunServer implements Server {
 								if (r instanceof Promise) {
 									r = await r;
 								}
+								for (const p of r.prompts ?? []) {
+									p.data = Buffer.from(p.data).toString('base64');
+								}
 								result[route.agent.id] = r;
 							}
 						}
@@ -101,6 +104,9 @@ export class BunServer implements Server {
 								let r = route.welcome();
 								if (r instanceof Promise) {
 									r = await r;
+								}
+								for (const p of r.prompts ?? []) {
+									p.data = Buffer.from(p.data).toString('base64');
 								}
 								return new Response(JSON.stringify(r), {
 									headers: {
