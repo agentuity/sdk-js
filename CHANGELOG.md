@@ -1,5 +1,12 @@
 # @agentuity/sdk
 
+## 0.0.95
+
+### Patch Changes
+
+- 361ab69: Add more otel trace context headers, remove old trace provider
+- 1b9f047: Base64 encode the welcome prompts
+
 ## 0.0.94
 
 ### Patch Changes
