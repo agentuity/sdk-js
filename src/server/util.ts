@@ -9,6 +9,7 @@ import type {
 	ReadableDataType,
 	InvocationArguments,
 	TriggerType,
+	AgentWelcomePrompt,
 } from '../types';
 import { injectTraceContextToHeaders } from './otel';
 import type { ServerRoute } from './types';
@@ -69,6 +70,74 @@ export async function toBuffer(data: ReadableDataType) {
 	}
 	if (data instanceof Blob) {
 		return Buffer.from(await data.arrayBuffer());
+	}
+	throw new Error('Invalid data type');
+}
+
+const isBase64 =
+	/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+
+export async function toWelcomePrompt({
+	data,
+	contentType,
+}: AgentWelcomePrompt): Promise<{ data: string; contentType: string }> {
+	if (data instanceof Buffer) {
+		return {
+			data: data.toString('base64'),
+			contentType,
+		};
+	}
+	if (data instanceof Uint8Array) {
+		return {
+			data: Buffer.from(data).toString('base64'),
+			contentType,
+		};
+	}
+	if (data instanceof ArrayBuffer) {
+		return {
+			data: Buffer.from(data).toString('base64'),
+			contentType,
+		};
+	}
+	if (data instanceof Blob) {
+		return {
+			data: Buffer.from(await data.arrayBuffer()).toString('base64'),
+			contentType,
+		};
+	}
+	if (data instanceof ReadableStream) {
+		const reader = data.getReader();
+		let buffer = Buffer.alloc(0);
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			buffer = Buffer.concat([buffer, value]);
+		}
+		return {
+			data: buffer.toString('base64'),
+			contentType,
+		};
+	}
+	if (typeof data === 'string') {
+		if (
+			(contentType.includes('text/') || contentType.includes('json')) &&
+			!isBase64.test(data)
+		) {
+			return {
+				data: Buffer.from(data).toString('base64'),
+				contentType,
+			};
+		}
+		return {
+			data,
+			contentType,
+		};
+	}
+	if (typeof data === 'object') {
+		return {
+			data: Buffer.from(safeStringify(data)).toString('base64'),
+			contentType,
+		};
 	}
 	throw new Error('Invalid data type');
 }

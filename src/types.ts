@@ -598,6 +598,17 @@ export type AgentHandler = (
 	context: AgentContext
 ) => Promise<AgentResponseData>;
 
+export interface AgentWelcomePrompt {
+	/**
+	 * The data as a DataType
+	 */
+	data: DataType;
+	/**
+	 * The data format
+	 */
+	contentType: string;
+}
+
 export interface AgentWelcomeResult {
 	/**
 	 * The welcome prompt to display to the user
@@ -606,16 +617,7 @@ export interface AgentWelcomeResult {
 	/**
 	 * The example prompts to display to the user
 	 */
-	prompts?: {
-		/**
-		 * The data in base64 format
-		 */
-		data: string;
-		/**
-		 * The data format
-		 */
-		contentType: string;
-	}[];
+	prompts?: AgentWelcomePrompt[];
 }
 
 /**
