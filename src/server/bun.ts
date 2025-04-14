@@ -14,6 +14,7 @@ import {
 	safeStringify,
 	getRoutesHelpText,
 	createStreamingResponse,
+	toWelcomePrompt,
 } from './util';
 import type { AgentWelcomeResult } from '../types';
 const idleTimeout = 255; // expressed in seconds
@@ -82,6 +83,12 @@ export class BunServer implements Server {
 								if (r instanceof Promise) {
 									r = await r;
 								}
+								if (r.prompts) {
+									for (let c = 0; c < r.prompts.length; c++) {
+										const p = r.prompts[c];
+										r.prompts[c] = await toWelcomePrompt(p);
+									}
+								}
 								result[route.agent.id] = r;
 							}
 						}
@@ -101,6 +108,12 @@ export class BunServer implements Server {
 								let r = route.welcome();
 								if (r instanceof Promise) {
 									r = await r;
+								}
+								if (r.prompts) {
+									for (let c = 0; c < r.prompts.length; c++) {
+										const p = r.prompts[c];
+										r.prompts[c] = await toWelcomePrompt(p);
+									}
 								}
 								return new Response(JSON.stringify(r), {
 									headers: {

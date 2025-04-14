@@ -20,6 +20,7 @@ import {
 	safeParse,
 	getRoutesHelpText,
 	createStreamingResponse,
+	toWelcomePrompt,
 } from './util';
 import type { AgentWelcomeResult } from '../types';
 
@@ -138,6 +139,12 @@ export class NodeServer implements Server {
 						if (r instanceof Promise) {
 							r = await r;
 						}
+						if (r.prompts) {
+							for (let c = 0; c < r.prompts.length; c++) {
+								const p = r.prompts[c];
+								r.prompts[c] = await toWelcomePrompt(p);
+							}
+						}
 						result[route.agent.id] = r;
 					}
 				}
@@ -155,6 +162,12 @@ export class NodeServer implements Server {
 						let r = route.welcome();
 						if (r instanceof Promise) {
 							r = await r;
+						}
+						if (r.prompts) {
+							for (let c = 0; c < r.prompts.length; c++) {
+								const p = r.prompts[c];
+								r.prompts[c] = await toWelcomePrompt(p);
+							}
 						}
 						content = r;
 						break;
