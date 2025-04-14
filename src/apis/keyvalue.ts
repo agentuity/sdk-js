@@ -121,7 +121,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					ttlstr = `/${params.ttl}`;
 				}
 
-				let base64 = datavalue.data.base64;
+				let buffer = datavalue.data.buffer;
 
 				const headers: Record<string, string> = {
 					'Content-Type': datavalue.data.contentType,
@@ -132,13 +132,15 @@ export default class KeyValueAPI implements KeyValueStorage {
 					datavalue.data.contentType.includes('json')
 				) {
 					const compressed = await gzipString(datavalue.data.text);
-					base64 = compressed.toString('base64');
+					buffer = compressed;
 					headers['Content-Encoding'] = 'gzip';
 				}
 
 				const resp = await PUT(
 					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					Buffer.from(base64, 'base64').buffer,
+					new Blob([buffer], {
+						type: datavalue.data.contentType,
+					}),
 					headers
 				);
 
