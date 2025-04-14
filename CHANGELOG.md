@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.96
+
+### Patch Changes
+
+- a5bafb7: Fix issue with node keyvalue not correctly handling the buffer upload
+
 ## 0.0.95
 
 ### Patch Changes
