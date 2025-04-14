@@ -12,6 +12,7 @@ import {
 import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
 	extractTraceContextFromNodeRequest,
+	injectTraceContextToHeaders,
 	injectTraceContextToNodeResponse,
 } from './otel';
 import {
@@ -176,58 +177,59 @@ export class NodeServer implements Server {
 				return;
 			}
 
-			if (req.url?.startsWith('/run/agent_')) {
-				const id = req.url.slice(5);
-				const body = await this.getBuffer(req);
-				const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
-					method: 'POST',
-					body: safeStringify({
-						trigger: 'manual',
-						payload: body.toString('base64'),
-						contentType:
-							req.headers['content-type'] || 'application/octet-stream',
-						metadata: { headers: this.getHeaders(req) },
-					}),
-					headers: {
-						'Content-Type': 'application/json',
-						'User-Agent': req.headers['user-agent'] || '',
-					},
-				});
-				const respBody = (await response.json()) as {
-					contentType: string;
-					payload: string;
-				};
-				res.writeHead(response.status, {
-					'Content-Type': respBody.contentType,
-					Server: response.headers.get('Server') || '',
-				});
-				const output = Buffer.from(respBody.payload, 'base64');
-				res.write(output);
-				res.end();
-				return;
-			}
-
-			if (!req.headers?.['content-type']?.includes('json')) {
-				res.writeHead(400);
-				res.write('Invalid content type, expected application/json');
-				res.end();
-				return;
-			}
-
-			let payload: IncomingRequest;
-			try {
-				payload = await this.getJSON<IncomingRequest>(req);
-			} catch (err) {
-				this.logger.error('Error parsing request body as json: %s', err);
-				res.writeHead(400);
-				res.end();
-			}
-
 			// Extract trace context from headers
 			const extractedContext = extractTraceContextFromNodeRequest(req);
 
 			// Execute the request handler within the extracted context
 			await context.with(extractedContext, async () => {
+				if (req.url?.startsWith('/run/agent_')) {
+					const id = req.url.slice(5);
+					const body = await this.getBuffer(req);
+					const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
+						method: 'POST',
+						body: safeStringify({
+							trigger: 'manual',
+							payload: body.toString('base64'),
+							contentType:
+								req.headers['content-type'] || 'application/octet-stream',
+							metadata: { headers: this.getHeaders(req) },
+						}),
+						headers: {
+							'Content-Type': 'application/json',
+							'User-Agent': req.headers['user-agent'] || '',
+						},
+					});
+					const respBody = (await response.json()) as {
+						contentType: string;
+						payload: string;
+					};
+					res.writeHead(response.status, {
+						...injectTraceContextToHeaders(),
+						'Content-Type': respBody.contentType,
+						Server: response.headers.get('Server') || '',
+					});
+					const output = Buffer.from(respBody.payload, 'base64');
+					res.write(output);
+					res.end();
+					return;
+				}
+
+				if (!req.headers?.['content-type']?.includes('json')) {
+					res.writeHead(400, injectTraceContextToHeaders());
+					res.write('Invalid content type, expected application/json');
+					res.end();
+					return;
+				}
+
+				let payload: IncomingRequest;
+				try {
+					payload = await this.getJSON<IncomingRequest>(req);
+				} catch (err) {
+					this.logger.error('Error parsing request body as json: %s', err);
+					res.writeHead(400, injectTraceContextToHeaders());
+					res.end();
+				}
+
 				// Create a span for this incoming request
 				await trace.getTracer('http-server').startActiveSpan(
 					`HTTP ${req.method}`,
@@ -251,7 +253,7 @@ export class NodeServer implements Server {
 								// callbackAgentHandler.received(id, body);
 								// span.setStatus({ code: SpanStatusCode.OK });
 								// injectTraceContextToNodeResponse(res);
-								res.writeHead(202);
+								res.writeHead(202, injectTraceContextToHeaders());
 								res.end('OK');
 								return;
 							}
@@ -264,7 +266,7 @@ export class NodeServer implements Server {
 									req.url
 								);
 								span.setAttribute('http.status_code', '404');
-								res.writeHead(404);
+								res.writeHead(404, injectTraceContextToHeaders());
 								res.end();
 								span.setStatus({
 									code: SpanStatusCode.ERROR,
@@ -280,7 +282,7 @@ export class NodeServer implements Server {
 									req.url
 								);
 								span.setAttribute('http.status_code', '405');
-								res.writeHead(405);
+								res.writeHead(405, injectTraceContextToHeaders());
 								res.end();
 								span.setStatus({
 									code: SpanStatusCode.ERROR,
@@ -306,7 +308,7 @@ export class NodeServer implements Server {
 									span,
 									routeResult
 								);
-								res.writeHead(200, headers);
+								res.writeHead(200, injectTraceContextToHeaders(headers));
 								// Ensure headers are sent before streaming
 								res.flushHeaders();
 								// Pipe the stream to the response

@@ -8,10 +8,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
  * @returns A record of headers with trace context injected
  */
 export function injectTraceContextToHeaders(
-	headers: Record<string, string> = {}
+	headers: Record<string, string> | Headers = {}
 ): Record<string, string> {
+	let _headers = headers;
+	if (headers instanceof Headers) {
+		_headers = headers.toJSON() as Record<string, string>;
+	}
 	// Create a carrier object for the headers
-	const carrier: Record<string, string> = { ...headers };
+	const carrier: Record<string, string> = { ..._headers } as Record<
+		string,
+		string
+	>;
 
 	// Get the current context
 	const currentContext = context.active();
