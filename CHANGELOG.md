@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.97
+
+### Patch Changes
+
+- 0bd3fff: Attempt to fix issue with github workflow not pushing tag after release
+
 ## 0.0.96
 
 ### Patch Changes
