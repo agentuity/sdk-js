@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.100
+
+### Patch Changes
+
+- Debug github workflow git tag issue
+
 ## 0.0.99
 
 ### Patch Changes
