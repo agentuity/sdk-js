@@ -30,9 +30,11 @@ jobs:
           if [ "$PREV_VERSION" = "$CURRENT_VERSION" ]; then
             echo "No version change detected, skipping release"
             echo "version_changed=false" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           else
             echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
             echo "version_changed=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup NPM
@@ -56,3 +58,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push tags to Github
+        if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
+        run: git push origin v${{ steps.check_version.outputs.version }}
