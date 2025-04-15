@@ -4,6 +4,7 @@ import type { Logger } from '../logger';
 import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
 import { safeStringify } from '../server/util';
+import { getAgentDetail } from '../router/router';
 
 /**
  * Reference to the original console object before patching
@@ -37,6 +38,22 @@ class OtelLogger implements Logger {
 		}
 	}
 
+	private getAttributes(): Record<string, Json> | undefined {
+		const attrs = getAgentDetail();
+		if (!attrs) {
+			return this.context;
+		}
+		const result: Record<string, Json> = {
+			...(this.context ?? {}),
+		};
+		for (const [key, value] of Object.entries(attrs)) {
+			if (value !== null && value !== undefined) {
+				result[`@agentuity/${key}`] = value as Json;
+			}
+		}
+		return result;
+	}
+
 	debug(message: string, ...args: unknown[]) {
 		this.logger?.debug(message, ...args);
 		let body: string;
@@ -50,7 +67,7 @@ class OtelLogger implements Logger {
 			severityNumber: LogsAPI.SeverityNumber.DEBUG,
 			severityText: 'DEBUG',
 			body,
-			attributes: this.context,
+			attributes: this.getAttributes(),
 		});
 	}
 	info(message: string, ...args: unknown[]) {
@@ -66,7 +83,7 @@ class OtelLogger implements Logger {
 			severityNumber: LogsAPI.SeverityNumber.INFO,
 			severityText: 'INFO',
 			body,
-			attributes: this.context,
+			attributes: this.getAttributes(),
 		});
 	}
 	warn(message: string, ...args: unknown[]) {
@@ -82,7 +99,7 @@ class OtelLogger implements Logger {
 			severityNumber: LogsAPI.SeverityNumber.WARN,
 			severityText: 'WARN',
 			body,
-			attributes: this.context,
+			attributes: this.getAttributes(),
 		});
 	}
 	error(message: string, ...args: unknown[]) {
@@ -98,7 +115,7 @@ class OtelLogger implements Logger {
 			severityNumber: LogsAPI.SeverityNumber.ERROR,
 			severityText: 'ERROR',
 			body,
-			attributes: this.context,
+			attributes: this.getAttributes(),
 		});
 	}
 	child(opts: Record<string, Json>) {

@@ -4,7 +4,6 @@ import type {
 	ServerRoute,
 	IncomingRequest,
 } from './types';
-import { callbackAgentHandler } from './agents';
 import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
 	extractTraceContextFromBunRequest,
@@ -219,24 +218,7 @@ export class BunServer implements Server {
 								},
 								async (span) => {
 									try {
-										if (
-											method === 'POST' &&
-											url.pathname.startsWith('/_reply/')
-										) {
-											const id = url.pathname.slice(8);
-											const body = await req.json();
-											callbackAgentHandler.received(id, body);
-											span.setStatus({ code: SpanStatusCode.OK });
-											return new Response('OK', {
-												status: 202,
-												headers: injectTraceContextToHeaders(),
-											});
-										}
-
 										const routeKey = `${method}:${url.pathname}`;
-
-										logger.debug('request: %s %s', method, url.pathname);
-
 										const route = routeMap.get(routeKey);
 
 										if (!route) {
@@ -257,6 +239,7 @@ export class BunServer implements Server {
 
 										span.setAttribute('@agentuity/agentName', route.agent.name);
 										span.setAttribute('@agentuity/agentId', route.agent.id);
+										logger.debug('request: %s %s', method, url.pathname);
 
 										try {
 											const routeResult = route.handler({

@@ -80,6 +80,33 @@ export function getSDKVersion(): string {
 }
 
 /**
+ * get the current executing agent details (agentId, agentName) or
+ * null if not executing in an agent context
+ */
+export function getAgentDetail(): Record<string, string | undefined> | null {
+	const store = asyncStorage.getStore() as {
+		agentId?: string;
+		agentName?: string;
+		projectId?: string;
+		deploymentId?: string;
+		orgId?: string;
+	};
+	if (!store) {
+		return null;
+	}
+	if ('agentId' in store) {
+		return {
+			agentId: store.agentId,
+			agentName: store.agentName,
+			projectId: store.projectId,
+			deploymentId: store.deploymentId,
+			orgId: store.orgId,
+		};
+	}
+	return null;
+}
+
+/**
  * Records an exception in the span and logs it
  *
  * @param span - The span to record the exception in
@@ -137,6 +164,7 @@ async function agentRedirectRun(
 				deploymentId: config.context.deploymentId,
 				orgId: config.context.orgId,
 				agentId: remoteAgent.id,
+				agentName: remoteAgent.name,
 				logger,
 				tracer: config.context.tracer,
 				meter: config.context.meter,
@@ -239,6 +267,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 					deploymentId: config.context.deploymentId,
 					orgId: config.context.orgId,
 					agentId,
+					agentName: config.context.agent.name,
 					logger,
 					tracer: config.context.tracer,
 					meter: config.context.meter,
