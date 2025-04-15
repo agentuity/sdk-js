@@ -258,19 +258,6 @@ export class NodeServer implements Server {
 					},
 					async (span) => {
 						try {
-							if (req.method === 'POST' && req.url?.startsWith('/_reply/')) {
-								span.setAttribute('http.status_code', '202');
-								// FIXME:
-								// const id = req.url.slice(8);
-								// const body = await this.getJSON<RemoteAgentResponse>(req);
-								// callbackAgentHandler.received(id, body);
-								// span.setStatus({ code: SpanStatusCode.OK });
-								// injectTraceContextToNodeResponse(res);
-								res.writeHead(202, injectTraceContextToHeaders());
-								res.end('OK');
-								return;
-							}
-
 							const route = this.routes.find((r) => r.path === req.url);
 							if (!route) {
 								this.logger.error(
@@ -306,6 +293,7 @@ export class NodeServer implements Server {
 
 							span.setAttribute('@agentuity/agentName', route.agent.name);
 							span.setAttribute('@agentuity/agentId', route.agent.id);
+							this.logger.debug('request: %s %s', req.method, req.url);
 
 							try {
 								const agentReq = {
