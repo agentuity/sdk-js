@@ -1,15 +1,24 @@
 # @agentuity/sdk
 
+## 0.0.101
+
+### Patch Changes
+
+- f4b6e75: Add agent context to console logger to annotate log attributes when inside agent execution
+
 ## [0.0.100] - 2025-04-15
 
 ### Added
+
 - Add permissions ([5fbda32](https://github.com/agentuity/sdk-js/commit/5fbda32))
 
 ### Changed
+
 - Add more otel trace context headers, remove old trace provider ([#72](https://github.com/agentuity/sdk-js/pull/72))
 - Automatically base64 encode welcome prompts ([#73](https://github.com/agentuity/sdk-js/pull/73))
 
 ### Fixed
+
 - Fix NodeJS issue where the buffer isn't correctly sending the blob but works fine in Bun version (doesn't support a buffer view, switched to blob) ([#74](https://github.com/agentuity/sdk-js/pull/74))
 - Debug github workflow git tag issue
 
