@@ -1,10 +1,10 @@
 # @agentuity/sdk
 
-## 0.0.101
+## [0.0.101] - 2025-04-18
 
-### Patch Changes
+### Added
 
-- f4b6e75: Add agent context to console logger to annotate log attributes when inside agent execution
+- Add agent context to console logger when running inside agent scope ([#77](https://github.com/agentuity/sdk-js/pull/77))
 
 ## [0.0.100] - 2025-04-15
 
