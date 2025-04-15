@@ -61,5 +61,6 @@ jobs:
 
       - name: Push tags to Github
         if: github.event_name != 'push' || steps.check_version.outputs.version_changed == 'true'
-        # run: git push origin v${{ steps.check_version.outputs.version }}
-        run: git tag
+        run: |
+          git tag -a v${{ steps.check_version.outputs.version }} -m "Release ${{ steps.check_version.outputs.version }}"
+          git push origin v${{ steps.check_version.outputs.version }}
