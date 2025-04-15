@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.98
+
+### Patch Changes
+
+- More debug for github release tags
+
 ## 0.0.97
 
 ### Patch Changes
