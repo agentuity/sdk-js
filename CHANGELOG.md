@@ -1,6 +1,6 @@
 # @agentuity/sdk
 
-## [v0.0.100] - 2025-04-15
+## [0.0.100] - 2025-04-15
 
 ### Added
 - Add permissions ([5fbda32](https://github.com/agentuity/sdk-js/commit/5fbda32))
