@@ -1,10 +1,10 @@
 # @agentuity/sdk
 
-## 0.0.102
+## [0.0.102] - 2025-04-16
 
-### Patch Changes
+### Fixed
 
-- da014a8: Fix issue where child span wasnt showing under the correct parent
+- Fix issue where the child span had the wrong parent on outbound requests for agent-to-agent ([#79](https://github.com/agentuity/sdk-js/pull/79))
 
 ## [0.0.101] - 2025-04-18
 
