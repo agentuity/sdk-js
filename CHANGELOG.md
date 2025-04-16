@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.102
+
+### Patch Changes
+
+- da014a8: Fix issue where child span wasnt showing under the correct parent
+
 ## [0.0.101] - 2025-04-18
 
 ### Added
