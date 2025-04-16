@@ -12,7 +12,7 @@ import { toDataType, safeStringify } from './util';
 import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
 import { getTracer, recordException } from '../router/router';
-import { context, SpanStatusCode } from '@opentelemetry/api';
+import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 
 /**
  * Invokes local agents within the same server
@@ -63,38 +63,44 @@ class LocalAgentInvoker implements RemoteAgent {
 			},
 			currentContext
 		);
-		try {
-			const body = await toDataType(
-				'agent',
-				args as unknown as InvocationArguments
-			);
-			const headers = {};
-			injectTraceContextToHeaders(headers);
-			const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
-				method: 'POST',
-				body: safeStringify(body),
-				headers: {
-					...headers,
-					'Content-Type': 'application/json',
-				},
-			});
-			if (resp.ok) {
-				const result = (await resp.json()) as DataPayload;
-				span.setAttribute('http.status_code', resp.status.toString());
-				span.setStatus({ code: SpanStatusCode.OK });
-				return {
-					data: new DataHandler(result),
-					contentType: result.contentType,
-					metadata: result.metadata,
-				};
+
+		const spanContext = trace.setSpan(currentContext, span);
+
+		// Execute the operation within the new context
+		return await context.with(spanContext, async () => {
+			try {
+				const body = await toDataType(
+					'agent',
+					args as unknown as InvocationArguments
+				);
+				const headers = {};
+				injectTraceContextToHeaders(headers);
+				const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
+					method: 'POST',
+					body: safeStringify(body),
+					headers: {
+						...headers,
+						'Content-Type': 'application/json',
+					},
+				});
+				if (resp.ok) {
+					const result = (await resp.json()) as DataPayload;
+					span.setAttribute('http.status_code', resp.status.toString());
+					span.setStatus({ code: SpanStatusCode.OK });
+					return {
+						data: new DataHandler(result),
+						contentType: result.contentType,
+						metadata: result.metadata,
+					};
+				}
+				throw new Error(await resp.text());
+			} catch (ex) {
+				recordException(span, ex);
+				throw ex;
+			} finally {
+				span.end();
 			}
-			throw new Error(await resp.text());
-		} catch (ex) {
-			recordException(span, ex);
-			throw ex;
-		} finally {
-			span.end();
-		}
+		});
 	}
 }
 
@@ -149,64 +155,70 @@ class RemoteAgentInvoker implements RemoteAgent {
 			},
 			currentContext
 		);
-		try {
-			const body = await toDataType(
-				'agent',
-				args as unknown as InvocationArguments
-			);
-			const headers = {};
-			injectTraceContextToHeaders(headers);
-			const resp = await POST<{ success: boolean; message?: string }>(
-				`/agent/${this.id}/run/${this.replyId}`,
-				safeStringify(body),
-				{
-					...headers,
-					'Content-Type': 'application/json',
+
+		const spanContext = trace.setSpan(currentContext, span);
+
+		// Execute the operation within the new context
+		return await context.with(spanContext, async () => {
+			try {
+				const body = await toDataType(
+					'agent',
+					args as unknown as InvocationArguments
+				);
+				const headers = {};
+				injectTraceContextToHeaders(headers);
+				const resp = await POST<{ success: boolean; message?: string }>(
+					`/agent/${this.id}/run/${this.replyId}`,
+					safeStringify(body),
+					{
+						...headers,
+						'Content-Type': 'application/json',
+					}
+				);
+				span.setAttribute('http.status_code', resp.status.toString());
+				const respPayload = resp.json;
+				if (respPayload?.success) {
+					const started = Date.now();
+					this.logger.debug(
+						'waiting for remote agent response using reply id: %s',
+						this.replyId
+					);
+					const handler = {
+						resolve: (_value: DataPayload) => {
+							return;
+						},
+						reject: (_reason?: Error) => {
+							return;
+						},
+					};
+					const promise = new Promise<DataPayload>((resolve, reject) => {
+						handler.resolve = resolve;
+						handler.reject = reject;
+					});
+					callbackAgentHandler.register(this.replyId, handler);
+					const respPayload = await promise;
+					this.logger.debug(
+						'received remote agent reply with id: %s after %s ms',
+						this.replyId,
+						Date.now() - started
+					);
+					span.setStatus({ code: SpanStatusCode.OK });
+					return {
+						data: new DataHandler(respPayload),
+						contentType: respPayload.contentType,
+						metadata: respPayload.metadata,
+					};
 				}
-			);
-			span.setAttribute('http.status_code', resp.status.toString());
-			const respPayload = resp.json;
-			if (respPayload?.success) {
-				const started = Date.now();
-				this.logger.debug(
-					'waiting for remote agent response using reply id: %s',
-					this.replyId
+				throw new Error(
+					respPayload?.message ?? 'unknown error from agent response'
 				);
-				const handler = {
-					resolve: (_value: DataPayload) => {
-						return;
-					},
-					reject: (_reason?: Error) => {
-						return;
-					},
-				};
-				const promise = new Promise<DataPayload>((resolve, reject) => {
-					handler.resolve = resolve;
-					handler.reject = reject;
-				});
-				callbackAgentHandler.register(this.replyId, handler);
-				const respPayload = await promise;
-				this.logger.debug(
-					'received remote agent reply with id: %s after %s ms',
-					this.replyId,
-					Date.now() - started
-				);
-				span.setStatus({ code: SpanStatusCode.OK });
-				return {
-					data: new DataHandler(respPayload),
-					contentType: respPayload.contentType,
-					metadata: respPayload.metadata,
-				};
+			} catch (ex) {
+				recordException(span, ex);
+				throw ex;
+			} finally {
+				span.end();
 			}
-			throw new Error(
-				respPayload?.message ?? 'unknown error from agent response'
-			);
-		} catch (ex) {
-			recordException(span, ex);
-			throw ex;
-		} finally {
-			span.end();
-		}
+		});
 	}
 }
 
@@ -288,74 +300,79 @@ export default class AgentResolver {
 			},
 			currentContext
 		);
-		if ('id' in params) {
-			span.setAttribute('remote.agentId', params.id);
-		}
-		if ('name' in params) {
-			span.setAttribute('remote.agentName', params.name);
-		}
-		try {
-			const resp = await POST('/agent/resolve', safeStringify(params), {
-				'Content-Type': 'application/json',
-			});
-			if (resp.status === 404) {
-				if ('id' in params) {
-					span.setStatus({
-						code: SpanStatusCode.ERROR,
-						message: `agent ${params.id} not found or you don't have access to it`,
-					});
-					throw new Error(
-						`agent ${params.id} not found or you don't have access to it`
-					);
-				}
-				if ('name' in params) {
-					span.setStatus({
-						code: SpanStatusCode.ERROR,
-						message: `agent ${params.name} not found or you don't have access to it`,
-					});
-					throw new Error(
-						`agent ${params.name} not found or you don't have access to it`
-					);
-				}
-				span.setStatus({
-					code: SpanStatusCode.ERROR,
-					message: "agent not found or you don't have access to it",
-				});
-				throw new Error("agent not found or you don't have access to it");
+		const spanContext = trace.setSpan(currentContext, span);
+
+		// Execute the operation within the new context
+		return await context.with(spanContext, async () => {
+			if ('id' in params) {
+				span.setAttribute('remote.agentId', params.id);
 			}
-			const payload = resp.json as {
-				success: boolean;
-				message?: string;
-				data: {
-					id: string;
-					name: string;
-					projectId: string;
-					description?: string;
+			if ('name' in params) {
+				span.setAttribute('remote.agentName', params.name);
+			}
+			try {
+				const resp = await POST('/agent/resolve', safeStringify(params), {
+					'Content-Type': 'application/json',
+				});
+				if (resp.status === 404) {
+					if ('id' in params) {
+						span.setStatus({
+							code: SpanStatusCode.ERROR,
+							message: `agent ${params.id} not found or you don't have access to it`,
+						});
+						throw new Error(
+							`agent ${params.id} not found or you don't have access to it`
+						);
+					}
+					if ('name' in params) {
+						span.setStatus({
+							code: SpanStatusCode.ERROR,
+							message: `agent ${params.name} not found or you don't have access to it`,
+						});
+						throw new Error(
+							`agent ${params.name} not found or you don't have access to it`
+						);
+					}
+					span.setStatus({
+						code: SpanStatusCode.ERROR,
+						message: "agent not found or you don't have access to it",
+					});
+					throw new Error("agent not found or you don't have access to it");
+				}
+				const payload = resp.json as {
+					success: boolean;
+					message?: string;
+					data: {
+						id: string;
+						name: string;
+						projectId: string;
+						description?: string;
+					};
 				};
-			};
-			if (!payload?.success) {
-				span.setStatus({
-					code: SpanStatusCode.ERROR,
-					message: payload?.message ?? 'unknown error from agent response',
-				});
-				throw new Error(
-					payload?.message ?? 'unknown error from agent response'
+				if (!payload?.success) {
+					span.setStatus({
+						code: SpanStatusCode.ERROR,
+						message: payload?.message ?? 'unknown error from agent response',
+					});
+					throw new Error(
+						payload?.message ?? 'unknown error from agent response'
+					);
+				}
+				span.setStatus({ code: SpanStatusCode.OK });
+				return new RemoteAgentInvoker(
+					this.logger,
+					payload.data.id,
+					payload.data.name,
+					payload.data.projectId,
+					payload.data.description
 				);
+			} catch (ex) {
+				recordException(span, ex);
+				throw ex;
+			} finally {
+				span.end();
 			}
-			span.setStatus({ code: SpanStatusCode.OK });
-			return new RemoteAgentInvoker(
-				this.logger,
-				payload.data.id,
-				payload.data.name,
-				payload.data.projectId,
-				payload.data.description
-			);
-		} catch (ex) {
-			recordException(span, ex);
-			throw ex;
-		} finally {
-			span.end();
-		}
+		});
 	}
 }
 
