@@ -211,7 +211,18 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 
 	return async (req: ServerRequest): Promise<AgentResponseData> => {
 		const agentId = config.context.agent.id;
-		const runId = req.request.runId;
+		let runId = req.request.runId;
+		if (req.headers['x-agentuity-runid']) {
+			runId = req.headers['x-agentuity-runid'];
+			if (runId) {
+				// biome-ignore lint/performance/noDelete:
+				delete req.headers['x-agentuity-runid'];
+				if (req.request?.metadata?.['runid'] === runId) {
+					// biome-ignore lint/performance/noDelete:
+					delete req.request.metadata['runid'];
+				}
+			}
+		}
 		const logger = config.context.logger.child({
 			'@agentuity/agentId': agentId,
 			'@agentuity/agentName': config.context.agent.name,
