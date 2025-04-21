@@ -1,9 +1,11 @@
 import type { Logger } from '../logger';
+import type { ReadableStream } from 'node:stream/web';
 import type {
 	AgentConfig,
 	DataPayload,
 	AgentResponseData,
 	AgentWelcome,
+	ReadableDataType,
 } from '../types';
 
 /**
@@ -22,6 +24,7 @@ export interface ServerRequest {
 	headers: Record<string, string>;
 	setTimeout: (val: number) => void;
 	controller?: ReadableStreamDefaultController;
+	body?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>;
 }
 
 /**

@@ -12,7 +12,7 @@ import type {
 	AgentWelcomePrompt,
 } from '../types';
 import { injectTraceContextToHeaders } from './otel';
-import type { ServerRoute } from './types';
+import type { IncomingRequest, ServerRoute } from './types';
 
 export function safeStringify(obj: unknown) {
 	const seen = new WeakSet();
@@ -360,12 +360,13 @@ export class Base64StreamHelper {
 	}
 }
 
-export function createStreamingResponse(
+export async function createStreamingResponse(
 	server: string,
 	headers: Headers,
 	span: Span,
-	routeResult: Promise<AgentResponseData>
-): [Record<string, string>, ReadableStream] {
+	routeResult: Promise<AgentResponseData>,
+	binary?: boolean
+): Promise<[Record<string, string>, ReadableStream]> {
 	const responseheaders = injectTraceContextToHeaders({
 		Server: server,
 	});
@@ -379,11 +380,36 @@ export function createStreamingResponse(
 		responseheaders['X-Accel-Buffering'] = 'no';
 		span.setAttribute('http.sse', 'true');
 	} else {
-		responseheaders['Content-Type'] = 'application/json';
 		span.setAttribute('http.sse', 'false');
 	}
 	span.setAttribute('http.status_code', '200');
 	span.setStatus({ code: SpanStatusCode.OK });
+	// binary is the new protocol for streaming
+	if (binary) {
+		const resp = await routeResult;
+		if (resp.metadata) {
+			for (const key in resp.metadata) {
+				responseheaders[`x-agentuity-${key}`] = resp.metadata[key] as string;
+			}
+		}
+		responseheaders['Content-Type'] = resp.data.contentType;
+		return [
+			responseheaders,
+			new ReadableStream({
+				async start(controller) {
+					const reader = resp.data.stream.getReader();
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						controller.enqueue(value);
+					}
+					controller.close();
+				},
+			}),
+		];
+	}
+	// this is the old protocol for streaming which will be deprecated and removed in a future version
+	responseheaders['Content-Type'] = 'application/json';
 	return [
 		responseheaders,
 		new ReadableStream({
@@ -437,4 +463,28 @@ export function createStreamingResponse(
 			},
 		}),
 	];
+}
+
+export function getRequestFromHeaders(
+	headers: Record<string, string>
+): IncomingRequest {
+	let trigger: TriggerType = 'manual';
+	const metadata: Record<string, string> = {};
+	for (const [key, value] of Object.entries(headers)) {
+		if (key.startsWith('x-agentuity-')) {
+			const name = key.slice(12);
+			if (name === 'trigger') {
+				trigger = value as TriggerType;
+			} else {
+				metadata[name] = value;
+			}
+		}
+	}
+	return {
+		trigger,
+		metadata,
+		contentType: headers['content-type'] ?? 'application/json',
+		payload: '',
+		runId: '',
+	};
 }

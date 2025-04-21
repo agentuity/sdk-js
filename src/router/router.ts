@@ -275,7 +275,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 				},
 				async () => {
 					return await context.with(spanContext, async () => {
-						const request = new AgentRequestHandler(req.request);
+						const request = new AgentRequestHandler(req.request, req.body);
 						const response = new AgentResponseHandler();
 						const context = {
 							...config.context,
@@ -285,6 +285,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 								resolver.getAgent(params),
 						} as AgentContext;
 						try {
+							await request.data.loadStream();
 							let handlerResponse = await config.handler(
 								request,
 								response,

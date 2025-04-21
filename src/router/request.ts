@@ -1,4 +1,10 @@
-import type { AgentRequest, Json, DataPayload } from '../types';
+import type { ReadableStream } from 'node:stream/web';
+import type {
+	AgentRequest,
+	Json,
+	DataPayload,
+	ReadableDataType,
+} from '../types';
 import { DataHandler } from './data';
 
 /**
@@ -8,9 +14,12 @@ export default class AgentRequestHandler implements AgentRequest {
 	private readonly request: DataPayload;
 	private readonly datahandler: DataHandler;
 
-	constructor(request: DataPayload) {
+	constructor(
+		request: DataPayload,
+		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
+	) {
 		this.request = request;
-		this.datahandler = new DataHandler(request);
+		this.datahandler = new DataHandler(request, stream, request.contentType);
 	}
 
 	/**
