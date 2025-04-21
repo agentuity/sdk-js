@@ -483,7 +483,7 @@ export function getRequestFromHeaders(
 	return {
 		trigger,
 		metadata,
-		contentType: headers['content-type'] ?? 'application/json',
+		contentType: headers['content-type'] ?? 'application/octet-stream',
 		payload: '',
 		runId: '',
 	};
