@@ -389,7 +389,15 @@ export async function createStreamingResponse(
 		const resp = await routeResult;
 		if (resp.metadata) {
 			for (const key in resp.metadata) {
-				responseheaders[`x-agentuity-${key}`] = resp.metadata[key] as string;
+				let value = resp.metadata[key] as string;
+				if (
+					value &&
+					value.charAt(0) === '{' &&
+					value.charAt(value.length - 1) === '}'
+				) {
+					value = safeParse(value, value);
+				}
+				responseheaders[`x-agentuity-${key}`] = value;
 			}
 		}
 		responseheaders['Content-Type'] = resp.data.contentType;
