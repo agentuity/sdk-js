@@ -222,6 +222,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 					delete req.request.metadata['runid'];
 				}
 			}
+			req.request.runId = runId;
 		}
 		const logger = config.context.logger.child({
 			'@agentuity/agentId': agentId,
@@ -254,6 +255,11 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		try {
 			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
+
+			if (!runId) {
+				runId = span.spanContext().traceId;
+				req.request.runId = runId;
+			}
 
 			executingCount++;
 
