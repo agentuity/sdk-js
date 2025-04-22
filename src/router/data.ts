@@ -16,6 +16,26 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Arguments = Pick<DataPayload, 'contentType' | 'payload'>;
 
+const toBuffer = async (
+	buffer: Buffer,
+	value: ReadableDataType
+): Promise<Buffer> => {
+	if (value instanceof Uint8Array) {
+		return Buffer.concat([buffer, value]);
+	}
+	if (value instanceof ArrayBuffer) {
+		return Buffer.concat([buffer, Buffer.from(value)]);
+	}
+	if (value instanceof Blob) {
+		const buf = await value.arrayBuffer();
+		return Buffer.concat([buffer, Buffer.from(buf)]);
+	}
+	if (typeof value === 'string') {
+		return Buffer.concat([buffer, Buffer.from(value)]);
+	}
+	throw new Error(`Unsupported value type: ${typeof value}`);
+};
+
 /**
  * The implementation of the Data interface
  */
@@ -51,10 +71,24 @@ export class DataHandler implements Data {
 	public async loadStream() {
 		// TODO: we need to make the getters async so we can load the data from the stream on-demand but that will break the current API
 		if (this.readstream) {
-			this.payload.payload = '';
-			for await (const chunk of this.readstream) {
-				this.payload.payload += chunk;
+			let buffer: Buffer = Buffer.alloc(0);
+			if (this.readstream instanceof ReadableStream) {
+				const reader = this.readstream.getReader();
+				while (true) {
+					const { done, value } = await reader.read();
+					if (value) {
+						buffer = await toBuffer(buffer, value);
+					}
+					if (done) {
+						break;
+					}
+				}
+			} else {
+				for await (const chunk of this.readstream) {
+					buffer = await toBuffer(buffer, chunk);
+				}
 			}
+			this.payload.payload = buffer.toString('utf-8');
 			this.streamLoaded = true;
 			this.readstream = undefined;
 		}
