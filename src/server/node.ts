@@ -322,6 +322,9 @@ export class NodeServer implements Server {
 
 							span.setAttribute('@agentuity/agentName', route.agent.name);
 							span.setAttribute('@agentuity/agentId', route.agent.id);
+
+							const runId = span.spanContext().traceId;
+
 							this.logger.debug('request: %s %s', req.method, req.url);
 
 							try {
@@ -331,7 +334,8 @@ export class NodeServer implements Server {
 										: undefined,
 									request: isBinary
 										? getRequestFromHeaders(
-												req.headers as Record<string, string>
+												req.headers as Record<string, string>,
+												runId
 											)
 										: (payload as IncomingRequest),
 									url: req.url ?? '',

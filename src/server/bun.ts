@@ -232,6 +232,7 @@ export class BunServer implements Server {
 										logger.debug('request: %s %s', method, url.pathname);
 
 										const isBinary = !!req.headers.get('x-agentuity-trigger');
+										const runId = span.spanContext().traceId;
 
 										try {
 											const routeResult = route.handler({
@@ -243,7 +244,7 @@ export class BunServer implements Server {
 												url: req.url,
 												headers: req.headers.toJSON(),
 												request: isBinary
-													? getRequestFromHeaders(req.headers.toJSON())
+													? getRequestFromHeaders(req.headers.toJSON(), runId)
 													: ((await req.json()) as IncomingRequest),
 												setTimeout: (val: number) =>
 													this.server?.timeout(req, val),

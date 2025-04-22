@@ -476,7 +476,8 @@ export async function createStreamingResponse(
 }
 
 export function getRequestFromHeaders(
-	headers: Record<string, string>
+	headers: Record<string, string>,
+	runId: string
 ): IncomingRequest {
 	let trigger: TriggerType = 'manual';
 	const metadata: Record<string, string> = {};
@@ -491,10 +492,10 @@ export function getRequestFromHeaders(
 		}
 	}
 	return {
-		trigger,
-		metadata,
 		contentType: headers['content-type'] ?? 'application/octet-stream',
+		metadata,
 		payload: '',
-		runId: '',
+		runId,
+		trigger,
 	};
 }
