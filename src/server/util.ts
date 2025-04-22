@@ -408,8 +408,10 @@ export async function createStreamingResponse(
 					const reader = resp.data.stream.getReader();
 					while (true) {
 						const { done, value } = await reader.read();
+						if (value) {
+							controller.enqueue(value);
+						}
 						if (done) break;
-						controller.enqueue(value);
 					}
 					controller.close();
 				},
