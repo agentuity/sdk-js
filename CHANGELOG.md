@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.104
+
+### Patch Changes
+
+- e32f0d8: Add support for remote agent-to-agent invocation
+
 All notable changes to this project will be documented in this file.
 
 ## [0.0.103] - 2025-04-23
