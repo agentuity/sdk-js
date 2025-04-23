@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.105
+
+### Patch Changes
+
+- f6e04cf: Add support for remote agent handoff
+
 ## 0.0.104
 
 ### Patch Changes
