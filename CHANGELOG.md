@@ -1,4 +1,6 @@
-# @agentuity/sdk
+# @agentuity/sdk Changelog
+
+All notable changes to this project will be documented in this file.
 
 ## [0.0.103] - 2025-04-23
 
@@ -98,10 +100,6 @@
 ### Patch Changes
 
 - Fix Vector delete api
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
 
 ## [0.0.89] - 2025-03-25
 
