@@ -4,7 +4,10 @@
 
 ### Patch Changes
 
-- 9f79163: Refactor to support binary streams instead of intermediate JSON protocol
+- 9f79163: Refactor to support binary streams instead of intermediate JSON protocol (#81)
+  - Improved handling of HTTP native protocol
+  - Added support for passing in the runId
+  - Better handling of stream data and binary content
 
 ## [0.0.102] - 2025-04-16
 
