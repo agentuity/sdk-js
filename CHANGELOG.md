@@ -1,6 +1,6 @@
 # @agentuity/sdk
 
-## 0.0.103
+## [0.0.103] - 2025-04-23
 
 ### Patch Changes
 
