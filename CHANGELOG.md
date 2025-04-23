@@ -1,5 +1,11 @@
 # @agentuity/sdk
 
+## 0.0.103
+
+### Patch Changes
+
+- 9f79163: Refactor to support binary streams instead of intermediate JSON protocol
+
 ## [0.0.102] - 2025-04-16
 
 ### Fixed
