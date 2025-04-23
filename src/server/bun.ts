@@ -1,9 +1,4 @@
-import type {
-	Server,
-	UnifiedServerConfig,
-	ServerRoute,
-	IncomingRequest,
-} from './types';
+import type { Server, UnifiedServerConfig, ServerRoute } from './types';
 import type { ReadableStream } from 'node:stream/web';
 import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
@@ -149,29 +144,20 @@ export class BunServer implements Server {
 								`http://127.0.0.1:${this.config.port}/${id}`,
 								{
 									method: 'POST',
-									body: safeStringify({
-										trigger: 'manual',
-										payload: Buffer.from(body).toString('base64'),
-										contentType:
-											req.headers.get('content-type') ??
-											'application/octet-stream',
-										metadata: { headers },
-									}),
+									body,
 									headers: {
-										'Content-Type': 'application/json',
+										'Content-Type':
+											headers['content-type'] ?? 'application/octet-stream',
+										'x-agentuity-trigger': 'manual',
+										'x-agentuity-metadata': safeStringify(headers),
 									},
 								}
 							);
 							if (resp.ok) {
-								const response = await resp.json();
-								const buf = Buffer.from(response.payload, 'base64');
-								return new Response(buf, {
+								const response = await resp.blob();
+								return new Response(response, {
 									status: resp.status,
-									headers: {
-										...injectTraceContextToHeaders(resp.headers),
-										'Content-Type': response.contentType,
-										'Content-Length': buf.byteLength.toString(),
-									},
+									headers: resp.headers,
 								});
 							}
 							return new Response(resp.body, {
@@ -231,36 +217,33 @@ export class BunServer implements Server {
 										span.setAttribute('@agentuity/agentId', route.agent.id);
 										logger.debug('request: %s %s', method, url.pathname);
 
-										const isBinary = !!req.headers.get('x-agentuity-trigger');
 										const runId = span.spanContext().traceId;
 
 										try {
 											const routeResult = route.handler({
-												body: isBinary
-													? ((req.body as unknown as
-															| ReadableStream<ReadableDataType>
-															| AsyncIterable<ReadableDataType>) ?? undefined)
-													: undefined,
+												body:
+													(req.body as unknown as
+														| ReadableStream<ReadableDataType>
+														| AsyncIterable<ReadableDataType>) ?? undefined,
 												url: req.url,
 												headers: req.headers.toJSON(),
-												request: isBinary
-													? getRequestFromHeaders(req.headers.toJSON(), runId)
-													: ((await req.json()) as IncomingRequest),
+												request: getRequestFromHeaders(
+													req.headers.toJSON(),
+													runId
+												),
 												setTimeout: (val: number) =>
 													this.server?.timeout(req, val),
 											});
 
 											const [headers, stream] = await createStreamingResponse(
 												`Agentuity BunJS/${sdkVersion}`,
-												req.headers,
 												span,
-												routeResult,
-												isBinary
+												routeResult
 											);
 
 											return new Response(stream, {
 												status: 200,
-												headers: injectTraceContextToHeaders(headers),
+												headers,
 											});
 										} catch (error) {
 											span.recordException(error as Error);

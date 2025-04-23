@@ -1,9 +1,4 @@
-import type {
-	IncomingRequest,
-	Server,
-	ServerRoute,
-	UnifiedServerConfig,
-} from './types';
+import type { Server, ServerRoute, UnifiedServerConfig } from './types';
 import type { ReadableStream } from 'node:stream/web';
 import type { Logger } from '../logger';
 import {
@@ -18,7 +13,6 @@ import {
 } from './otel';
 import {
 	safeStringify,
-	safeParse,
 	getRoutesHelpText,
 	createStreamingResponse,
 	toWelcomePrompt,
@@ -67,21 +61,6 @@ export class NodeServer implements Server {
 					}
 				});
 			}
-		});
-	}
-
-	private getJSON<T>(req: IncomingMessage): Promise<T> {
-		return new Promise((resolve, reject) => {
-			const chunks: Buffer[] = [];
-			req.on('data', (chunk) => chunks.push(chunk));
-			req.on('end', async () => {
-				const body = Buffer.concat(chunks);
-				const payload = safeParse(body.toString());
-				resolve(payload as T);
-			});
-			req.on('error', (err) => {
-				reject(err);
-			});
 		});
 	}
 
@@ -175,7 +154,7 @@ export class NodeServer implements Server {
 				res.writeHead(200, {
 					'Content-Type': 'application/json',
 				});
-				res.end(JSON.stringify(result));
+				res.end(safeStringify(result));
 				return;
 			}
 
@@ -224,52 +203,23 @@ export class NodeServer implements Server {
 					const body = await this.getBuffer(req);
 					const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
 						method: 'POST',
-						body: safeStringify({
-							trigger: 'manual',
-							payload: body.toString('base64'),
-							contentType:
-								req.headers['content-type'] || 'application/octet-stream',
-							metadata: { headers: this.getHeaders(req) },
-						}),
+						body,
 						headers: {
-							'Content-Type': 'application/json',
+							'Content-Type':
+								req.headers['content-type'] || 'application/octet-stream',
 							'User-Agent': req.headers['user-agent'] || '',
+							'x-agentuity-trigger': 'manual',
+							'x-agentuity-metadata': safeStringify(this.getHeaders(req)),
 						},
 					});
-					const respBody = (await response.json()) as {
-						contentType: string;
-						payload: string;
-					};
-					res.writeHead(response.status, {
-						...injectTraceContextToHeaders(),
-						'Content-Type': respBody.contentType,
-						Server: response.headers.get('Server') || '',
-					});
-					const output = Buffer.from(respBody.payload, 'base64');
-					res.write(output);
+					const respBody = await response.arrayBuffer();
+					res.writeHead(
+						response.status,
+						injectTraceContextToHeaders(response.headers)
+					);
+					res.write(respBody);
 					res.end();
 					return;
-				}
-
-				const isBinary = !!req.headers?.['x-agentuity-trigger'];
-
-				if (!isBinary && !req.headers?.['content-type']?.includes('json')) {
-					res.writeHead(400, injectTraceContextToHeaders());
-					res.write('Invalid content type, expected application/json');
-					res.end();
-					return;
-				}
-
-				let payload: IncomingRequest;
-				if (!isBinary) {
-					try {
-						payload = await this.getJSON<IncomingRequest>(req);
-					} catch (err) {
-						this.logger.error('Error parsing request body as json: %s', err);
-						res.writeHead(400, injectTraceContextToHeaders());
-						res.end();
-						return;
-					}
 				}
 
 				// Create a span for this incoming request
@@ -329,15 +279,11 @@ export class NodeServer implements Server {
 
 							try {
 								const agentReq = {
-									body: isBinary
-										? await this.getBufferAsStream(req)
-										: undefined,
-									request: isBinary
-										? getRequestFromHeaders(
-												req.headers as Record<string, string>,
-												runId
-											)
-										: (payload as IncomingRequest),
+									body: await this.getBufferAsStream(req),
+									request: getRequestFromHeaders(
+										req.headers as Record<string, string>,
+										runId
+									),
 									url: req.url ?? '',
 									headers: this.getHeaders(req),
 									setTimeout: (val: number) => req.setTimeout(val),
@@ -345,12 +291,10 @@ export class NodeServer implements Server {
 								const routeResult = route.handler(agentReq);
 								const [headers, stream] = await createStreamingResponse(
 									`Agentuity NodeJS/${sdkVersion}`,
-									new Headers(req.headers as Record<string, string>),
 									span,
-									routeResult,
-									isBinary
+									routeResult
 								);
-								res.writeHead(200, injectTraceContextToHeaders(headers));
+								res.writeHead(200, headers);
 								// Ensure headers are sent before streaming
 								res.flushHeaders();
 								// Pipe the stream to the response

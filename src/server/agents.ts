@@ -4,14 +4,17 @@ import type {
 	InvocationArguments,
 	RemoteAgentResponse,
 	DataPayload,
+	ReadableDataType,
+	JsonObject,
 } from '../types';
+import type { ReadableStream } from 'node:stream/web';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
-import { toDataType, safeStringify } from './util';
+import { toDataType, safeStringify, safeParse } from './util';
 import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
-import { getTracer, recordException } from '../router/router';
+import { getSDKVersion, getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 
 /**
@@ -73,15 +76,12 @@ class LocalAgentInvoker implements RemoteAgent {
 					'agent',
 					args as unknown as InvocationArguments
 				);
-				const headers = {};
+				const headers = { 'Content-Type': 'application/json' };
 				injectTraceContextToHeaders(headers);
 				const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 					method: 'POST',
 					body: safeStringify(body),
-					headers: {
-						...headers,
-						'Content-Type': 'application/json',
-					},
+					headers,
 				});
 				if (resp.ok) {
 					const result = (await resp.json()) as DataPayload;
@@ -111,32 +111,42 @@ class RemoteAgentInvoker implements RemoteAgent {
 	private readonly logger: Logger;
 	public readonly id: string;
 	public readonly name: string;
-	public readonly description?: string;
 	public readonly projectId: string;
-	private readonly replyId: string;
+	public readonly orgId: string;
+	private readonly url: string;
+	private readonly authorization: string;
+	private readonly transactionId: string;
 
 	/**
 	 * Creates a new remote agent invoker
 	 *
 	 * @param logger - The logger to use
-	 * @param id - The agent ID
+	 * @param url - The agent url endpoint to use
+	 * @param authorization - The agent authorization token
+	 * @param id - The agent id
 	 * @param name - The agent name
-	 * @param projectId - The project ID
-	 * @param description - Optional description of the agent
+	 * @param projectId - The project id
+	 * @param orgId - The organization id
+	 * @param transactionId - The transaction id
 	 */
 	constructor(
 		logger: Logger,
+		url: string,
+		authorization: string,
 		id: string,
 		name: string,
 		projectId: string,
-		description?: string
+		orgId: string,
+		transactionId: string
 	) {
 		this.logger = logger;
+		this.url = url;
+		this.authorization = authorization;
 		this.id = id;
 		this.name = name;
 		this.projectId = projectId;
-		this.description = description;
-		this.replyId = crypto.randomUUID();
+		this.orgId = orgId;
+		this.transactionId = transactionId;
 	}
 
 	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
@@ -148,8 +158,11 @@ class RemoteAgentInvoker implements RemoteAgent {
 			'remoteagent.run',
 			{
 				attributes: {
-					'remote.agentId': this.id,
-					'remote.agentName': this.name,
+					'@agentuity/agentId': this.id,
+					'@agentuity/agentName': this.name,
+					'@agentuity/orgId': this.orgId,
+					'@agentuity/projectId': this.projectId,
+					'@agentuity/transactionId': this.transactionId,
 					scope: 'remote',
 				},
 			},
@@ -165,53 +178,74 @@ class RemoteAgentInvoker implements RemoteAgent {
 					'agent',
 					args as unknown as InvocationArguments
 				);
-				const headers = {};
+				const sdkVersion = getSDKVersion();
+				const headers = {
+					Authorization: `Bearer ${this.authorization}`,
+					'Content-Type': body.contentType,
+					'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
+				};
 				injectTraceContextToHeaders(headers);
-				const resp = await POST<{ success: boolean; message?: string }>(
-					`/agent/${this.id}/run/${this.replyId}`,
-					safeStringify(body),
-					{
-						...headers,
-						'Content-Type': 'application/json',
-					}
-				);
+				this.logger.info('invoking remote agent');
+				const resp = await fetch(this.url, {
+					headers,
+					body: Buffer.from(body.payload, 'base64').buffer,
+					method: 'POST',
+				});
+				this.logger.info('invoked remote agent, returned: %d', resp.status);
 				span.setAttribute('http.status_code', resp.status.toString());
-				const respPayload = resp.json;
-				if (respPayload?.success) {
-					const started = Date.now();
-					this.logger.debug(
-						'waiting for remote agent response using reply id: %s',
-						this.replyId
-					);
-					const handler = {
-						resolve: (_value: DataPayload) => {
-							return;
-						},
-						reject: (_reason?: Error) => {
-							return;
-						},
-					};
-					const promise = new Promise<DataPayload>((resolve, reject) => {
-						handler.resolve = resolve;
-						handler.reject = reject;
-					});
-					callbackAgentHandler.register(this.replyId, handler);
-					const respPayload = await promise;
-					this.logger.debug(
-						'received remote agent reply with id: %s after %s ms',
-						this.replyId,
-						Date.now() - started
-					);
+				if (resp.ok) {
 					span.setStatus({ code: SpanStatusCode.OK });
-					return {
-						data: new DataHandler(respPayload),
-						contentType: respPayload.contentType,
-						metadata: respPayload.metadata,
-					};
+				} else {
+					span.setStatus({
+						code: SpanStatusCode.ERROR,
+						message: await resp.text(),
+					});
+					throw new Error(await resp.text());
 				}
-				throw new Error(
-					respPayload?.message ?? 'unknown error from agent response'
+				const metadata: JsonObject = {};
+				for (const [key, value] of Object.entries(resp.headers.toJSON())) {
+					if (key.startsWith('x-agentuity-')) {
+						if (key === 'x-agentuity-metadata') {
+							const md = safeParse(value) as JsonObject;
+							if (md) {
+								for (const [k, v] of Object.entries(md)) {
+									metadata[k] = v;
+								}
+							}
+							continue;
+						}
+						const mdkey = key.substring(12);
+						if (
+							value.charAt(0) === '{' &&
+							value.charAt(value.length - 1) === '}'
+						) {
+							metadata[mdkey] = safeParse(value);
+						} else {
+							metadata[mdkey] = value;
+						}
+					}
+				}
+				const contentType =
+					resp.headers.get('content-type') ?? 'application/octet-stream';
+				this.logger.debug(
+					'invoked remote agent, returned metadata: %s, content-type: %s',
+					metadata,
+					contentType
 				);
+				const resultBody = await resp.body;
+				const data = resultBody
+					? new DataHandler(
+							{ contentType, payload: '' },
+							resultBody as unknown as ReadableStream<ReadableDataType>,
+							contentType
+						)
+					: new DataHandler({ contentType, payload: '' });
+				await data.loadStream();
+				return {
+					data,
+					contentType,
+					metadata,
+				};
 			} catch (ex) {
 				recordException(span, ex);
 				throw ex;
@@ -311,9 +345,13 @@ export default class AgentResolver {
 				span.setAttribute('remote.agentName', params.name);
 			}
 			try {
-				const resp = await POST('/agent/resolve', safeStringify(params), {
-					'Content-Type': 'application/json',
-				});
+				const resp = await POST(
+					'/agent/2025-03-17/resolve',
+					safeStringify(params),
+					{
+						'Content-Type': 'application/json',
+					}
+				);
 				if (resp.status === 404) {
 					if ('id' in params) {
 						span.setStatus({
@@ -346,7 +384,10 @@ export default class AgentResolver {
 						id: string;
 						name: string;
 						projectId: string;
-						description?: string;
+						url: string;
+						authorization: string;
+						orgId: string;
+						transactionId: string;
 					};
 				};
 				if (!payload?.success) {
@@ -361,10 +402,13 @@ export default class AgentResolver {
 				span.setStatus({ code: SpanStatusCode.OK });
 				return new RemoteAgentInvoker(
 					this.logger,
+					payload.data.url,
+					payload.data.authorization,
 					payload.data.id,
 					payload.data.name,
 					payload.data.projectId,
-					payload.data.description
+					payload.data.orgId,
+					payload.data.transactionId
 				);
 			} catch (ex) {
 				recordException(span, ex);
@@ -375,44 +419,3 @@ export default class AgentResolver {
 		});
 	}
 }
-
-interface PromiseWithResolver<T> {
-	resolve: (value: T) => void;
-	reject: (reason?: Error) => void;
-}
-
-/**
- * Handles callbacks for asynchronous agent responses
- */
-export class CallbackAgentHandler {
-	private pending: Map<string, PromiseWithResolver<DataPayload>>;
-
-	/**
-	 * Creates a new callback agent handler
-	 */
-	constructor() {
-		this.pending = new Map();
-	}
-
-	/**
-	 * register is called to register a promise callback handler for a pending
-	 * remote agent response.
-	 */
-	register(id: string, promise: PromiseWithResolver<DataPayload>) {
-		this.pending.set(id, promise);
-	}
-
-	/**
-	 * received is called when a remote agent response is received to forward to the
-	 * promise callback handler.
-	 */
-	received(id: string, response: DataPayload) {
-		const promise = this.pending.get(id);
-		if (promise) {
-			this.pending.delete(id);
-			promise.resolve(response);
-		}
-	}
-}
-
-export const callbackAgentHandler = new CallbackAgentHandler();
