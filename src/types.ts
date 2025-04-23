@@ -317,11 +317,6 @@ export interface RemoteAgent {
 	name: string;
 
 	/**
-	 * the description of the agent
-	 */
-	description?: string;
-
-	/**
 	 * the project id of the agent
 	 */
 	projectId: string;

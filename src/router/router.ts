@@ -24,7 +24,6 @@ import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
 import type { Logger } from '../logger';
 import AgentResolver from '../server/agents';
-import { DataHandler } from './data';
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -347,10 +346,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 									[redirect.invocation ?? req.request]
 								);
 								span.setStatus({ code: SpanStatusCode.OK });
-								return {
-									data: new DataHandler(redirectResponse),
-									metadata: redirectResponse.metadata,
-								};
+								return redirectResponse;
 							}
 
 							span.setStatus({ code: SpanStatusCode.OK });
