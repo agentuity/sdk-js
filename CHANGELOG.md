@@ -1,10 +1,15 @@
-# @agentuity/sdk
+# @agentuity/sdk Changelog
 
-## 0.0.103
+All notable changes to this project will be documented in this file.
+
+## [0.0.103] - 2025-04-23
 
 ### Patch Changes
 
-- 9f79163: Refactor to support binary streams instead of intermediate JSON protocol
+- 9f79163: Refactor to support binary streams instead of intermediate JSON protocol (#81)
+  - Improved handling of HTTP native protocol
+  - Added support for passing in the runId
+  - Better handling of stream data and binary content
 
 ## [0.0.102] - 2025-04-16
 
@@ -34,71 +39,67 @@
 - Fix NodeJS issue where the buffer isn't correctly sending the blob but works fine in Bun version (doesn't support a buffer view, switched to blob) ([#74](https://github.com/agentuity/sdk-js/pull/74))
 - Debug github workflow git tag issue
 
-## 0.0.99
+## [0.0.99] - 2025-04-14
 
 ### Patch Changes
 
 - More debug for github workflow
 
-## 0.0.98
+## [0.0.98] - 2025-04-14
 
 ### Patch Changes
 
 - More debug for github release tags
 
-## 0.0.97
+## [0.0.97] - 2025-04-14
 
 ### Patch Changes
 
 - 0bd3fff: Attempt to fix issue with github workflow not pushing tag after release
 
-## 0.0.96
+## [0.0.96] - 2025-04-14
 
 ### Patch Changes
 
 - a5bafb7: Fix issue with node keyvalue not correctly handling the buffer upload
 
-## 0.0.95
+## [0.0.95] - 2025-04-14
 
 ### Patch Changes
 
 - 361ab69: Add more otel trace context headers, remove old trace provider
 - 1b9f047: Base64 encode the welcome prompts
 
-## 0.0.94
+## [0.0.94] - 2025-03-31
 
 ### Patch Changes
 
 - addda11: Fix regression in otel traces missing for AI SDK by change in opentelemetry-api version change
 
-## 0.0.93
+## [0.0.93] - 2025-03-31
 
 ### Patch Changes
 
 - 8220ae0: Add support for agent inspection discovery
 
-## 0.0.92
+## [0.0.92] - 2025-03-31
 
 ### Patch Changes
 
 - b41dcc8: Add data and markdown methods to AgentResponse interface and implementation
 
-## 0.0.91
+## [0.0.91] - 2025-03-31
 
 ### Patch Changes
 
 - Use new agentuity sdk api
 - 3869d0d: Add GitHub workflow for npm package release triggered by version tags
 
-## 0.0.90
+## [0.0.90] - 2025-03-27
 
 ### Patch Changes
 
 - Fix Vector delete api
-
-# Changelog
-
-All notable changes to this project will be documented in this file.
 
 ## [0.0.89] - 2025-03-25
 
