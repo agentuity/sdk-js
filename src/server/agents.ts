@@ -301,7 +301,11 @@ export default class AgentResolver {
 			if ('id' in params && a.id === params.id) {
 				return a;
 			}
-			if ('name' in params && a.name === params.name) {
+			if (
+				'name' in params &&
+				a.name === params.name &&
+				(this.projectId === params.projectId || !params.projectId)
+			) {
 				return a;
 			}
 			return null;
@@ -309,7 +313,7 @@ export default class AgentResolver {
 		if (agent) {
 			if (agent.id === this.currentAgentId) {
 				throw new Error(
-					'agent loop detected trying to redirect to the current active agent'
+					'agent loop detected trying to redirect to the current active agent. if you are trying to redirect to another agent in a different project with the same name, you must specify the projectId parameter along with the name parameter'
 				);
 			}
 			return new LocalAgentInvoker(
