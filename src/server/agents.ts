@@ -115,6 +115,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 	public readonly orgId: string;
 	private readonly url: string;
 	private readonly authorization: string;
+	private readonly transactionId: string;
 
 	/**
 	 * Creates a new remote agent invoker
@@ -126,6 +127,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 	 * @param name - The agent name
 	 * @param projectId - The project id
 	 * @param orgId - The organization id
+	 * @param transactionId - The transaction id
 	 */
 	constructor(
 		logger: Logger,
@@ -134,7 +136,8 @@ class RemoteAgentInvoker implements RemoteAgent {
 		id: string,
 		name: string,
 		projectId: string,
-		orgId: string
+		orgId: string,
+		transactionId: string
 	) {
 		this.logger = logger;
 		this.url = url;
@@ -143,6 +146,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 		this.name = name;
 		this.projectId = projectId;
 		this.orgId = orgId;
+		this.transactionId = transactionId;
 	}
 
 	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
@@ -158,6 +162,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					'@agentuity/agentName': this.name,
 					'@agentuity/orgId': this.orgId,
 					'@agentuity/projectId': this.projectId,
+					'@agentuity/transactionId': this.transactionId,
 					scope: 'remote',
 				},
 			},
@@ -382,6 +387,7 @@ export default class AgentResolver {
 						url: string;
 						authorization: string;
 						orgId: string;
+						transactionId: string;
 					};
 				};
 				if (!payload?.success) {
@@ -401,7 +407,8 @@ export default class AgentResolver {
 					payload.data.id,
 					payload.data.name,
 					payload.data.projectId,
-					payload.data.orgId
+					payload.data.orgId,
+					payload.data.transactionId
 				);
 			} catch (ex) {
 				recordException(span, ex);
