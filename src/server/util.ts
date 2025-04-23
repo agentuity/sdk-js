@@ -362,113 +362,43 @@ export class Base64StreamHelper {
 
 export async function createStreamingResponse(
 	server: string,
-	headers: Headers,
 	span: Span,
-	routeResult: Promise<AgentResponseData>,
-	binary?: boolean
+	routeResult: Promise<AgentResponseData>
 ): Promise<[Record<string, string>, ReadableStream]> {
 	const responseheaders = injectTraceContextToHeaders({
 		Server: server,
 	});
 
-	const streamAsSSE = headers.get('accept')?.includes('text/event-stream');
-
-	if (streamAsSSE) {
-		responseheaders['Content-Type'] = 'text/event-stream;charset=utf-8';
-		responseheaders['Cache-Control'] = 'no-cache, no-transform';
-		responseheaders.Connection = 'keep-alive';
-		responseheaders['X-Accel-Buffering'] = 'no';
-		span.setAttribute('http.sse', 'true');
-	} else {
-		span.setAttribute('http.sse', 'false');
-	}
-	span.setAttribute('http.status_code', '200');
-	span.setStatus({ code: SpanStatusCode.OK });
-	// binary is the new protocol for streaming
-	if (binary) {
-		const resp = await routeResult;
-		if (resp.metadata) {
-			for (const key in resp.metadata) {
-				let value = resp.metadata[key] as string;
-				if (
-					value &&
-					value.charAt(0) === '{' &&
-					value.charAt(value.length - 1) === '}'
-				) {
-					value = safeParse(value, value);
-				}
-				responseheaders[`x-agentuity-${key}`] = value;
+	const resp = await routeResult;
+	if (resp.metadata) {
+		for (const key in resp.metadata) {
+			let value = resp.metadata[key] as string;
+			if (
+				value &&
+				value.charAt(0) === '{' &&
+				value.charAt(value.length - 1) === '}'
+			) {
+				value = safeParse(value, value);
 			}
+			responseheaders[`x-agentuity-${key}`] = value;
 		}
-		responseheaders['Content-Type'] = resp.data.contentType;
-		return [
-			responseheaders,
-			new ReadableStream({
-				async start(controller) {
-					const reader = resp.data.stream.getReader();
-					while (true) {
-						const { done, value } = await reader.read();
-						if (value) {
-							controller.enqueue(value);
-						}
-						if (done) break;
-					}
-					controller.close();
-				},
-			}),
-		];
 	}
-	// this is the old protocol for streaming which will be deprecated and removed in a future version
-	responseheaders['Content-Type'] = 'application/json';
+	responseheaders['Content-Type'] = resp.data.contentType;
+
+	span.setStatus({ code: SpanStatusCode.OK });
+
 	return [
 		responseheaders,
 		new ReadableStream({
-			start(controller) {
-				routeResult
-					.then(async (resp) => {
-						const helper = new Base64StreamHelper();
-						if (!streamAsSSE) {
-							controller.enqueue(
-								`{"contentType":"${resp.data.contentType}","metadata":${JSON.stringify(resp.metadata ?? null)},"payload":"`
-							);
-						}
-						const reader = resp.data.stream.getReader();
-						while (true) {
-							const { done, value } = await reader.read();
-							if (done) break;
-							const data = await toBuffer(value);
-							if (!data || data.length === 0) {
-								continue;
-							}
-							if (streamAsSSE) {
-								const buf = Buffer.from(
-									`data: ${data.toString('utf-8')}\n\n`,
-									'utf-8'
-								);
-								controller.enqueue(buf);
-							} else {
-								controller.enqueue(helper.push(data));
-							}
-						}
-						if (!streamAsSSE) {
-							const output = helper.flush();
-							if (output) {
-								controller.enqueue(output);
-							}
-							controller.enqueue('"}');
-						}
-						controller.close();
-					})
-					.catch((err) => {
-						span.recordException(err as Error);
-						span.setStatus({
-							code: SpanStatusCode.ERROR,
-							message: err.message,
-						});
-						controller.error(err);
-					});
-			},
-			cancel(controller: ReadableStreamDefaultController) {
+			async start(controller) {
+				const reader = resp.data.stream.getReader();
+				while (true) {
+					const { done, value } = await reader.read();
+					if (value) {
+						controller.enqueue(value);
+					}
+					if (done) break;
+				}
 				controller.close();
 			},
 		}),
