@@ -4,6 +4,7 @@ import type {
 	ServerRoute,
 	UnifiedServerConfig,
 } from './types';
+import type { ReadableStream } from 'node:stream/web';
 import type { Logger } from '../logger';
 import {
 	createServer as createHttpServer,
@@ -21,8 +22,10 @@ import {
 	getRoutesHelpText,
 	createStreamingResponse,
 	toWelcomePrompt,
+	getRequestFromHeaders,
 } from './util';
 import type { AgentWelcomeResult } from '../types';
+import { Readable } from 'node:stream';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
@@ -95,6 +98,24 @@ export class NodeServer implements Server {
 			});
 		});
 	}
+
+	private getBufferAsStream(
+		req: IncomingMessage
+	): Promise<ReadableStream<Buffer>> {
+		return new Promise((resolve, reject) => {
+			const chunks: Buffer[] = [];
+			req.on('data', (chunk) => chunks.push(chunk));
+			req.on('end', async () => {
+				const body = Buffer.concat(chunks);
+				const readable = Readable.from(body);
+				resolve(Readable.toWeb(readable) as ReadableStream<Buffer>);
+			});
+			req.on('error', (err) => {
+				reject(err);
+			});
+		});
+	}
+
 	/**
 	 * Gets the headers from the request
 	 */
@@ -117,7 +138,10 @@ export class NodeServer implements Server {
 		const { sdkVersion } = this;
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
-				res.writeHead(200);
+				res.writeHead(200, {
+					'x-agentuity-binary': 'true',
+					'x-agentuity-version': sdkVersion,
+				});
 				res.end();
 				return;
 			}
@@ -227,7 +251,9 @@ export class NodeServer implements Server {
 					return;
 				}
 
-				if (!req.headers?.['content-type']?.includes('json')) {
+				const isBinary = !!req.headers?.['x-agentuity-trigger'];
+
+				if (!isBinary && !req.headers?.['content-type']?.includes('json')) {
 					res.writeHead(400, injectTraceContextToHeaders());
 					res.write('Invalid content type, expected application/json');
 					res.end();
@@ -235,12 +261,15 @@ export class NodeServer implements Server {
 				}
 
 				let payload: IncomingRequest;
-				try {
-					payload = await this.getJSON<IncomingRequest>(req);
-				} catch (err) {
-					this.logger.error('Error parsing request body as json: %s', err);
-					res.writeHead(400, injectTraceContextToHeaders());
-					res.end();
+				if (!isBinary) {
+					try {
+						payload = await this.getJSON<IncomingRequest>(req);
+					} catch (err) {
+						this.logger.error('Error parsing request body as json: %s', err);
+						res.writeHead(400, injectTraceContextToHeaders());
+						res.end();
+						return;
+					}
 				}
 
 				// Create a span for this incoming request
@@ -293,21 +322,33 @@ export class NodeServer implements Server {
 
 							span.setAttribute('@agentuity/agentName', route.agent.name);
 							span.setAttribute('@agentuity/agentId', route.agent.id);
+
+							const runId = span.spanContext().traceId;
+
 							this.logger.debug('request: %s %s', req.method, req.url);
 
 							try {
 								const agentReq = {
-									request: payload as IncomingRequest,
+									body: isBinary
+										? await this.getBufferAsStream(req)
+										: undefined,
+									request: isBinary
+										? getRequestFromHeaders(
+												req.headers as Record<string, string>,
+												runId
+											)
+										: (payload as IncomingRequest),
 									url: req.url ?? '',
 									headers: this.getHeaders(req),
 									setTimeout: (val: number) => req.setTimeout(val),
 								};
 								const routeResult = route.handler(agentReq);
-								const [headers, stream] = createStreamingResponse(
+								const [headers, stream] = await createStreamingResponse(
 									`Agentuity NodeJS/${sdkVersion}`,
 									new Headers(req.headers as Record<string, string>),
 									span,
-									routeResult
+									routeResult,
+									isBinary
 								);
 								res.writeHead(200, injectTraceContextToHeaders(headers));
 								// Ensure headers are sent before streaming
@@ -322,7 +363,11 @@ export class NodeServer implements Server {
 								res.end();
 							} catch (err) {
 								this.logger.error('Server error', err);
-								injectTraceContextToNodeResponse(res);
+								try {
+									injectTraceContextToNodeResponse(res);
+								} catch (err) {
+									this.logger.error('Error injecting trace context: %s', err);
+								}
 								res.writeHead(500);
 								res.end();
 								span.recordException(err as Error);

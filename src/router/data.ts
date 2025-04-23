@@ -16,6 +16,26 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type Arguments = Pick<DataPayload, 'contentType' | 'payload'>;
 
+const toBuffer = async (
+	buffer: Buffer,
+	value: ReadableDataType
+): Promise<Buffer> => {
+	if (value instanceof Uint8Array) {
+		return Buffer.concat([buffer, value]);
+	}
+	if (value instanceof ArrayBuffer) {
+		return Buffer.concat([buffer, Buffer.from(value)]);
+	}
+	if (value instanceof Blob) {
+		const buf = await value.arrayBuffer();
+		return Buffer.concat([buffer, Buffer.from(buf)]);
+	}
+	if (typeof value === 'string') {
+		return Buffer.concat([buffer, Buffer.from(value)]);
+	}
+	throw new Error(`Unsupported value type: ${typeof value}`);
+};
+
 /**
  * The implementation of the Data interface
  */
@@ -24,24 +44,54 @@ export class DataHandler implements Data {
 	private readonly type: string;
 	private isStream = false;
 	private streamLoaded = false;
+	private useBase64 = false;
 	private readstream?:
 		| ReadableStream<ReadableDataType>
 		| AsyncIterable<ReadableDataType>;
 
 	constructor(
 		payload: Arguments,
-		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>
+		stream?: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
+		contentType?: string
 	) {
 		this.payload = payload ?? {
-			contentType: 'application/octet-stream',
+			contentType: contentType ?? 'application/octet-stream',
 			payload: '',
 		};
-		this.type =
-			payload?.contentType === undefined || payload?.contentType === null
+		this.type = contentType
+			? contentType
+			: payload?.contentType === undefined || payload?.contentType === null
 				? 'application/octet-stream'
 				: payload.contentType;
 		this.isStream = this.payload?.payload?.startsWith('blob:') ?? false;
 		this.readstream = stream;
+		this.useBase64 = stream === undefined;
+	}
+
+	public async loadStream() {
+		// TODO: we need to make the getters async so we can load the data from the stream on-demand but that will break the current API
+		if (this.readstream) {
+			let buffer: Buffer = Buffer.alloc(0);
+			if (this.readstream instanceof ReadableStream) {
+				const reader = this.readstream.getReader();
+				while (true) {
+					const { done, value } = await reader.read();
+					if (value) {
+						buffer = await toBuffer(buffer, value);
+					}
+					if (done) {
+						break;
+					}
+				}
+			} else {
+				for await (const chunk of this.readstream) {
+					buffer = await toBuffer(buffer, chunk);
+				}
+			}
+			this.payload.payload = buffer.toString('utf-8');
+			this.streamLoaded = true;
+			this.readstream = undefined;
+		}
 	}
 
 	private getStreamFilename() {
@@ -65,7 +115,9 @@ export class DataHandler implements Data {
 		const filename = this.getStreamFilename();
 		if (filename) {
 			const streamBuf = readFileSync(filename, 'utf-8');
-			this.payload.payload = Buffer.from(streamBuf).toString('base64');
+			this.payload.payload = Buffer.from(streamBuf).toString(
+				this.useBase64 ? 'base64' : 'utf-8'
+			);
 			this.streamLoaded = true;
 		}
 	}
@@ -90,23 +142,26 @@ export class DataHandler implements Data {
 			this.payload.payload === undefined ||
 			this.payload.payload === null
 		) {
-			return Buffer.from([]);
+			return Buffer.alloc(0);
 		}
 		this.ensureStreamLoaded();
 		try {
 			const base64String = this.payload.payload.trim();
 			if (!base64String) {
-				return Buffer.from([]);
+				return Buffer.alloc(0);
 			}
-			const paddedBase64 = base64String.padEnd(
-				Math.ceil(base64String.length / 4) * 4,
-				'='
-			);
-			if (!/^[A-Za-z0-9+/=]+$/.test(paddedBase64)) {
-				console.warn('Invalid base64 string:', paddedBase64);
-				return Buffer.from(base64String, 'utf-8');
+			if (this.useBase64) {
+				const paddedBase64 = base64String.padEnd(
+					Math.ceil(base64String.length / 4) * 4,
+					'='
+				);
+				if (!/^[A-Za-z0-9+/=]+$/.test(paddedBase64)) {
+					console.warn('Invalid base64 string:', paddedBase64);
+					return Buffer.from(base64String, 'utf-8');
+				}
+				return Buffer.from(paddedBase64, 'base64');
 			}
-			return Buffer.from(paddedBase64, 'base64');
+			return Buffer.from(base64String, 'utf-8');
 		} catch (error) {
 			console.error('Error decoding base64:', error);
 			return Buffer.from(this.payload.payload || '', 'utf-8');

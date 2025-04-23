@@ -4,6 +4,7 @@ import type {
 	ServerRoute,
 	IncomingRequest,
 } from './types';
+import type { ReadableStream } from 'node:stream/web';
 import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import {
 	extractTraceContextFromBunRequest,
@@ -14,8 +15,9 @@ import {
 	getRoutesHelpText,
 	createStreamingResponse,
 	toWelcomePrompt,
+	getRequestFromHeaders,
 } from './util';
-import type { AgentWelcomeResult } from '../types';
+import type { AgentWelcomeResult, ReadableDataType } from '../types';
 const idleTimeout = 255; // expressed in seconds
 const timeout = 600;
 
@@ -72,7 +74,12 @@ export class BunServer implements Server {
 						});
 					},
 				},
-				'/_health': new Response('OK'),
+				'/_health': new Response('OK', {
+					headers: {
+						'x-agentuity-binary': 'true',
+						'x-agentuity-version': sdkVersion,
+					},
+				}),
 				'/welcome': {
 					GET: async () => {
 						const result: Record<string, AgentWelcomeResult> = {};
@@ -179,21 +186,6 @@ export class BunServer implements Server {
 						const url = new URL(req.url);
 						const method = req.method;
 
-						if (method !== 'POST') {
-							return new Response('Method not allowed', {
-								status: 405,
-								headers: injectTraceContextToHeaders(),
-							});
-						}
-						if (!req.headers.get('content-type')?.includes('json')) {
-							return new Response(
-								'Invalid Content-Type, Expected application/json',
-								{
-									status: 400,
-									headers: injectTraceContextToHeaders(),
-								}
-							);
-						}
 						this.server?.timeout(req, timeout);
 
 						// Extract trace context from headers
@@ -201,8 +193,6 @@ export class BunServer implements Server {
 
 						// Execute the request handler within the extracted context
 						return context.with(extractedContext, async () => {
-							const body = await req.json();
-
 							// Create a span for this incoming request
 							return trace.getTracer('http-server').startActiveSpan(
 								`HTTP ${method}`,
@@ -241,20 +231,31 @@ export class BunServer implements Server {
 										span.setAttribute('@agentuity/agentId', route.agent.id);
 										logger.debug('request: %s %s', method, url.pathname);
 
+										const isBinary = !!req.headers.get('x-agentuity-trigger');
+										const runId = span.spanContext().traceId;
+
 										try {
 											const routeResult = route.handler({
+												body: isBinary
+													? ((req.body as unknown as
+															| ReadableStream<ReadableDataType>
+															| AsyncIterable<ReadableDataType>) ?? undefined)
+													: undefined,
 												url: req.url,
 												headers: req.headers.toJSON(),
-												request: body as IncomingRequest,
+												request: isBinary
+													? getRequestFromHeaders(req.headers.toJSON(), runId)
+													: ((await req.json()) as IncomingRequest),
 												setTimeout: (val: number) =>
 													this.server?.timeout(req, val),
 											});
 
-											const [headers, stream] = createStreamingResponse(
+											const [headers, stream] = await createStreamingResponse(
 												`Agentuity BunJS/${sdkVersion}`,
 												req.headers,
 												span,
-												routeResult
+												routeResult,
+												isBinary
 											);
 
 											return new Response(stream, {
