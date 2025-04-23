@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- e32f0d8: Add support for remote agent-to-agent invocation
+- e32f0d8: Add support for remote agent-to-agent invocation ([#83](https://github.com/agentuity/sdk-js/pull/83))
 
 All notable changes to this project will be documented in this file.
 
