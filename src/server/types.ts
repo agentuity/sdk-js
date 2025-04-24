@@ -6,6 +6,7 @@ import type {
 	AgentResponseData,
 	AgentWelcome,
 	ReadableDataType,
+	AgentInvocationScope,
 } from '../types';
 
 /**
@@ -13,6 +14,7 @@ import type {
  */
 export interface IncomingRequest extends DataPayload {
 	runId: string;
+	scope: AgentInvocationScope;
 }
 
 /**

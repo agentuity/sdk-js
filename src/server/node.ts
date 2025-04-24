@@ -209,7 +209,9 @@ export class NodeServer implements Server {
 								req.headers['content-type'] || 'application/octet-stream',
 							'User-Agent': req.headers['user-agent'] || '',
 							'x-agentuity-trigger': 'manual',
-							'x-agentuity-metadata': safeStringify(this.getHeaders(req)),
+							'x-agentuity-metadata': safeStringify({
+								headers: this.getHeaders(req),
+							}),
 						},
 					});
 					const respBody = await response.arrayBuffer();

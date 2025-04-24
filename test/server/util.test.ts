@@ -4,7 +4,6 @@ import {
 	safeParse,
 	getRoutesHelpText,
 	toBuffer,
-	Base64StreamHelper,
 } from '../../src/server/util';
 import type { ServerRoute } from '../../src/server/types';
 import type { ReadableDataType } from '../../src/types';
@@ -140,57 +139,6 @@ describe('Utility Functions', () => {
 			await expect(
 				toBuffer(123 as unknown as ReadableDataType)
 			).rejects.toThrow('Invalid data type');
-		});
-	});
-
-	describe('Base64StreamHelper', () => {
-		it('should encode complete chunks correctly', () => {
-			const helper = new Base64StreamHelper();
-			const chunk = Buffer.from('hello');
-			const result = helper.push(chunk);
-
-			expect(result).toBe('aGVs'); // Base64 for "hel"
-
-			const remaining = helper.flush();
-			expect(remaining).toBe('bG8='); // Base64 for "lo"
-		});
-
-		it('should handle multiple chunks correctly', () => {
-			const helper = new Base64StreamHelper();
-
-			const chunk1 = Buffer.from('hello');
-			const result1 = helper.push(chunk1);
-			expect(result1).toBe('aGVs'); // Base64 for "hel"
-
-			const chunk2 = Buffer.from(' world');
-			const result2 = helper.push(chunk2);
-
-			expect(result2).toBe('bG8gd29y'); // Base64 for "lo wor"
-
-			const remaining = helper.flush();
-			expect(remaining).toBe('bGQ='); // Base64 for "ld"
-		});
-
-		it('should handle empty flush', () => {
-			const helper = new Base64StreamHelper();
-
-			const chunk = Buffer.from('abc'); // 3 bytes
-			const result = helper.push(chunk);
-			expect(result).toBe('YWJj'); // Base64 for "abc"
-
-			const remaining = helper.flush();
-			expect(remaining).toBe('');
-		});
-
-		it('should handle empty input', () => {
-			const helper = new Base64StreamHelper();
-
-			const chunk = Buffer.from('');
-			const result = helper.push(chunk);
-			expect(result).toBe('');
-
-			const remaining = helper.flush();
-			expect(remaining).toBe('');
 		});
 	});
 });

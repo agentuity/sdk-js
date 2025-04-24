@@ -10,9 +10,11 @@ import type {
 	InvocationArguments,
 	TriggerType,
 	AgentWelcomePrompt,
+	AgentInvocationScope,
 } from '../types';
 import { injectTraceContextToHeaders } from './otel';
 import type { IncomingRequest, ServerRoute } from './types';
+import { ReadableStream } from 'node:stream/web';
 
 export function safeStringify(obj: unknown) {
 	const seen = new WeakSet();
@@ -71,7 +73,7 @@ export async function toBuffer(data: ReadableDataType) {
 	if (data instanceof Blob) {
 		return Buffer.from(await data.arrayBuffer());
 	}
-	throw new Error('Invalid data type');
+	throw new Error('Invalid data type (toBuffer)');
 }
 
 const isBase64 =
@@ -139,7 +141,7 @@ export async function toWelcomePrompt({
 			contentType,
 		};
 	}
-	throw new Error('Invalid data type');
+	throw new Error('Invalid data type (toWelcomePrompt');
 }
 
 export async function toDataType(
@@ -147,91 +149,101 @@ export async function toDataType(
 	args: InvocationArguments
 ): Promise<{
 	trigger: TriggerType;
-	payload: string;
-	contentType: string;
+	payload: DataHandler;
 	metadata?: JsonObject;
 }> {
+	if (args instanceof DataHandler) {
+		const payload = args as DataHandler;
+		return {
+			trigger,
+			payload,
+		};
+	}
 	if (args.data === null || args.data === undefined) {
 		return {
 			trigger,
-			payload: '',
-			contentType: 'text/plain',
+			payload: new DataHandler('', 'text/plain'),
 			metadata: args.metadata,
 		};
 	}
 	if (typeof args.data === 'string') {
 		return {
 			trigger,
-			payload: Buffer.from(args.data).toString('base64'),
-			contentType: 'text/plain',
+			payload: new DataHandler(args.data, args.contentType ?? 'text/plain'),
 			metadata: args.metadata,
 		};
 	}
 	if (typeof args.data === 'object') {
 		if ('contentType' in args.data) {
-			const value = args.data as Data;
+			const value = args.data as DataHandler;
 			return {
 				trigger,
-				payload: value.base64,
-				contentType: value.contentType,
+				payload: value,
 				metadata: args.metadata,
 			};
 		}
 		if (args.data instanceof ArrayBuffer) {
 			return {
 				trigger,
-				payload: Buffer.from(args.data).toString('base64'),
-				contentType: args.contentType ?? 'application/octet-stream',
+				payload: new DataHandler(
+					Buffer.from(args.data),
+					args.contentType ?? 'application/octet-stream'
+				),
 				metadata: args.metadata,
 			};
 		}
 		if (args.data instanceof Buffer) {
 			return {
 				trigger,
-				payload: args.data.toString('base64'),
-				contentType: args.contentType ?? 'application/octet-stream',
+				payload: new DataHandler(
+					args.data as Buffer,
+					args.contentType ?? 'application/octet-stream'
+				),
 				metadata: args.metadata,
 			};
 		}
 		if (args.data instanceof Blob) {
+			const blob = await args.data.arrayBuffer();
 			return {
 				trigger,
-				payload: Buffer.from(await args.data.arrayBuffer()).toString('base64'),
-				contentType: args.contentType ?? 'application/octet-stream',
+				payload: new DataHandler(
+					Buffer.from(blob),
+					args.contentType ?? 'application/octet-stream'
+				),
 				metadata: args.metadata,
 			};
 		}
 		if (args.data instanceof Uint8Array) {
+			const buffer = Buffer.from(args.data);
 			return {
 				trigger,
-				payload: Buffer.from(args.data).toString('base64'),
-				contentType: args.contentType ?? 'application/octet-stream',
+				payload: new DataHandler(
+					buffer,
+					args.contentType ?? 'application/octet-stream'
+				),
 				metadata: args.metadata,
 			};
 		}
 		if (args.data instanceof ReadableStream) {
-			const reader = args.data.getReader();
-			const chunks: string[] = [];
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				chunks.push(value);
-			}
 			return {
 				trigger,
-				payload: Buffer.from(chunks.join('')).toString('base64'),
-				contentType: args.contentType ?? 'application/octet-stream',
+				payload: new DataHandler(
+					args.data,
+					args.contentType ?? 'application/octet-stream'
+				),
 				metadata: args.metadata,
 			};
 		}
 		return {
 			trigger,
-			payload: Buffer.from(safeStringify(args.data)).toString('base64'),
-			contentType: args.contentType ?? 'application/json',
+			payload: new DataHandler(
+				safeStringify(args.data),
+				args.contentType ?? 'application/json'
+			),
 			metadata: args.metadata,
 		};
 	}
-	throw new Error('Invalid data type');
+	throw new Error('Invalid data type (toDataType)');
 }
 
 export async function fromDataType(
@@ -239,125 +251,83 @@ export async function fromDataType(
 	contentType?: string,
 	metadata?: JsonObject
 ): Promise<AgentResponseData> {
+	if (data instanceof DataHandler) {
+		return {
+			data,
+			metadata,
+		};
+	}
 	const response: AgentResponseData = {
 		data: null as unknown as DataHandler, // Will be set in each case
 		metadata, // Always include metadata
 	};
 
 	if (data === null || data === undefined) {
-		response.data = new DataHandler({
-			contentType: contentType ?? 'text/plain',
-			payload: '',
-		});
+		response.data = new DataHandler('', 'text/plain');
 		return response;
 	}
 
 	if (typeof data === 'string') {
-		response.data = new DataHandler({
-			contentType: contentType ?? 'text/plain',
-			payload: Buffer.from(data).toString('base64'),
-		});
+		response.data = new DataHandler(data, contentType ?? 'text/plain');
 		return response;
 	}
 
 	if (typeof data === 'object') {
 		if ('contentType' in data) {
 			const value = data as Data;
-			response.data = new DataHandler({
-				contentType: value.contentType,
-				payload: value.base64,
-			});
+			response.data = new DataHandler(await value.text(), value.contentType);
 			return response;
 		}
 
 		if (data instanceof ArrayBuffer) {
-			response.data = new DataHandler({
-				contentType: contentType ?? 'application/octet-stream',
-				payload: Buffer.from(data).toString('base64'),
-			});
+			response.data = new DataHandler(
+				Buffer.from(data),
+				contentType ?? 'application/octet-stream'
+			);
 			return response;
 		}
 
 		if (data instanceof Buffer) {
-			response.data = new DataHandler({
-				contentType: contentType ?? 'application/octet-stream',
-				payload: data.toString('base64'),
-			});
+			response.data = new DataHandler(
+				data,
+				contentType ?? 'application/octet-stream'
+			);
 			return response;
 		}
 
 		if (data instanceof Blob) {
-			response.data = new DataHandler({
-				contentType: contentType ?? 'application/octet-stream',
-				payload: Buffer.from(await data.arrayBuffer()).toString('base64'),
-			});
+			const buffer = await data.arrayBuffer();
+			response.data = new DataHandler(
+				Buffer.from(buffer),
+				contentType ?? 'application/octet-stream'
+			);
 			return response;
 		}
 
 		if (data instanceof Uint8Array) {
-			response.data = new DataHandler({
-				contentType: contentType ?? 'application/octet-stream',
-				payload: Buffer.from(data).toString('base64'),
-			});
+			response.data = new DataHandler(
+				Buffer.from(data),
+				contentType ?? 'application/octet-stream'
+			);
 			return response;
 		}
 
 		if (data instanceof ReadableStream) {
-			const reader = data.getReader();
-			let buffer: Uint8Array = new Uint8Array();
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				buffer = new Uint8Array([...buffer, ...value]);
-			}
-			response.data = new DataHandler({
-				contentType: contentType ?? 'application/octet-stream',
-				payload: Buffer.from(buffer).toString('base64'),
-			});
+			response.data = new DataHandler(
+				data as unknown as ReadableStream<ReadableDataType>,
+				contentType ?? 'application/octet-stream'
+			);
 			return response;
 		}
 
-		response.data = new DataHandler({
-			contentType: contentType ?? 'application/json',
-			payload: Buffer.from(safeStringify(data)).toString('base64'),
-		});
+		response.data = new DataHandler(
+			safeStringify(data),
+			contentType ?? 'application/json'
+		);
 		return response;
 	}
 
-	throw new Error('Invalid data type');
-}
-
-// a few bits of the code here are taken from https://github.com/marceljuenemann/base64-stream
-// https://github.com/mazira/base64-stream/blob/master/lib/encode.js
-export class Base64StreamHelper {
-	private extra: Buffer | null = null;
-
-	push(_chunk: Buffer): string {
-		let chunk = _chunk;
-		if (this.extra) {
-			chunk = Buffer.concat([this.extra, _chunk]);
-			this.extra = null;
-		}
-
-		// 3 bytes are represented by 4 characters, so we can only encode in groups of 3 bytes
-		const remaining = chunk.length % 3;
-
-		if (remaining !== 0) {
-			// Store the extra bytes for later
-			this.extra = Buffer.from(chunk.subarray(chunk.length - remaining));
-			chunk = Buffer.from(chunk.subarray(0, chunk.length - remaining));
-		}
-
-		return chunk.toString('base64');
-	}
-	flush(): string {
-		if (this.extra) {
-			const value = this.extra.toString('base64');
-			this.extra = null;
-			return value;
-		}
-		return '';
-	}
+	throw new Error('Invalid data type (fromDataType)');
 }
 
 export async function createStreamingResponse(
@@ -391,7 +361,8 @@ export async function createStreamingResponse(
 		responseheaders,
 		new ReadableStream({
 			async start(controller) {
-				const reader = resp.data.stream.getReader();
+				const stream = await resp.data.stream();
+				const reader = stream.getReader();
 				while (true) {
 					const { done, value } = await reader.read();
 					if (value) {
@@ -409,23 +380,105 @@ export function getRequestFromHeaders(
 	headers: Record<string, string>,
 	runId: string
 ): IncomingRequest {
-	let trigger: TriggerType = 'manual';
-	const metadata: Record<string, string> = {};
-	for (const [key, value] of Object.entries(headers)) {
-		if (key.startsWith('x-agentuity-')) {
-			const name = key.slice(12);
-			if (name === 'trigger') {
-				trigger = value as TriggerType;
-			} else {
-				metadata[name] = value;
-			}
-		}
+	const metadata = metadataFromHeaders(headers);
+	const trigger = metadata.trigger as TriggerType;
+	let scope: AgentInvocationScope = 'local';
+	if ('scope' in metadata) {
+		scope = metadata.scope as AgentInvocationScope;
+		// biome-ignore lint/performance/noDelete: deleting scope
+		delete metadata.scope;
 	}
+	if ('scope' in metadata) {
+		scope = metadata.scope as AgentInvocationScope;
+		// biome-ignore lint/performance/noDelete: deleting scope
+		delete metadata.scope;
+	}
+	// biome-ignore lint/performance/noDelete: deleting trigger
+	delete metadata.trigger;
 	return {
 		contentType: headers['content-type'] ?? 'application/octet-stream',
 		metadata,
-		payload: '',
 		runId,
 		trigger,
+		scope,
 	};
+}
+
+/**
+ * Extracts metadata from headers
+ *
+ * @param headers - The headers to extract metadata from
+ * @returns The metadata
+ */
+export function metadataFromHeaders(headers: Record<string, string>) {
+	console.log('metadataFromHeaders>>', headers);
+	const metadata: JsonObject = {};
+	for (const [key, value] of Object.entries(headers)) {
+		if (key.startsWith('x-agentuity-')) {
+			if (key === 'x-agentuity-metadata') {
+				const md = safeParse(value) as JsonObject;
+				if (md) {
+					for (const [k, v] of Object.entries(md)) {
+						metadata[k] = v;
+					}
+				}
+				continue;
+			}
+			const mdkey = key.substring(12);
+			if (value.charAt(0) === '{' && value.charAt(value.length - 1) === '}') {
+				metadata[mdkey] = safeParse(value);
+			} else {
+				metadata[mdkey] = value;
+			}
+		}
+	}
+	if (
+		'headers' in metadata &&
+		typeof metadata.headers === 'object' &&
+		metadata.headers
+	) {
+		// check to see if we have embedded headers metadata and if so, merge it into the main metadata
+		for (const [key, value] of Object.entries(metadata.headers)) {
+			if (key.startsWith('x-agentuity-')) {
+				if (typeof value === 'string') {
+					const mdkey = key.substring(12);
+					if (
+						value.charAt(0) === '{' &&
+						value.charAt(value.length - 1) === '}'
+					) {
+						metadata[mdkey] = safeParse(value);
+					} else {
+						metadata[mdkey] = value;
+					}
+					delete (metadata.headers as JsonObject)[key];
+				}
+			}
+		}
+	}
+	return metadata;
+}
+
+export function setMetadataInHeaders(
+	headers: Record<string, string>,
+	metadata: JsonObject
+) {
+	for (const [key, value] of Object.entries(metadata)) {
+		if (value === null || value === undefined) {
+			continue;
+		}
+		switch (typeof value) {
+			case 'string':
+				headers[`x-agentuity-${key}`] = value;
+				break;
+			case 'number':
+				headers[`x-agentuity-${key}`] = value.toString();
+				break;
+			case 'boolean':
+				headers[`x-agentuity-${key}`] = value.toString();
+				break;
+			default:
+				headers[`x-agentuity-${key}`] = safeStringify(value);
+				break;
+		}
+	}
 }

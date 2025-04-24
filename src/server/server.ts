@@ -174,5 +174,6 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		vector,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
+		scope: 'local',
 	} as unknown as AgentContext;
 }

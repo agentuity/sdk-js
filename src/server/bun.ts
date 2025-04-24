@@ -149,7 +149,7 @@ export class BunServer implements Server {
 										'Content-Type':
 											headers['content-type'] ?? 'application/octet-stream',
 										'x-agentuity-trigger': 'manual',
-										'x-agentuity-metadata': safeStringify(headers),
+										'x-agentuity-metadata': safeStringify({ headers }),
 									},
 								}
 							);
@@ -241,7 +241,7 @@ export class BunServer implements Server {
 												routeResult
 											);
 
-											return new Response(stream, {
+											return new Response(stream as unknown as BodyInit, {
 												status: 200,
 												headers,
 											});

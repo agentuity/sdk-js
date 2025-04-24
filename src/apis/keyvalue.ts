@@ -1,3 +1,4 @@
+import type { ReadableStream } from 'node:stream/web';
 import type {
 	DataResult,
 	DataResultFound,
@@ -5,6 +6,7 @@ import type {
 	DataType,
 	KeyValueStorage,
 	KeyValueStorageSetParams,
+	ReadableDataType,
 } from '../types';
 import { DELETE, GET, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
@@ -50,15 +52,15 @@ export default class KeyValueAPI implements KeyValueStorage {
 					return { exists: false } as DataResultNotFound;
 				}
 				if (resp.status === 200) {
-					const buffer = await Buffer.from(await resp.response.arrayBuffer());
 					span.addEvent('hit');
+					const body = resp.response
+						.body as unknown as ReadableStream<ReadableDataType>;
 					const result: DataResultFound = {
 						exists: true,
-						data: new DataHandler({
-							payload: buffer.toString('base64'),
-							contentType:
-								resp.headers.get('content-type') ?? 'application/octet-stream',
-						}),
+						data: new DataHandler(
+							body,
+							resp.headers.get('content-type') ?? 'application/octet-stream'
+						),
 					};
 					span.setStatus({ code: SpanStatusCode.OK });
 					return result;
@@ -121,7 +123,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					ttlstr = `/${params.ttl}`;
 				}
 
-				let buffer = datavalue.data.buffer;
+				let buffer: Buffer;
 
 				const headers: Record<string, string> = {
 					'Content-Type': datavalue.data.contentType,
@@ -131,9 +133,11 @@ export default class KeyValueAPI implements KeyValueStorage {
 					datavalue.data.contentType.includes('text') ||
 					datavalue.data.contentType.includes('json')
 				) {
-					const compressed = await gzipString(datavalue.data.text);
+					const compressed = await gzipString(await datavalue.data.text());
 					buffer = compressed;
 					headers['Content-Encoding'] = 'gzip';
+				} else {
+					buffer = await datavalue.data.buffer();
 				}
 
 				const resp = await PUT(

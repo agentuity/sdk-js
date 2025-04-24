@@ -17,6 +17,11 @@ export type TriggerType =
 	| 'agent';
 
 /**
+ * The scope of the agent invocation
+ */
+export type AgentInvocationScope = 'local' | 'remote';
+
+/**
  * Data is a generic container for data and provides easy access to the data in different formats. Internally
  * the data is stored as a base64 encoded string so that it can be easily converted to different formats
  * (both textual and binary).
@@ -31,37 +36,37 @@ export interface Data {
 	/**
 	 * an base64 encoded string of the data
 	 */
-	base64: string;
+	base64(): Promise<string>;
 
 	/**
 	 * the data represented as a string
 	 */
-	text: string;
+	text(): Promise<string>;
 
 	/**
 	 * the JSON data. If the data is not JSON, this will throw an error.
 	 */
-	json: Json;
+	json(): Promise<Json>;
 
 	/**
 	 * get the data as an object of the given type T. If the data is not JSON, this will throw an error.
 	 */
-	object<T>(): T;
+	object<T>(): Promise<T>;
 
 	/**
 	 * the binary data represented as a Uint8Array<ArrayBuffer>
 	 */
-	binary: Uint8Array;
+	binary(): Promise<Uint8Array>;
 
 	/**
 	 * the binary data represented as a Buffer
 	 */
-	buffer: Buffer;
+	buffer(): Promise<Buffer>;
 
 	/**
 	 * the stream of the data
 	 */
-	stream: ReadableStream<ReadableDataType>;
+	stream(): Promise<ReadableStream<ReadableDataType>>;
 }
 
 export type ReadableDataType =
@@ -301,7 +306,6 @@ export interface InvocationArguments {
 
 export interface RemoteAgentResponse {
 	data: Data;
-	contentType: string;
 	metadata?: JsonObject;
 }
 
@@ -382,6 +386,11 @@ export interface AgentContext {
 	 * the project id
 	 */
 	projectId: string;
+
+	/**
+	 * scope of the agent invocation
+	 */
+	scope: AgentInvocationScope;
 
 	/**
 	 * the agent configuration
@@ -580,7 +589,8 @@ export interface AgentResponse {
 	 */
 	stream(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
-		contentType?: string
+		contentType?: string,
+		metadata?: JsonObject
 	): Promise<AgentResponseData>;
 }
 
@@ -655,6 +665,5 @@ export interface Session {
 export interface DataPayload {
 	trigger: TriggerType;
 	contentType: string;
-	payload?: string;
 	metadata?: JsonObject;
 }

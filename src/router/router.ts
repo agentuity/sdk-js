@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { ReadableStream } from 'node:stream/web';
 import {
 	SpanStatusCode,
 	type Exception,
@@ -19,6 +20,7 @@ import type {
 	AgentConfig,
 	AgentRedirectResponse,
 	Data,
+	ReadableDataType,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
@@ -291,7 +293,15 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 				},
 				async () => {
 					return await context.with(spanContext, async () => {
-						const request = new AgentRequestHandler(req.request, req.body);
+						const body = req.body
+							? (req.body as unknown as ReadableStream<ReadableDataType>)
+							: new ReadableStream<ReadableDataType>();
+						const request = new AgentRequestHandler(
+							req.request.trigger,
+							body,
+							req.request.contentType,
+							req.request.metadata ?? {}
+						);
 						const response = new AgentResponseHandler();
 						const context = {
 							...config.context,
@@ -299,9 +309,9 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							runId,
 							getAgent: (params: GetAgentRequestParams) =>
 								resolver.getAgent(params),
+							scope: req.request.scope,
 						} as AgentContext;
 						try {
-							await request.data.loadStream();
 							let handlerResponse = await config.handler(
 								request,
 								response,
