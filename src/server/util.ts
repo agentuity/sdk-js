@@ -7,7 +7,6 @@ import type {
 	Data,
 	JsonObject,
 	ReadableDataType,
-	InvocationArguments,
 	TriggerType,
 	AgentWelcomePrompt,
 	AgentInvocationScope,
@@ -144,104 +143,45 @@ export async function toWelcomePrompt({
 	throw new Error('Invalid data type (toWelcomePrompt');
 }
 
-export async function toDataType(
-	trigger: TriggerType,
-	args: InvocationArguments
-): Promise<{
-	trigger: TriggerType;
-	payload: DataHandler;
-	metadata?: JsonObject;
-}> {
+export async function dataTypeToBuffer(args: DataType): Promise<Buffer> {
 	if (args instanceof DataHandler) {
 		const payload = args as DataHandler;
-		return {
-			trigger,
-			payload,
-		};
+		return payload.buffer();
 	}
-	if (args.data === null || args.data === undefined) {
-		return {
-			trigger,
-			payload: new DataHandler('', 'text/plain'),
-			metadata: args.metadata,
-		};
+	if (args === null || args === undefined) {
+		return Buffer.alloc(0);
 	}
-	if (typeof args.data === 'string') {
-		return {
-			trigger,
-			payload: new DataHandler(args.data, args.contentType ?? 'text/plain'),
-			metadata: args.metadata,
-		};
+	if (typeof args === 'string') {
+		return Buffer.from(args, 'utf-8');
 	}
-	if (typeof args.data === 'object') {
-		if ('contentType' in args.data) {
-			const value = args.data as DataHandler;
-			return {
-				trigger,
-				payload: value,
-				metadata: args.metadata,
-			};
+	if (typeof args === 'object') {
+		if (args instanceof DataHandler) {
+			return args.buffer();
 		}
-		if (args.data instanceof ArrayBuffer) {
-			return {
-				trigger,
-				payload: new DataHandler(
-					Buffer.from(args.data),
-					args.contentType ?? 'application/octet-stream'
-				),
-				metadata: args.metadata,
-			};
+		if (args instanceof ArrayBuffer) {
+			return Buffer.from(args);
 		}
-		if (args.data instanceof Buffer) {
-			return {
-				trigger,
-				payload: new DataHandler(
-					args.data as Buffer,
-					args.contentType ?? 'application/octet-stream'
-				),
-				metadata: args.metadata,
-			};
+		if (args instanceof Buffer) {
+			return args;
 		}
-		if (args.data instanceof Blob) {
-			const blob = await args.data.arrayBuffer();
-			return {
-				trigger,
-				payload: new DataHandler(
-					Buffer.from(blob),
-					args.contentType ?? 'application/octet-stream'
-				),
-				metadata: args.metadata,
-			};
+		if (args instanceof Blob) {
+			const blob = await args.arrayBuffer();
+			return Buffer.from(blob);
 		}
-		if (args.data instanceof Uint8Array) {
-			const buffer = Buffer.from(args.data);
-			return {
-				trigger,
-				payload: new DataHandler(
-					buffer,
-					args.contentType ?? 'application/octet-stream'
-				),
-				metadata: args.metadata,
-			};
+		if (args instanceof Uint8Array) {
+			return Buffer.from(args);
 		}
-		if (args.data instanceof ReadableStream) {
-			return {
-				trigger,
-				payload: new DataHandler(
-					args.data,
-					args.contentType ?? 'application/octet-stream'
-				),
-				metadata: args.metadata,
-			};
+		if (args instanceof ReadableStream) {
+			const reader = args.getReader();
+			let buffer = Buffer.alloc(0);
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				buffer = Buffer.concat([buffer, value]);
+			}
+			return buffer;
 		}
-		return {
-			trigger,
-			payload: new DataHandler(
-				safeStringify(args.data),
-				args.contentType ?? 'application/json'
-			),
-			metadata: args.metadata,
-		};
+		return Buffer.from(safeStringify(args));
 	}
 	throw new Error('Invalid data type (toDataType)');
 }
@@ -273,9 +213,8 @@ export async function fromDataType(
 	}
 
 	if (typeof data === 'object') {
-		if ('contentType' in data) {
-			const value = data as Data;
-			response.data = new DataHandler(await value.text(), value.contentType);
+		if (data instanceof DataHandler) {
+			response.data = data;
 			return response;
 		}
 

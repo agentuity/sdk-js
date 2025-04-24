@@ -50,7 +50,7 @@ export class DataHandler implements Data {
 			| AsyncIterable<ReadableDataType>,
 		contentType: string
 	) {
-		this.type = contentType;
+		this.type = contentType ?? 'application/octet-stream';
 		if (typeof stream === 'string') {
 			this._buffer = Buffer.from(stream);
 		} else if (stream instanceof Buffer) {

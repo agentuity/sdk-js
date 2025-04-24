@@ -60,7 +60,7 @@ export default class AgentRequestHandler implements AgentRequest {
 	 * get the metadata value of the request
 	 */
 	get(key: string, defaultValue?: Json) {
-		const metadata = this.metadata;
+		const metadata = this._metadata;
 		if (key in metadata) {
 			return metadata[key];
 		}

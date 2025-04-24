@@ -10,10 +10,10 @@ import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
 import {
-	toDataType,
 	safeStringify,
 	metadataFromHeaders,
 	setMetadataInHeaders,
+	dataTypeToBuffer,
 } from './util';
 import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
@@ -75,10 +75,7 @@ class LocalAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body =
-					args?.data instanceof DataHandler
-						? await args.data.blob()
-						: undefined;
+				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
 				const headers: Record<string, string> = {
 					'Content-Type': args?.contentType ?? 'application/octet-stream',
 					'x-agentuity-trigger': 'agent',
@@ -188,14 +185,10 @@ class RemoteAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body = await toDataType(
-					'agent',
-					args as unknown as InvocationArguments
-				);
 				const sdkVersion = getSDKVersion();
 				const headers: Record<string, string> = {
 					Authorization: `Bearer ${this.authorization}`,
-					'Content-Type': body.payload.contentType,
+					'Content-Type': args?.contentType ?? 'application/octet-stream',
 					'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 					'x-agentuity-scope': 'remote',
 					'x-agentuity-trigger': 'agent',
@@ -204,10 +197,11 @@ class RemoteAgentInvoker implements RemoteAgent {
 					setMetadataInHeaders(headers, args.metadata);
 				}
 				injectTraceContextToHeaders(headers);
+				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
 				this.logger.info('invoking remote agent');
 				const resp = await fetch(this.url, {
 					headers,
-					body: await body.payload.blob(),
+					body,
 					method: 'POST',
 				});
 				this.logger.info('invoked remote agent, returned: %d', resp.status);
