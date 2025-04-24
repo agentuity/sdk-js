@@ -1,5 +1,16 @@
 # @agentuity/sdk Changelog
 
+## 0.0.106-next.0
+
+### Patch Changes
+
+- Breaking Change! Refactor the data API to have async methods instead of static properties so we can fully take advantage of the new streaming capabilities
+- Test case fixes
+- Simplification of code
+- Fix trigger issue
+- Deprecate the /run/:id route
+- Prerelease breaking SDK changes for production testing
+
 ## 0.0.105
 
 ### Patch Changes
