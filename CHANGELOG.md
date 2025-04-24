@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- f6e04cf: Add support for remote agent handoff
+- f6e04cf: Add support for remote agent handoff ([#85](https://github.com/agentuity/sdk-js/pull/85))
 
 ## 0.0.104
 
