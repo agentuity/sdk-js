@@ -333,7 +333,6 @@ export function getRequestFromHeaders(
  * @returns The metadata
  */
 export function metadataFromHeaders(headers: Record<string, string>) {
-	console.log('metadataFromHeaders>>', headers);
 	const metadata: JsonObject = {};
 	for (const [key, value] of Object.entries(headers)) {
 		if (key.startsWith('x-agentuity-')) {
