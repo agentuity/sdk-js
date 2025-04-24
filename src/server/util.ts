@@ -303,17 +303,17 @@ export function getRequestFromHeaders(
 	runId: string
 ): IncomingRequest {
 	const metadata = metadataFromHeaders(headers);
-	const trigger = metadata.trigger as TriggerType;
+	let trigger = metadata.trigger as TriggerType;
 	let scope: AgentInvocationScope = 'local';
 	if ('scope' in metadata) {
 		scope = metadata.scope as AgentInvocationScope;
 		// biome-ignore lint/performance/noDelete: deleting scope
 		delete metadata.scope;
 	}
-	if ('scope' in metadata) {
-		scope = metadata.scope as AgentInvocationScope;
+	if ('trigger' in metadata) {
+		trigger = metadata.trigger as TriggerType;
 		// biome-ignore lint/performance/noDelete: deleting scope
-		delete metadata.scope;
+		delete metadata.trigger;
 	}
 	// biome-ignore lint/performance/noDelete: deleting trigger
 	delete metadata.trigger;
@@ -321,7 +321,7 @@ export function getRequestFromHeaders(
 		contentType: headers['content-type'] ?? 'application/octet-stream',
 		metadata,
 		runId,
-		trigger,
+		trigger: trigger ?? 'manual',
 		scope,
 	};
 }
