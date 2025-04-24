@@ -41,14 +41,14 @@ export function safeParse(text: string, defaultValue?: unknown) {
 export function getRoutesHelpText(host: string, routes: ServerRoute[]) {
 	const buffer = ['The following Agent routes are available:', ''];
 	for (const route of routes) {
-		buffer.push(`${route.method} /run${route.path} [${route.agent.name}]`);
+		buffer.push(`${route.method} ${route.path} [${route.agent.name}]`);
 	}
 	buffer.push('');
 	if (process.platform === 'darwin' || process.platform === 'linux') {
 		buffer.push('Example usage:');
 		buffer.push('');
 		buffer.push(
-			`curl http://${host}/run${routes[0].path} \\\n\t--json '{"prompt":"Hello"}'`
+			`curl http://${host}${routes[0].path} \\\n\t--json '{"prompt":"Hello"}'`
 		);
 		buffer.push('');
 	}

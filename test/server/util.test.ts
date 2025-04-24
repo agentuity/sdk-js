@@ -89,12 +89,12 @@ describe('Utility Functions', () => {
 
 			const result = getRoutesHelpText('localhost:3000', routes);
 			expect(result).toContain('The following Agent routes are available:');
-			expect(result).toContain('GET /run/test [TestAgent]');
-			expect(result).toContain('POST /run/another [AnotherAgent]');
+			expect(result).toContain('GET /test [TestAgent]');
+			expect(result).toContain('POST /another [AnotherAgent]');
 
 			if (process.platform === 'darwin' || process.platform === 'linux') {
 				expect(result).toContain('Example usage:');
-				expect(result).toContain('curl http://localhost:3000/run/test');
+				expect(result).toContain('curl http://localhost:3000/test');
 			}
 		});
 	});
