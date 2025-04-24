@@ -303,8 +303,10 @@ export class NodeServer implements Server {
 								const reader = stream.getReader();
 								while (true) {
 									const { done, value } = await reader.read();
+									if (value) {
+										res.write(value);
+									}
 									if (done) break;
-									res.write(value);
 								}
 								res.end();
 							} catch (err) {

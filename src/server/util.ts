@@ -295,23 +295,7 @@ export async function createStreamingResponse(
 
 	span.setStatus({ code: SpanStatusCode.OK });
 
-	return [
-		responseheaders,
-		new ReadableStream({
-			async start(controller) {
-				const stream = await resp.data.stream();
-				const reader = stream.getReader();
-				while (true) {
-					const { done, value } = await reader.read();
-					if (value) {
-						controller.enqueue(value);
-					}
-					if (done) break;
-				}
-				controller.close();
-			},
-		}),
-	];
+	return [responseheaders, await resp.data.stream()];
 }
 
 export function getRequestFromHeaders(
