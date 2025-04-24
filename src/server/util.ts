@@ -4,7 +4,6 @@ import { DataHandler } from '../router/data';
 import type {
 	AgentResponseData,
 	DataType,
-	Data,
 	JsonObject,
 	ReadableDataType,
 	TriggerType,
