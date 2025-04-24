@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "@agentuity/sdk": "0.0.105"
+  },
+  "changesets": [
+    "old-candles-admire"
+  ]
+}
