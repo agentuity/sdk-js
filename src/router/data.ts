@@ -5,10 +5,13 @@ import { safeParse } from '../server/util';
 const invalidJsonSymbol = Symbol('invalid json');
 
 // regex to split the data into chunks
-const chunkingRegexp: RegExp = /[^\n]*\n/m;
+const chunkingRegexp = {
+	word: /\S+\s+/m,
+	line: /\n+/m,
+};
 
 // milliseconds to wait between chunks to smooth out the stream
-const chunkSmoothing = 30;
+const chunkSmoothing = 10;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -168,6 +171,7 @@ export class DataHandler implements Data {
 		}
 		const dataPromise = this.data();
 		const chunkable = this.isTextChunkable();
+		const contentType = this.contentType;
 		return new ReadableStream({
 			async start(controller) {
 				const data = await dataPromise;
@@ -176,14 +180,19 @@ export class DataHandler implements Data {
 					controller.close();
 					return;
 				}
+				const chunkby = contentType.startsWith('text/') ? 'word' : 'line';
+				const re = chunkingRegexp[chunkby];
 				let match: RegExpExecArray | null;
 				let buffer = data.toString('utf-8');
-				match = chunkingRegexp.exec(buffer);
+				match = re.exec(buffer);
 				while (match !== null) {
 					const chunk = match[0];
 					controller.enqueue(Buffer.from(chunk));
 					buffer = buffer.slice(chunk.length);
-					match = chunkingRegexp.exec(buffer);
+					match = re.exec(buffer);
+					if (!match) {
+						break;
+					}
 					await sleep(chunkSmoothing);
 				}
 				// in case we have a partial chunk remaining, we need to enqueue it
