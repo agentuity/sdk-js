@@ -1,5 +1,32 @@
 # @agentuity/sdk Changelog
 
+## 0.0.106-next.1
+
+### Breaking Changes
+
+- 24a34bc: Refactor the data API to have async methods instead of static properties to fully take advantage of streaming capabilities
+
+### Deprecated
+
+- 1bf6d92: Deprecate the /run/:id route
+
+### Fixed
+
+- bd8dfb9: Fix issue with attempting to read stream more than once
+- c33c519: Fix multiple reads of the stream, ensure streams are only read once
+- b379538: Fix trigger issue
+
+### Changed
+
+- 49b6db5: Prerelease breaking SDK changes for production testing
+- 6be53f6: Update instructions for default route
+- c49dc33: More simplification
+
+### Removed
+
+- f0812e7: Remove unused code
+- bb3043e: Remove console logs
+
 ## 0.0.105
 
 ### Patch Changes
