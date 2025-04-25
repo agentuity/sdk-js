@@ -1,4 +1,3 @@
-import type { ReadableStream } from 'node:stream/web';
 import type {
 	DataResult,
 	DataResultFound,
@@ -6,14 +5,13 @@ import type {
 	DataType,
 	KeyValueStorage,
 	KeyValueStorageSetParams,
-	ReadableDataType,
 } from '../types';
 import { DELETE, GET, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { fromDataType } from '../server/util';
 import { DataHandler } from '../router/data';
-import { gzipString } from '../server/gzip';
+import { gunzipBuffer, gzipString } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -53,8 +51,10 @@ export default class KeyValueAPI implements KeyValueStorage {
 				}
 				if (resp.status === 200) {
 					span.addEvent('hit');
-					const body = resp.response
-						.body as unknown as ReadableStream<ReadableDataType>;
+					let body = Buffer.from(await resp.response.arrayBuffer());
+					if (resp.headers.get('content-encoding') === 'gzip') {
+						body = await gunzipBuffer(body);
+					}
 					const result: DataResultFound = {
 						exists: true,
 						data: new DataHandler(
