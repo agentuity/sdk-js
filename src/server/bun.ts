@@ -138,6 +138,9 @@ export class BunServer implements Server {
 							this.server?.timeout(req, timeout);
 							const url = new URL(req.url);
 							const id = url.pathname.slice(5);
+							console.error(
+								`this route is deprecated and will be removed in a future version. you can now just use /${id}`
+							);
 							const body = await req.arrayBuffer();
 							const headers = req.headers.toJSON();
 							const resp = await fetch(
@@ -149,7 +152,7 @@ export class BunServer implements Server {
 										'Content-Type':
 											headers['content-type'] ?? 'application/octet-stream',
 										'x-agentuity-trigger': 'manual',
-										'x-agentuity-metadata': safeStringify(headers),
+										'x-agentuity-metadata': safeStringify({ headers }),
 									},
 								}
 							);
@@ -241,7 +244,7 @@ export class BunServer implements Server {
 												routeResult
 											);
 
-											return new Response(stream, {
+											return new Response(stream as unknown as BodyInit, {
 												status: 200,
 												headers,
 											});

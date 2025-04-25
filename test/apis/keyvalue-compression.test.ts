@@ -116,17 +116,6 @@ describe('KeyValue API Compression', () => {
 			const key = 'test-key';
 			const value = new Uint8Array([1, 2, 3, 4]);
 
-			mock.module('../../src/server/util', () => ({
-				fromDataType: () =>
-					Promise.resolve({
-						data: {
-							contentType: 'application/octet-stream',
-							base64: 'binary-data-base64',
-							text: undefined,
-						},
-					}),
-			}));
-
 			await keyValueAPI.set(name, key, value);
 
 			expect(mockGzipString).not.toHaveBeenCalled();

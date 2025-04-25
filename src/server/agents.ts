@@ -3,15 +3,18 @@ import type {
 	RemoteAgent,
 	InvocationArguments,
 	RemoteAgentResponse,
-	DataPayload,
 	ReadableDataType,
-	JsonObject,
 } from '../types';
 import type { ReadableStream } from 'node:stream/web';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import type { AgentConfig } from '../types';
-import { toDataType, safeStringify, safeParse } from './util';
+import {
+	safeStringify,
+	metadataFromHeaders,
+	setMetadataInHeaders,
+	dataTypeToBuffer,
+} from './util';
 import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
 import { getSDKVersion, getTracer, recordException } from '../router/router';
@@ -61,7 +64,7 @@ class LocalAgentInvoker implements RemoteAgent {
 				attributes: {
 					'remote.agentId': this.id,
 					'remote.agentName': this.name,
-					scope: 'local',
+					'@agentuity/scope': 'local',
 				},
 			},
 			currentContext
@@ -72,26 +75,34 @@ class LocalAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body = await toDataType(
-					'agent',
-					args as unknown as InvocationArguments
-				);
-				const headers = { 'Content-Type': 'application/json' };
+				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
+				const headers: Record<string, string> = {
+					'Content-Type': args?.contentType ?? 'application/octet-stream',
+					'x-agentuity-trigger': 'agent',
+				};
+				if (args?.metadata) {
+					setMetadataInHeaders(headers, args.metadata);
+				}
 				injectTraceContextToHeaders(headers);
 				const resp = await fetch(`http://127.0.0.1:${this.port}/${this.id}`, {
 					method: 'POST',
-					body: safeStringify(body),
+					body,
 					headers,
 				});
 				if (resp.ok) {
-					const result = (await resp.json()) as DataPayload;
 					span.setAttribute('http.status_code', resp.status.toString());
-					span.setStatus({ code: SpanStatusCode.OK });
-					return {
-						data: new DataHandler(result),
-						contentType: result.contentType,
-						metadata: result.metadata,
-					};
+					if (resp.body) {
+						span.setStatus({ code: SpanStatusCode.OK });
+						return {
+							data: new DataHandler(
+								resp.body as unknown as ReadableStream<ReadableDataType>,
+								resp.headers.get('content-type') ?? 'application/octet-stream'
+							),
+							contentType:
+								resp.headers.get('content-type') ?? 'application/octet-stream',
+							metadata: metadataFromHeaders(resp.headers.toJSON()),
+						};
+					}
 				}
 				throw new Error(await resp.text());
 			} catch (ex) {
@@ -163,7 +174,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					'@agentuity/orgId': this.orgId,
 					'@agentuity/projectId': this.projectId,
 					'@agentuity/transactionId': this.transactionId,
-					scope: 'remote',
+					'@agentuity/scope': 'remote',
 				},
 			},
 			currentContext
@@ -174,21 +185,23 @@ class RemoteAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body = await toDataType(
-					'agent',
-					args as unknown as InvocationArguments
-				);
 				const sdkVersion = getSDKVersion();
-				const headers = {
+				const headers: Record<string, string> = {
 					Authorization: `Bearer ${this.authorization}`,
-					'Content-Type': body.contentType,
+					'Content-Type': args?.contentType ?? 'application/octet-stream',
 					'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
+					'x-agentuity-scope': 'remote',
+					'x-agentuity-trigger': 'agent',
 				};
+				if (args?.metadata) {
+					setMetadataInHeaders(headers, args.metadata);
+				}
 				injectTraceContextToHeaders(headers);
+				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
 				this.logger.info('invoking remote agent');
 				const resp = await fetch(this.url, {
 					headers,
-					body: Buffer.from(body.payload, 'base64').buffer,
+					body,
 					method: 'POST',
 				});
 				this.logger.info('invoked remote agent, returned: %d', resp.status);
@@ -202,29 +215,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					});
 					throw new Error(await resp.text());
 				}
-				const metadata: JsonObject = {};
-				for (const [key, value] of Object.entries(resp.headers.toJSON())) {
-					if (key.startsWith('x-agentuity-')) {
-						if (key === 'x-agentuity-metadata') {
-							const md = safeParse(value) as JsonObject;
-							if (md) {
-								for (const [k, v] of Object.entries(md)) {
-									metadata[k] = v;
-								}
-							}
-							continue;
-						}
-						const mdkey = key.substring(12);
-						if (
-							value.charAt(0) === '{' &&
-							value.charAt(value.length - 1) === '}'
-						) {
-							metadata[mdkey] = safeParse(value);
-						} else {
-							metadata[mdkey] = value;
-						}
-					}
-				}
+				const metadata = metadataFromHeaders(resp.headers.toJSON());
 				const contentType =
 					resp.headers.get('content-type') ?? 'application/octet-stream';
 				this.logger.debug(
@@ -232,18 +223,11 @@ class RemoteAgentInvoker implements RemoteAgent {
 					metadata,
 					contentType
 				);
-				const resultBody = await resp.body;
-				const data = resultBody
-					? new DataHandler(
-							{ contentType, payload: '' },
-							resultBody as unknown as ReadableStream<ReadableDataType>,
-							contentType
-						)
-					: new DataHandler({ contentType, payload: '' });
-				await data.loadStream();
 				return {
-					data,
-					contentType,
+					data: new DataHandler(
+						resp.body as unknown as ReadableStream<ReadableDataType>,
+						contentType
+					),
 					metadata,
 				};
 			} catch (ex) {
@@ -329,15 +313,7 @@ export default class AgentResolver {
 		const currentContext = context.active();
 
 		// Create a child span using the current context
-		const span = tracer.startSpan(
-			'remoteagent.run',
-			{
-				attributes: {
-					scope: 'remote',
-				},
-			},
-			currentContext
-		);
+		const span = tracer.startSpan('remoteagent.run', {}, currentContext);
 		const spanContext = trace.setSpan(currentContext, span);
 
 		// Execute the operation within the new context

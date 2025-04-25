@@ -38,10 +38,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	async empty(metadata?: JsonObject): Promise<AgentResponseData> {
 		return {
-			data: new DataHandler({
-				contentType: 'text/plain',
-				payload: '',
-			}),
+			data: new DataHandler('', 'text/plain'),
 			metadata,
 		};
 	}
@@ -51,10 +48,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	async json(data: Json, metadata?: JsonObject): Promise<AgentResponseData> {
 		return {
-			data: new DataHandler({
-				contentType: 'application/json',
-				payload: Buffer.from(safeStringify(data)).toString('base64'),
-			}),
+			data: new DataHandler(safeStringify(data), 'application/json'),
 			metadata,
 		};
 	}
@@ -64,10 +58,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	async text(data: string, metadata?: JsonObject): Promise<AgentResponseData> {
 		return {
-			data: new DataHandler({
-				contentType: 'text/plain',
-				payload: Buffer.from(data).toString('base64'),
-			}),
+			data: new DataHandler(data, 'text/plain'),
 			metadata,
 		};
 	}
@@ -154,10 +145,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	async html(data: string, metadata?: JsonObject): Promise<AgentResponseData> {
 		return {
-			data: new DataHandler({
-				contentType: 'text/html',
-				payload: Buffer.from(safeStringify(data)).toString('base64'),
-			}),
+			data: new DataHandler(data, 'text/html'),
 			metadata,
 		};
 	}
@@ -181,15 +169,12 @@ export default class AgentResponseHandler implements AgentResponse {
 	 */
 	async stream(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
-		contentType?: string
+		contentType?: string,
+		metadata?: JsonObject
 	): Promise<AgentResponseData> {
 		return {
-			data: new DataHandler(
-				{
-					contentType: contentType ?? 'text/plain',
-				},
-				stream
-			),
+			data: new DataHandler(stream, contentType ?? 'application/octet-stream'),
+			metadata,
 		};
 	}
 
@@ -212,10 +197,7 @@ export default class AgentResponseHandler implements AgentResponse {
 		metadata?: JsonObject
 	): Promise<AgentResponseData> {
 		return {
-			data: new DataHandler({
-				contentType: 'text/markdown',
-				payload: Buffer.from(content).toString('base64'),
-			}),
+			data: new DataHandler(content, 'text/markdown'),
 			metadata,
 		};
 	}

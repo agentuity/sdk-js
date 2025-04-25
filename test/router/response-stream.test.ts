@@ -25,8 +25,8 @@ describe('AgentResponseHandler Streaming', () => {
 			const result = await responseHandler.stream(stream);
 
 			expect(result.data).toBeDefined();
-			expect(result.data.contentType).toBe('text/plain');
-			expect(result.data.stream).toBe(stream);
+			expect(result.data.contentType).toBe('application/octet-stream');
+			expect(result.data.stream()).resolves.toBeInstanceOf(ReadableStream);
 		});
 
 		it('should use custom content type when provided', async () => {
@@ -45,7 +45,7 @@ describe('AgentResponseHandler Streaming', () => {
 
 			expect(result.data).toBeDefined();
 			expect(result.data.contentType).toBe(contentType);
-			expect(result.data.stream).toBe(stream);
+			expect(result.data.stream()).resolves.toBeInstanceOf(ReadableStream);
 		});
 
 		it('should handle AsyncIterable input', async () => {
@@ -58,8 +58,8 @@ describe('AgentResponseHandler Streaming', () => {
 			const result = await responseHandler.stream(asyncIterable);
 
 			expect(result.data).toBeDefined();
-			expect(result.data.contentType).toBe('text/plain');
-			expect(result.data.stream).toBeDefined();
+			expect(result.data.contentType).toBe('application/octet-stream');
+			expect(result.data.stream()).resolves.toBeInstanceOf(ReadableStream);
 		});
 
 		it('should handle empty streams', async () => {
@@ -72,8 +72,8 @@ describe('AgentResponseHandler Streaming', () => {
 			const result = await responseHandler.stream(emptyStream);
 
 			expect(result.data).toBeDefined();
-			expect(result.data.contentType).toBe('text/plain');
-			expect(result.data.stream).toBe(emptyStream);
+			expect(result.data.contentType).toBe('application/octet-stream');
+			expect(result.data.stream()).resolves.toBeInstanceOf(ReadableStream);
 		});
 
 		it('should handle binary data in streams', async () => {
@@ -90,7 +90,7 @@ describe('AgentResponseHandler Streaming', () => {
 
 			expect(result.data).toBeDefined();
 			expect(result.data.contentType).toBe(contentType);
-			expect(result.data.stream).toBe(stream);
+			expect(result.data.stream()).resolves.toBeInstanceOf(ReadableStream);
 		});
 	});
 });

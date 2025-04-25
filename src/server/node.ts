@@ -200,6 +200,9 @@ export class NodeServer implements Server {
 			await context.with(extractedContext, async () => {
 				if (req.url?.startsWith('/run/agent_')) {
 					const id = req.url.slice(5);
+					console.error(
+						`this route is deprecated and will be removed in a future version. you can now just use /${id}`
+					);
 					const body = await this.getBuffer(req);
 					const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
 						method: 'POST',
@@ -209,7 +212,9 @@ export class NodeServer implements Server {
 								req.headers['content-type'] || 'application/octet-stream',
 							'User-Agent': req.headers['user-agent'] || '',
 							'x-agentuity-trigger': 'manual',
-							'x-agentuity-metadata': safeStringify(this.getHeaders(req)),
+							'x-agentuity-metadata': safeStringify({
+								headers: this.getHeaders(req),
+							}),
 						},
 					});
 					const respBody = await response.arrayBuffer();
@@ -301,8 +306,10 @@ export class NodeServer implements Server {
 								const reader = stream.getReader();
 								while (true) {
 									const { done, value } = await reader.read();
+									if (value) {
+										res.write(value);
+									}
 									if (done) break;
-									res.write(value);
 								}
 								res.end();
 							} catch (err) {
