@@ -36,8 +36,8 @@ const toBuffer = async (
  * The implementation of the Data interface
  */
 export class DataHandler implements Data {
-	private readonly type: string;
-	private readonly readstream?:
+	private readonly _type: string;
+	private _readstream?:
 		| ReadableStream<ReadableDataType>
 		| AsyncIterable<ReadableDataType>;
 	private _buffer: Buffer;
@@ -50,13 +50,13 @@ export class DataHandler implements Data {
 			| AsyncIterable<ReadableDataType>,
 		contentType: string
 	) {
-		this.type = contentType ?? 'application/octet-stream';
+		this._type = contentType ?? 'application/octet-stream';
 		if (typeof stream === 'string') {
 			this._buffer = Buffer.from(stream);
 		} else if (stream instanceof Buffer) {
 			this._buffer = stream;
 		} else {
-			this.readstream = stream as unknown as
+			this._readstream = stream as unknown as
 				| ReadableStream<ReadableDataType>
 				| AsyncIterable<ReadableDataType>;
 			this._buffer = Buffer.alloc(0);
@@ -64,10 +64,10 @@ export class DataHandler implements Data {
 	}
 
 	private async ensureStreamLoaded(): Promise<Buffer> {
-		if (this.buffer.length === 0 && this.readstream) {
+		if (this._buffer.length === 0 && this._readstream) {
 			let buffer: Buffer = Buffer.alloc(0);
-			if (this.readstream instanceof ReadableStream) {
-				const reader = this.readstream.getReader();
+			if (this._readstream instanceof ReadableStream) {
+				const reader = this._readstream.getReader();
 				while (true) {
 					const { done, value } = await reader.read();
 					if (value) {
@@ -78,17 +78,18 @@ export class DataHandler implements Data {
 					}
 				}
 			} else {
-				for await (const chunk of this.readstream) {
+				for await (const chunk of this._readstream) {
 					buffer = await toBuffer(buffer, chunk);
 				}
 			}
 			this._buffer = buffer;
+			this._readstream = undefined;
 		}
 		return this._buffer;
 	}
 
 	public toString() {
-		return `[Data ${this.type}]`;
+		return `[Data ${this._type}]`;
 	}
 
 	private async data(): Promise<Buffer> {
@@ -96,7 +97,7 @@ export class DataHandler implements Data {
 	}
 
 	get contentType(): string {
-		return this.type;
+		return this._type;
 	}
 
 	async base64(): Promise<string> {
@@ -151,11 +152,11 @@ export class DataHandler implements Data {
 	}
 
 	async stream(): Promise<ReadableStream<ReadableDataType>> {
-		if (this.readstream) {
-			if (this.readstream instanceof ReadableStream) {
-				return this.readstream;
+		if (this._readstream) {
+			if (this._readstream instanceof ReadableStream) {
+				return this._readstream;
 			}
-			const iterator = this.readstream;
+			const iterator = this._readstream;
 			return new ReadableStream({
 				async start(controller) {
 					for await (const chunk of iterator) {
