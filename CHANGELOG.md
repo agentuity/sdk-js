@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.107
+
+### Patch Changes
+
+- Fix issue with chunking and streaming text not matching in some cases
+
 ## 0.0.106
 
 ### Patch Changes
