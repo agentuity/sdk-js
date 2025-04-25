@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.106-next.1
+
+### Patch Changes
+
+- Fix attempting to read the stream more than once
+
 ## 0.0.106-next.0
 
 ### Patch Changes
