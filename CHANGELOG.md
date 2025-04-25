@@ -1,5 +1,12 @@
 # @agentuity/sdk Changelog
 
+## 0.0.106
+
+### Patch Changes
+
+- Fix attempting to read the stream more than once
+- c3c4e9c: Breaking change: Refactor the data API to have async methods instead of static properties so we can fully take advantage of the new streaming capabilities
+
 ## 0.0.106-next.1
 
 ### Patch Changes
