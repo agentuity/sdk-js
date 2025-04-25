@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.108
+
+### Patch Changes
+
+- Fixed issue when the keyvalue returns a gzip encoded value
+
 ## 0.0.107
 
 ### Patch Changes

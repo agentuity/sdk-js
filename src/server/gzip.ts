@@ -22,18 +22,15 @@ export async function gzipString(data: string): Promise<Buffer> {
 }
 
 /**
- * Decompresses a gzipped Buffer and returns the original string
+ * Decompresses a gzipped Buffer and returns the uncompressed Buffer
  *
  * @param buffer - The compressed Buffer to decompress
- * @returns A Promise that resolves to the original string
+ * @returns A Promise that resolves to an uncompressed Buffer
  * @throws Error if the buffer is not valid gzipped data
  */
-export async function gunzipBuffer(buffer: Buffer): Promise<string> {
+export async function gunzipBuffer(buffer: Buffer): Promise<Buffer> {
 	if (!buffer || buffer.length === 0) {
-		return '';
+		return Buffer.alloc(0);
 	}
-
-	// Decompress buffer and convert to string
-	const decompressed = await gunzipPromise(buffer);
-	return decompressed.toString('utf-8');
+	return gunzipPromise(buffer);
 }
