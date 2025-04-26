@@ -35,7 +35,7 @@ export interface ServerRequest {
 export interface ServerRoute {
 	path: string;
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-	handler: (req: ServerRequest) => Promise<AgentResponseData>;
+	handler: (req: ServerRequest) => Promise<AgentResponseData | Response>;
 	agent: AgentConfig;
 	welcome?: AgentWelcome;
 }

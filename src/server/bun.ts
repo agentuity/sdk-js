@@ -12,7 +12,11 @@ import {
 	toWelcomePrompt,
 	getRequestFromHeaders,
 } from './util';
-import type { AgentWelcomeResult, ReadableDataType } from '../types';
+import type {
+	AgentResponseData,
+	AgentWelcomeResult,
+	ReadableDataType,
+} from '../types';
 const idleTimeout = 255; // expressed in seconds
 const timeout = 600;
 
@@ -171,6 +175,15 @@ export class BunServer implements Server {
 					},
 				},
 				'/:agentId': {
+					OPTIONS: async () => {
+						return new Response('OK', {
+							headers: {
+								'Access-Control-Allow-Origin': '*',
+								'Access-Control-Allow-Methods': 'OPTIONS, POST',
+								'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+							},
+						});
+					},
 					POST: async (req) => {
 						const url = new URL(req.url);
 						const method = req.method;
@@ -181,90 +194,91 @@ export class BunServer implements Server {
 						const extractedContext = extractTraceContextFromBunRequest(req);
 
 						// Execute the request handler within the extracted context
-						return context.with(extractedContext, async () => {
-							// Create a span for this incoming request
-							return trace.getTracer('http-server').startActiveSpan(
-								`HTTP ${method}`,
-								{
-									kind: SpanKind.SERVER,
-									attributes: {
-										'http.method': method,
-										'http.url': req.url,
-										'http.host': url.host,
-										'http.user_agent': req.headers.get('user-agent') || '',
-										'http.path': url.pathname,
+						return context.with(
+							extractedContext,
+							async (): Promise<Response> => {
+								// Create a span for this incoming request
+								return trace.getTracer('http-server').startActiveSpan(
+									`HTTP ${method}`,
+									{
+										kind: SpanKind.SERVER,
+										attributes: {
+											'http.method': method,
+											'http.url': req.url,
+											'http.host': url.host,
+											'http.user_agent': req.headers.get('user-agent') || '',
+											'http.path': url.pathname,
+										},
 									},
-								},
-								async (span) => {
-									try {
-										const routeKey = `${method}:${url.pathname}`;
-										const route = routeMap.get(routeKey);
-
-										if (!route) {
-											logger.error(
-												'agent not found: %s for: %s',
-												method,
-												url.pathname
-											);
-											span.setStatus({
-												code: SpanStatusCode.ERROR,
-												message: `No Agent found at ${url.pathname}`,
-											});
-											return new Response('Not Found', {
-												status: 404,
-												headers: injectTraceContextToHeaders(),
-											});
-										}
-
-										span.setAttribute('@agentuity/agentName', route.agent.name);
-										span.setAttribute('@agentuity/agentId', route.agent.id);
-										logger.debug('request: %s %s', method, url.pathname);
-
-										const runId = span.spanContext().traceId;
-
+									async (span): Promise<Response> => {
 										try {
-											const routeResult = route.handler({
-												body:
-													(req.body as unknown as
-														| ReadableStream<ReadableDataType>
-														| AsyncIterable<ReadableDataType>) ?? undefined,
-												url: req.url,
-												headers: req.headers.toJSON(),
-												request: getRequestFromHeaders(
-													req.headers.toJSON(),
-													runId
-												),
-												setTimeout: (val: number) =>
-													this.server?.timeout(req, val),
-											});
+											const routeKey = `${method}:${url.pathname}`;
+											const route = routeMap.get(routeKey);
 
-											const [headers, stream] = await createStreamingResponse(
-												`Agentuity BunJS/${sdkVersion}`,
-												span,
-												routeResult
+											if (!route) {
+												logger.error(
+													'agent not found: %s for: %s',
+													method,
+													url.pathname
+												);
+												span.setStatus({
+													code: SpanStatusCode.ERROR,
+													message: `No Agent found at ${url.pathname}`,
+												});
+												return new Response('Not Found', {
+													status: 404,
+													headers: injectTraceContextToHeaders(),
+												});
+											}
+
+											span.setAttribute(
+												'@agentuity/agentName',
+												route.agent.name
 											);
+											span.setAttribute('@agentuity/agentId', route.agent.id);
+											logger.debug('request: %s %s', method, url.pathname);
 
-											return new Response(stream as unknown as BodyInit, {
-												status: 200,
-												headers,
-											});
-										} catch (error) {
-											span.recordException(error as Error);
-											span.setStatus({
-												code: SpanStatusCode.ERROR,
-												message: (error as Error).message,
-											});
-											return new Response('Internal Server Error', {
-												status: 500,
-												headers: injectTraceContextToHeaders(),
-											});
+											const runId = span.spanContext().traceId;
+
+											try {
+												const routeResult = route.handler({
+													body:
+														(req.body as unknown as
+															| ReadableStream<ReadableDataType>
+															| AsyncIterable<ReadableDataType>) ?? undefined,
+													url: req.url,
+													headers: req.headers.toJSON(),
+													request: getRequestFromHeaders(
+														req.headers.toJSON(),
+														runId
+													),
+													setTimeout: (val: number) =>
+														this.server?.timeout(req, val),
+												});
+
+												return createStreamingResponse(
+													`Agentuity BunJS/${sdkVersion}`,
+													span,
+													routeResult as Promise<AgentResponseData>
+												);
+											} catch (error) {
+												span.recordException(error as Error);
+												span.setStatus({
+													code: SpanStatusCode.ERROR,
+													message: (error as Error).message,
+												});
+												return new Response('Internal Server Error', {
+													status: 500,
+													headers: injectTraceContextToHeaders(),
+												});
+											}
+										} finally {
+											span.end();
 										}
-									} finally {
-										span.end();
 									}
-								}
-							);
-						});
+								);
+							}
+						);
 					},
 				},
 			},
