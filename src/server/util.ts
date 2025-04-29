@@ -272,7 +272,7 @@ export async function createStreamingResponse(
 	server: string,
 	span: Span,
 	routeResult: Promise<AgentResponseData>
-): Promise<[Record<string, string>, ReadableStream]> {
+): Promise<Response> {
 	const responseheaders = injectTraceContextToHeaders({
 		Server: server,
 	});
@@ -291,11 +291,29 @@ export async function createStreamingResponse(
 			responseheaders[`x-agentuity-${key}`] = value;
 		}
 	}
-	responseheaders['Content-Type'] = resp.data.contentType;
+	if (resp.data?.contentType) {
+		responseheaders['Content-Type'] = resp.data.contentType;
+	}
+	responseheaders['Access-Control-Allow-Origin'] = '*';
+	responseheaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+	responseheaders['Access-Control-Allow-Headers'] =
+		'Content-Type, Authorization';
+
+	if (resp instanceof Response) {
+		for (const [key, value] of Object.entries(responseheaders)) {
+			resp.headers.set(key, value);
+		}
+		return resp;
+	}
+
+	const stream = await resp.data.stream();
 
 	span.setStatus({ code: SpanStatusCode.OK });
 
-	return [responseheaders, await resp.data.stream()];
+	return new Response(stream as unknown as BodyInit, {
+		status: 200,
+		headers: responseheaders,
+	});
 }
 
 export function getRequestFromHeaders(

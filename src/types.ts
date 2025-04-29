@@ -146,7 +146,13 @@ export interface DataResultNotFound {
 export type DataResult = DataResultFound | DataResultNotFound;
 
 export interface KeyValueStorageSetParams {
+	/**
+	 * the number of milliseconds to keep the value in the cache
+	 */
 	ttl?: number;
+	/**
+	 * the content type of the value
+	 */
 	contentType?: string;
 }
 
@@ -299,13 +305,28 @@ export interface VectorStorage {
 }
 
 export interface InvocationArguments {
+	/**
+	 * the data to pass to the agent
+	 */
 	data?: DataType;
+	/**
+	 * the content type of the data
+	 */
 	contentType?: string;
+	/**
+	 * the metadata to pass to the agent
+	 */
 	metadata?: JsonObject;
 }
 
 export interface RemoteAgentResponse {
+	/**
+	 * the response data from the agent
+	 */
 	data: Data;
+	/**
+	 * the metadata from the agent
+	 */
 	metadata?: JsonObject;
 }
 
@@ -459,13 +480,28 @@ export interface AgentRequest {
 }
 
 export interface AgentResponseData {
+	/**
+	 * the data from the agent
+	 */
 	data: Data;
+	/**
+	 * the metadata from the agent
+	 */
 	metadata?: JsonObject;
 }
 
 export interface AgentRedirectResponse {
+	/**
+	 * if this is a redirect response
+	 */
 	redirect: true;
+	/**
+	 * the agent to redirect to
+	 */
 	agent: GetAgentRequestParams;
+	/**
+	 * the invocation arguments
+	 */
 	invocation?: InvocationArguments;
 }
 
@@ -572,6 +608,11 @@ export interface AgentResponse {
 
 	/**
 	 * return a response with specific data and content type with optional metadata
+	 *
+	 * @param data - the data to return
+	 * @param contentType - the content type of the data
+	 * @param metadata - the metadata to return
+	 * @returns the response data
 	 */
 	data(
 		data: DataType,
@@ -585,7 +626,12 @@ export interface AgentResponse {
 	markdown(content: string, metadata?: JsonObject): Promise<AgentResponseData>;
 
 	/**
-	 * stream a response to the client. the content type will default to text/plain if not provided or if SSE is requested.
+	 * stream a response to the client. the content type will default to application/octet-stream if not provided.
+	 *
+	 * @param stream - the stream to return
+	 * @param contentType - the content type of the stream
+	 * @param metadata - the metadata to return as headers
+	 * @returns the response data
 	 */
 	stream(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
@@ -601,7 +647,7 @@ export type AgentHandler = (
 	request: AgentRequest,
 	response: AgentResponse,
 	context: AgentContext
-) => Promise<AgentResponseData>;
+) => Promise<AgentResponseData | Response>;
 
 export interface AgentWelcomePrompt {
 	/**
@@ -658,12 +704,27 @@ export interface AgentConfig {
  * Session information for an agent request
  */
 export interface Session {
+	/**
+	 * the request
+	 */
 	request: AgentRequest;
+	/**
+	 * the context
+	 */
 	context: AgentContext;
 }
 
 export interface DataPayload {
+	/**
+	 * the trigger that caused the invocation
+	 */
 	trigger: TriggerType;
+	/**
+	 * the content type
+	 */
 	contentType: string;
+	/**
+	 * the metadata
+	 */
 	metadata?: JsonObject;
 }

@@ -8,10 +8,7 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"type": "module",
-	"files": [
-		"dist/**/*",
-		"LICENSE.md"
-	],
+	"files": ["dist/**/*", "LICENSE.md"],
 	"engines": {
 		"node": ">=22"
 	},
@@ -24,17 +21,9 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": [
-		"ai",
-		"agents",
-		"agentuity",
-		"ai agent",
-		"agent"
-	],
+	"keywords": ["ai", "agents", "agentuity", "ai agent", "agent"],
 	"tsup": {
-		"entry": [
-			"src/index.ts"
-		],
+		"entry": ["src/index.ts"],
 		"format": "esm",
 		"splitting": false,
 		"sourcemap": true,
@@ -51,7 +40,7 @@
 		"version": "npx @changesets/cli version",
 		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
 		"start": "npm run node:start",
-		"test": "for t in `find ./test -name '*.test.ts'`;do bun test $t; done;"
+		"test": "for t in `find ./test -name '*.test.ts'`;do bun test $t || exit 1; done;"
 	},
 	"exports": {
 		"./package.json": "./package.json",

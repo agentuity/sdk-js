@@ -19,7 +19,6 @@ import type {
 	RemoteAgent,
 	AgentConfig,
 	AgentRedirectResponse,
-	Data,
 	ReadableDataType,
 } from '../types';
 import AgentRequestHandler from './request';
@@ -210,7 +209,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		valueType: ValueType.INT,
 	});
 
-	return async (req: ServerRequest): Promise<AgentResponseData> => {
+	return async (req: ServerRequest): Promise<AgentResponseData | Response> => {
 		const agentId = config.context.agent.id;
 		let runId = req.request.runId;
 		if (req.headers['x-agentuity-runid']) {
@@ -328,23 +327,27 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 								throw new Error('handler returned null instead of a response');
 							}
 
+							if (handlerResponse instanceof Response) {
+								return await handlerResponse;
+							}
+
 							if (typeof handlerResponse === 'string') {
 								handlerResponse = await response.text(handlerResponse);
 							} else if (
 								'contentType' in handlerResponse &&
 								'payload' in handlerResponse
 							) {
+								const r = handlerResponse as AgentResponseData;
 								handlerResponse = {
-									data: handlerResponse as unknown as Data,
-									metadata: handlerResponse.metadata,
+									data: r.data,
+									metadata: r.metadata,
 								};
 							} else if (
 								'redirect' in handlerResponse &&
 								handlerResponse.redirect &&
 								'agent' in handlerResponse
 							) {
-								const redirect =
-									handlerResponse as unknown as AgentRedirectResponse;
+								const redirect = handlerResponse as AgentRedirectResponse;
 								const agent = await context.getAgent(redirect.agent);
 								req.setTimeout(255); // increase the timeout for the redirect
 								const redirectResponse = await agentRedirectRun(

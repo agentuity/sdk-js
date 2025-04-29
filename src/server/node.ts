@@ -18,7 +18,7 @@ import {
 	toWelcomePrompt,
 	getRequestFromHeaders,
 } from './util';
-import type { AgentWelcomeResult } from '../types';
+import type { AgentResponseData, AgentWelcomeResult } from '../types';
 import { Readable } from 'node:stream';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
@@ -131,6 +131,16 @@ export class NodeServer implements Server {
 				res.end(
 					getRoutesHelpText(req.headers.host ?? 'localhost:3500', this.routes)
 				);
+				return;
+			}
+
+			if (req.method === 'OPTIONS') {
+				res.writeHead(200, {
+					'Access-Control-Allow-Origin': '*',
+					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+				});
+				res.end();
 				return;
 			}
 
@@ -294,22 +304,29 @@ export class NodeServer implements Server {
 									setTimeout: (val: number) => req.setTimeout(val),
 								};
 								const routeResult = route.handler(agentReq);
-								const [headers, stream] = await createStreamingResponse(
+								const response = await createStreamingResponse(
 									`Agentuity NodeJS/${sdkVersion}`,
 									span,
-									routeResult
+									routeResult as Promise<AgentResponseData>
 								);
-								res.writeHead(200, headers);
-								// Ensure headers are sent before streaming
+								const outheaders: Record<string, string> = {};
+								const headers = response.headers as Headers;
+								headers.forEach((value, key) => {
+									outheaders[key] = value;
+								});
+								res.writeHead(response.status, outheaders);
 								res.flushHeaders();
-								// Pipe the stream to the response
-								const reader = stream.getReader();
-								while (true) {
-									const { done, value } = await reader.read();
-									if (value) {
-										res.write(value);
+								if (response.body) {
+									const reader = response.body.getReader();
+									while (true) {
+										const { done, value } = await reader.read();
+										if (value) {
+											res.write(value);
+										}
+										if (done) {
+											break;
+										}
 									}
-									if (done) break;
 								}
 								res.end();
 							} catch (err) {
