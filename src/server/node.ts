@@ -129,7 +129,7 @@ export class NodeServer implements Server {
 					'Content-Type': 'text/plain',
 				});
 				res.end(
-					getRoutesHelpText(req.headers.host ?? 'localhost:3500', this.routes)
+					getRoutesHelpText(req.headers.host ?? '127.0.0.1:3500', this.routes)
 				);
 				return;
 			}
@@ -357,7 +357,7 @@ export class NodeServer implements Server {
 			const server = this.server as ReturnType<typeof createHttpServer>;
 			server.requestTimeout = MAX_REQUEST_TIMEOUT;
 			server.timeout = MAX_REQUEST_TIMEOUT;
-			server.listen(this.port, () => {
+			server.listen(this.port, '127.0.0.1', () => {
 				this.logger.info(`Node server listening on port ${this.port}`);
 				resolve();
 			});
