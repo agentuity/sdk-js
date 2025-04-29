@@ -63,13 +63,13 @@ describe('Compression Utilities', () => {
 			const compressed = await gzipString(testString);
 			const decompressed = await gunzipBuffer(compressed);
 
-			expect(decompressed).toBe(testString);
+			expect(decompressed.toString('utf-8')).toBe(testString);
 		});
 
 		it('should return an empty string for empty buffer', async () => {
 			const decompressed = await gunzipBuffer(Buffer.from([]));
 
-			expect(decompressed).toBe('');
+			expect(decompressed.length).toBe(0);
 		});
 
 		it('should throw an error for invalid gzip data', async () => {
@@ -84,8 +84,8 @@ describe('Compression Utilities', () => {
 				undefined as unknown as Buffer
 			);
 
-			expect(decompressedNull).toBe('');
-			expect(decompressedUndefined).toBe('');
+			expect(decompressedNull.length).toBe(0);
+			expect(decompressedUndefined.length).toBe(0);
 		});
 	});
 
@@ -95,7 +95,7 @@ describe('Compression Utilities', () => {
 			const compressed = await gzipString(testString);
 			const decompressed = await gunzipBuffer(compressed);
 
-			expect(decompressed).toBe(testString);
+			expect(decompressed.toString('utf-8')).toBe(testString);
 		});
 
 		it('should correctly roundtrip a large string', async () => {
@@ -103,7 +103,7 @@ describe('Compression Utilities', () => {
 			const compressed = await gzipString(largeString);
 			const decompressed = await gunzipBuffer(compressed);
 
-			expect(decompressed).toBe(largeString);
+			expect(decompressed.toString('utf-8')).toBe(largeString);
 		});
 
 		it('should correctly roundtrip a JSON string', async () => {
@@ -120,8 +120,8 @@ describe('Compression Utilities', () => {
 			const compressed = await gzipString(jsonString);
 			const decompressed = await gunzipBuffer(compressed);
 
-			expect(decompressed).toBe(jsonString);
-			expect(JSON.parse(decompressed)).toEqual(jsonObject);
+			expect(decompressed.toString('utf-8')).toBe(jsonString);
+			expect(JSON.parse(decompressed.toString('utf-8'))).toEqual(jsonObject);
 		});
 
 		it('should correctly roundtrip Unicode strings', async () => {
@@ -129,7 +129,7 @@ describe('Compression Utilities', () => {
 			const compressed = await gzipString(unicodeString);
 			const decompressed = await gunzipBuffer(compressed);
 
-			expect(decompressed).toBe(unicodeString);
+			expect(decompressed.toString('utf-8')).toBe(unicodeString);
 		});
 	});
 });

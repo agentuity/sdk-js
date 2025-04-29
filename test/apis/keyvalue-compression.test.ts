@@ -163,7 +163,13 @@ describe('KeyValue API Compression', () => {
 						},
 					},
 					response: {
-						arrayBuffer: () => Promise.resolve(Buffer.from('compressed-data')),
+						arrayBuffer: () =>
+							Promise.resolve(
+								Buffer.from(
+									'H4sICGUADWgAA3Rlc3QudHh0APPI5AIAmjwi1QMAAAA=',
+									'base64'
+								)
+							),
 					},
 				})
 			);
