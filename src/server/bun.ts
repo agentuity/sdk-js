@@ -55,7 +55,8 @@ export class BunServer implements Server {
 		}
 
 		const { sdkVersion, logger } = this.config;
-		const hostname = process.env.AGENTUITY_CLOUD_PORT ? '0.0.0.0' : '127.0.0.1';
+		const hostname =
+			process.env.AGENTUITY_ENV === 'development' ? '127.0.0.1' : '0.0.0.0';
 
 		this.server = Bun.serve({
 			port: this.config.port,
