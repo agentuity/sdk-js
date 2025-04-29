@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.110
+
+### Patch Changes
+
+- In cloud we must bind to all addresses
+
 ## 0.0.109
 
 ### Patch Changes
