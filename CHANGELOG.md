@@ -1,5 +1,12 @@
 # @agentuity/sdk Changelog
 
+## 0.0.109
+
+### Patch Changes
+
+- 984f9e8: Add the ability for an agent to return a Response object directly to provide more flexibility to integrate with existing APIs and protocols
+- 4225c14: Bind explicitly to ipv4 when creating server
+
 ## 0.0.108
 
 ### Patch Changes
