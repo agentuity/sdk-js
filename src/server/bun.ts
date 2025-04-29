@@ -54,12 +54,13 @@ export class BunServer implements Server {
 
 		this.server = Bun.serve({
 			port: this.config.port,
+			hostname: '127.0.0.1',
 			idleTimeout: idleTimeout,
 			routes: {
 				'/': {
 					GET: async (req) => {
 						const helpText = getRoutesHelpText(
-							req.headers.get('host') ?? 'localhost:3500',
+							req.headers.get('host') ?? '127.0.0.1:3500',
 							this.config.routes
 						);
 						return new Response(helpText, {
