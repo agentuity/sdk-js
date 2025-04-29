@@ -357,7 +357,10 @@ export class NodeServer implements Server {
 			const server = this.server as ReturnType<typeof createHttpServer>;
 			server.requestTimeout = MAX_REQUEST_TIMEOUT;
 			server.timeout = MAX_REQUEST_TIMEOUT;
-			server.listen(this.port, '127.0.0.1', () => {
+			const address = process.env.AGENTUITY_CLOUD_PORT
+				? '0.0.0.0'
+				: '127.0.0.1';
+			server.listen(this.port, address, () => {
 				this.logger.info(`Node server listening on port ${this.port}`);
 				resolve();
 			});
