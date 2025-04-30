@@ -172,6 +172,59 @@ export function patchConsole(
 	_patch.info = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
+	
+	_patch.dir = (...args: unknown[]) => {
+		__originalConsole.dir(...args);
+	};
+	_patch.dirxml = (...args: unknown[]) => {
+		__originalConsole.dirxml(...args);
+	};
+	_patch.table = (...args: unknown[]) => {
+		__originalConsole.table(...args);
+	};
+	_patch.trace = (...args: unknown[]) => {
+		__originalConsole.trace(...args);
+	};
+	_patch.group = (...args: unknown[]) => {
+		__originalConsole.group(...args);
+	};
+	_patch.groupCollapsed = (...args: unknown[]) => {
+		__originalConsole.groupCollapsed(...args);
+	};
+	_patch.groupEnd = (...args: unknown[]) => {
+		__originalConsole.groupEnd(...args);
+	};
+	_patch.time = (...args: unknown[]) => {
+		__originalConsole.time(...args);
+	};
+	_patch.timeEnd = (...args: unknown[]) => {
+		__originalConsole.timeEnd(...args);
+	};
+	_patch.timeLog = (...args: unknown[]) => {
+		__originalConsole.timeLog(...args);
+	};
+	_patch.assert = (...args: unknown[]) => {
+		__originalConsole.assert(...args);
+	};
+	_patch.count = (...args: unknown[]) => {
+		__originalConsole.count(...args);
+	};
+	_patch.countReset = (...args: unknown[]) => {
+		__originalConsole.countReset(...args);
+	};
+	_patch.profile = (...args: unknown[]) => {
+		__originalConsole.profile(...args);
+	};
+	_patch.profileEnd = (...args: unknown[]) => {
+		__originalConsole.profileEnd(...args);
+	};
+	_patch.timeStamp = (...args: unknown[]) => {
+		__originalConsole.timeStamp(...args);
+	};
+	_patch.clear = (...args: unknown[]) => {
+		__originalConsole.clear(...args);
+	};
+	
 	// biome-ignore lint/suspicious/noGlobalAssign: <explanation>
 	console = globalThis.console = _patch;
 }
