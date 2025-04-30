@@ -11,7 +11,7 @@ import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { fromDataType } from '../server/util';
 import { DataHandler } from '../router/data';
-import { gunzipBuffer, gzipString } from '../server/gzip';
+import { gunzipBuffer, gzipBuffer } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -41,7 +41,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await GET(
-					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
 					true
 				);
 				if (resp.status === 404) {
@@ -133,7 +133,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					datavalue.data.contentType.includes('text') ||
 					datavalue.data.contentType.includes('json')
 				) {
-					const compressed = await gzipString(await datavalue.data.text());
+					const compressed = await gzipBuffer(await datavalue.data.buffer());
 					buffer = compressed;
 					headers['Content-Encoding'] = 'gzip';
 				} else {
@@ -141,7 +141,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 				}
 
 				const resp = await PUT(
-					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
+					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
 					new Blob([buffer], {
 						type: datavalue.data.contentType,
 					}),
@@ -190,7 +190,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 			// Execute the operation within the new context
 			await context.with(spanContext, async () => {
 				const resp = await DELETE(
-					`/kv/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status !== 200) {
 					throw new Error(

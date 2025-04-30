@@ -260,6 +260,7 @@ export class BunServer implements Server {
 												});
 
 												return createStreamingResponse(
+													req.headers.get('origin'),
 													`Agentuity BunJS/${sdkVersion}`,
 													span,
 													routeResult as Promise<AgentResponseData>

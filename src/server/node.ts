@@ -305,6 +305,7 @@ export class NodeServer implements Server {
 								};
 								const routeResult = route.handler(agentReq);
 								const response = await createStreamingResponse(
+									req.headers.origin ?? null,
 									`Agentuity NodeJS/${sdkVersion}`,
 									span,
 									routeResult as Promise<AgentResponseData>

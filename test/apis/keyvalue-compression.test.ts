@@ -4,14 +4,14 @@ import '../setup'; // Import global test setup
 
 describe('KeyValue API Compression', () => {
 	let keyValueAPI: KeyValueAPI;
-	let mockGzipString: ReturnType<typeof mock>;
+	let mockGzipBuffer: ReturnType<typeof mock>;
 	let mockPUT: ReturnType<typeof mock>;
 	let mockGET: ReturnType<typeof mock>;
 
 	beforeEach(() => {
 		keyValueAPI = new KeyValueAPI();
 
-		mockGzipString = mock((data: string) => {
+		mockGzipBuffer = mock((data: string) => {
 			return Promise.resolve(Buffer.from(`compressed:${data}`));
 		});
 
@@ -42,7 +42,7 @@ describe('KeyValue API Compression', () => {
 		});
 
 		mock.module('../../src/server/gzip', () => ({
-			gzipString: mockGzipString,
+			gzipBuffer: mockGzipBuffer,
 		}));
 
 		mock.module('../../src/apis/api', () => ({
@@ -87,7 +87,7 @@ describe('KeyValue API Compression', () => {
 
 			await keyValueAPI.set(name, key, value);
 
-			expect(mockGzipString).toHaveBeenCalled();
+			expect(mockGzipBuffer).toHaveBeenCalled();
 
 			expect(mockPUT).toHaveBeenCalled();
 			const putArgs = mockPUT.mock.calls[0];
@@ -103,7 +103,7 @@ describe('KeyValue API Compression', () => {
 
 			await keyValueAPI.set(name, key, value);
 
-			expect(mockGzipString).toHaveBeenCalled();
+			expect(mockGzipBuffer).toHaveBeenCalled();
 
 			expect(mockPUT).toHaveBeenCalled();
 			const putArgs = mockPUT.mock.calls[0];
@@ -118,7 +118,7 @@ describe('KeyValue API Compression', () => {
 
 			await keyValueAPI.set(name, key, value);
 
-			expect(mockGzipString).not.toHaveBeenCalled();
+			expect(mockGzipBuffer).not.toHaveBeenCalled();
 
 			expect(mockPUT).toHaveBeenCalled();
 			const putArgs = mockPUT.mock.calls[0];
