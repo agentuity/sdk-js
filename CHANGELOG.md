@@ -1,5 +1,13 @@
 # @agentuity/sdk Changelog
 
+## 0.0.111
+
+### Patch Changes
+
+- 32e8fcb: More fixes related to gzip compression when using keyvalue
+  Change the name of the span when doing a remote solution vs remote execution
+  Update to use versioned routes for API services
+
 ## 0.0.110
 
 ### Patch Changes
