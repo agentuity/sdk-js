@@ -205,7 +205,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					method: 'POST',
 				});
 				this.logger.info('invoked remote agent, returned: %d', resp.status);
-				span.setAttribute('http.status_code', resp.status.toString());
+				span.setAttribute('http.status_code', resp.status);
 				if (resp.ok) {
 					span.setStatus({ code: SpanStatusCode.OK });
 				} else {
@@ -313,7 +313,7 @@ export default class AgentResolver {
 		const currentContext = context.active();
 
 		// Create a child span using the current context
-		const span = tracer.startSpan('remoteagent.run', {}, currentContext);
+		const span = tracer.startSpan('remoteagent.resolve', {}, currentContext);
 		const spanContext = trace.setSpan(currentContext, span);
 
 		// Execute the operation within the new context
@@ -332,6 +332,7 @@ export default class AgentResolver {
 						'Content-Type': 'application/json',
 					}
 				);
+				span.setAttribute('http.status_code', resp.status);
 				if (resp.status === 404) {
 					if ('id' in params) {
 						span.setStatus({

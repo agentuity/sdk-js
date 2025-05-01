@@ -269,6 +269,7 @@ export async function fromDataType(
 }
 
 export async function createStreamingResponse(
+	origin: string | null,
 	server: string,
 	span: Span,
 	routeResult: Promise<AgentResponseData>
@@ -280,21 +281,29 @@ export async function createStreamingResponse(
 	const resp = await routeResult;
 	if (resp.metadata) {
 		for (const key in resp.metadata) {
-			let value = resp.metadata[key] as string;
-			if (
-				value &&
-				value.charAt(0) === '{' &&
-				value.charAt(value.length - 1) === '}'
-			) {
-				value = safeParse(value, value);
+			let value = resp.metadata[key];
+			if (typeof value === 'string') {
+				if (
+					value &&
+					value.charAt(0) === '{' &&
+					value.charAt(value.length - 1) === '}'
+				) {
+					value = safeParse(value, value);
+				}
+			} else {
+				value = JSON.stringify(value);
 			}
-			responseheaders[`x-agentuity-${key}`] = value;
+			responseheaders[`x-agentuity-${key}`] = value as string;
 		}
 	}
 	if (resp.data?.contentType) {
 		responseheaders['Content-Type'] = resp.data.contentType;
 	}
-	responseheaders['Access-Control-Allow-Origin'] = '*';
+	if (origin) {
+		responseheaders['Access-Control-Allow-Origin'] = origin;
+	} else {
+		responseheaders['Access-Control-Allow-Origin'] = '*';
+	}
 	responseheaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
 	responseheaders['Access-Control-Allow-Headers'] =
 		'Content-Type, Authorization';
