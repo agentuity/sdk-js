@@ -173,7 +173,15 @@ export function patchConsole(
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
 	_patch.dir = (...args: unknown[]) => {
-		delegate.debug('dir:', ...args);
+		let msg = '';
+		if (args.length === 1) {
+			msg = format(args[0]);
+		} else if (args.length > 2) {
+			msg = format(args[0], args[1]);
+		} else {
+			msg = safeStringify(args);
+		}
+		delegate.debug(msg);
 	};
 	_patch.dirxml = (...args: unknown[]) => {
 		delegate.debug('dirxml:', ...args);
@@ -182,7 +190,7 @@ export function patchConsole(
 		delegate.debug('table:', ...args);
 	};
 	_patch.trace = (...args: unknown[]) => {
-		delegate.debug('trace:', ...args);
+		delegate.debug(args[0] as string, ...args.slice(1));
 	};
 	_patch.group = (...args: unknown[]) => {
 		delegate.debug('group:', ...args);
@@ -194,7 +202,7 @@ export function patchConsole(
 		delegate.debug('groupEnd');
 	};
 	_patch.clear = () => {
-		delegate.debug('clear');
+		/* no-op */
 	};
 	_patch.count = (...args: unknown[]) => {
 		delegate.debug('count:', ...args);
