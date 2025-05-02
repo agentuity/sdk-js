@@ -172,6 +172,57 @@ export function patchConsole(
 	_patch.info = (...args: unknown[]) => {
 		delegate.info(args[0] as string, ...args.slice(1));
 	};
+	_patch.dir = (...args: unknown[]) => {
+		delegate.debug('dir:', ...args);
+	};
+	_patch.dirxml = (...args: unknown[]) => {
+		delegate.debug('dirxml:', ...args);
+	};
+	_patch.table = (...args: unknown[]) => {
+		delegate.debug('table:', ...args);
+	};
+	_patch.trace = (...args: unknown[]) => {
+		delegate.debug('trace:', ...args);
+	};
+	_patch.group = (...args: unknown[]) => {
+		delegate.debug('group:', ...args);
+	};
+	_patch.groupCollapsed = (...args: unknown[]) => {
+		delegate.debug('groupCollapsed:', ...args);
+	};
+	_patch.groupEnd = () => {
+		delegate.debug('groupEnd');
+	};
+	_patch.clear = () => {
+		delegate.debug('clear');
+	};
+	_patch.count = (...args: unknown[]) => {
+		delegate.debug('count:', ...args);
+	};
+	_patch.countReset = (...args: unknown[]) => {
+		delegate.debug('countReset:', ...args);
+	};
+	_patch.assert = (condition?: boolean, ...args: unknown[]) => {
+		if (!condition) {
+			delegate.error('assertion failed:', ...args);
+		}
+	};
+	_patch.time = (...args: unknown[]) => {
+		delegate.debug('time:', ...args);
+	};
+	_patch.timeLog = (...args: unknown[]) => {
+		delegate.debug('timeLog:', ...args);
+	};
+	_patch.timeEnd = (...args: unknown[]) => {
+		delegate.debug('timeEnd:', ...args);
+	};
+	_patch.profile = (...args: unknown[]) => {
+		delegate.debug('profile:', ...args);
+	};
+	_patch.profileEnd = (...args: unknown[]) => {
+		delegate.debug('profileEnd:', ...args);
+	};
+
 	// biome-ignore lint/suspicious/noGlobalAssign: <explanation>
 	console = globalThis.console = _patch;
 }
