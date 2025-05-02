@@ -6,7 +6,6 @@ import {
 	injectTraceContextToHeaders,
 } from './otel';
 import {
-	safeStringify,
 	getRoutesHelpText,
 	createStreamingResponse,
 	toWelcomePrompt,
@@ -135,48 +134,6 @@ export class BunServer implements Server {
 						});
 					},
 				},
-				'/run/:id': {
-					POST: async (req) => {
-						// Extract trace context from headers
-						const extractedContext = extractTraceContextFromBunRequest(req);
-
-						// Execute the request handler within the extracted context
-						return context.with(extractedContext, async () => {
-							this.server?.timeout(req, timeout);
-							const url = new URL(req.url);
-							const id = url.pathname.slice(5);
-							console.error(
-								`this route is deprecated and will be removed in a future version. you can now just use /${id}`
-							);
-							const body = await req.arrayBuffer();
-							const headers = req.headers.toJSON();
-							const resp = await fetch(
-								`http://127.0.0.1:${this.config.port}/${id}`,
-								{
-									method: 'POST',
-									body,
-									headers: {
-										'Content-Type':
-											headers['content-type'] ?? 'application/octet-stream',
-										'x-agentuity-trigger': 'manual',
-										'x-agentuity-metadata': safeStringify({ headers }),
-									},
-								}
-							);
-							if (resp.ok) {
-								const response = await resp.blob();
-								return new Response(response, {
-									status: resp.status,
-									headers: resp.headers,
-								});
-							}
-							return new Response(resp.body, {
-								status: resp.status,
-								headers: injectTraceContextToHeaders(resp.headers),
-							});
-						});
-					},
-				},
 				'/:agentId': {
 					OPTIONS: async () => {
 						return new Response('OK', {
@@ -289,6 +246,15 @@ export class BunServer implements Server {
 			async fetch() {
 				return new Response('Not Found', {
 					status: 404,
+				});
+			},
+			error(error) {
+				logger.error('unhandled error: %s', error);
+				return new Response(`Unhandled Error: ${error.message}`, {
+					status: 500,
+					headers: {
+						'Content-Type': 'text/plain',
+					},
 				});
 			},
 		});
