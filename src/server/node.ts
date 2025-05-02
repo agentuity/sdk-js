@@ -64,20 +64,6 @@ export class NodeServer implements Server {
 		});
 	}
 
-	private getBuffer(req: IncomingMessage): Promise<Buffer> {
-		return new Promise((resolve, reject) => {
-			const chunks: Buffer[] = [];
-			req.on('data', (chunk) => chunks.push(chunk));
-			req.on('end', async () => {
-				const body = Buffer.concat(chunks);
-				resolve(body);
-			});
-			req.on('error', (err) => {
-				reject(err);
-			});
-		});
-	}
-
 	private getBufferAsStream(
 		req: IncomingMessage
 	): Promise<ReadableStream<Buffer>> {
@@ -208,35 +194,6 @@ export class NodeServer implements Server {
 
 			// Execute the request handler within the extracted context
 			await context.with(extractedContext, async () => {
-				if (req.url?.startsWith('/run/agent_')) {
-					const id = req.url.slice(5);
-					console.error(
-						`this route is deprecated and will be removed in a future version. you can now just use /${id}`
-					);
-					const body = await this.getBuffer(req);
-					const response = await fetch(`http://127.0.0.1:${this.port}/${id}`, {
-						method: 'POST',
-						body,
-						headers: {
-							'Content-Type':
-								req.headers['content-type'] || 'application/octet-stream',
-							'User-Agent': req.headers['user-agent'] || '',
-							'x-agentuity-trigger': 'manual',
-							'x-agentuity-metadata': safeStringify({
-								headers: this.getHeaders(req),
-							}),
-						},
-					});
-					const respBody = await response.arrayBuffer();
-					res.writeHead(
-						response.status,
-						injectTraceContextToHeaders(response.headers)
-					);
-					res.write(respBody);
-					res.end();
-					return;
-				}
-
 				// Create a span for this incoming request
 				await trace.getTracer('http-server').startActiveSpan(
 					`HTTP ${req.method}`,
