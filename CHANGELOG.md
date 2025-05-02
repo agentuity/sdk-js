@@ -1,5 +1,12 @@
 # @agentuity/sdk Changelog
 
+## 0.0.112
+
+### Patch Changes
+
+- 9c087d2: Add missing console logger methods
+- e0d2307: Adds a Bun error handler for unhandled exceptions that are thrown from the agent.
+
 ## 0.0.111
 
 ### Patch Changes
