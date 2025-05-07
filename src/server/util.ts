@@ -430,3 +430,17 @@ export function setMetadataInHeaders(
 		}
 	}
 }
+
+export function headersToRecord(headers: Headers): Record<string, string> {
+	// Try using toJSON if available
+	if (typeof headers.toJSON === 'function') {
+		return headers.toJSON();
+	}
+
+	// Fallback for environments where toJSON is not available
+	const record: Record<string, string> = {};
+	headers.forEach((value, key) => {
+		record[key] = value;
+	});
+	return record;
+}
