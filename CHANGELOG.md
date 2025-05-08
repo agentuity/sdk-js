@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.113
+
+### Patch Changes
+
+- cross platform support for headers.toJSON
+
 ## 0.0.112
 
 ### Patch Changes
