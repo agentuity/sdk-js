@@ -14,6 +14,7 @@ import {
 	metadataFromHeaders,
 	setMetadataInHeaders,
 	dataTypeToBuffer,
+	headersToRecord,
 } from './util';
 import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
@@ -100,7 +101,7 @@ class LocalAgentInvoker implements RemoteAgent {
 							),
 							contentType:
 								resp.headers.get('content-type') ?? 'application/octet-stream',
-							metadata: metadataFromHeaders(resp.headers.toJSON()),
+							metadata: metadataFromHeaders(headersToRecord(resp.headers)),
 						};
 					}
 				}
@@ -215,7 +216,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					});
 					throw new Error(await resp.text());
 				}
-				const metadata = metadataFromHeaders(resp.headers.toJSON());
+				const metadata = metadataFromHeaders(headersToRecord(resp.headers));
 				const contentType =
 					resp.headers.get('content-type') ?? 'application/octet-stream';
 				this.logger.debug(
