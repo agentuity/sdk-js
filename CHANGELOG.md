@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.114
+
+### Patch Changes
+
+- Fixed issue with Vector get type being wrong
+
 ## 0.0.113
 
 ### Patch Changes
