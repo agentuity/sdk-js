@@ -280,7 +280,7 @@ export interface VectorStorage {
 	 * @param key - the key of the vector to get
 	 * @returns the results of the vector search
 	 */
-	get(name: string, key: string): Promise<VectorSearchResult[]>;
+	get(name: string, key: string): Promise<VectorSearchResult | null>;
 
 	/**
 	 * search for vectors in the vector storage

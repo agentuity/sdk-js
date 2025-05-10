@@ -79,6 +79,27 @@ type VectorDeleteResponse =
 	| VectorDeleteErrorResponse;
 
 /**
+ * Response for a successful vector delete operation
+ */
+interface VectorGetSuccessResponse {
+	success: true;
+	data: VectorSearchResult | null;
+}
+
+/**
+ * Response for a failed vector delete operation
+ */
+interface VectorGetErrorResponse {
+	success: false;
+	message: string;
+}
+
+/**
+ * Response for a vector get operation
+ */
+type VectorGetResponse = VectorGetSuccessResponse | VectorGetErrorResponse;
+
+/**
  * Implementation of the VectorStorage interface for interacting with the vector storage API
  */
 export default class VectorAPI implements VectorStorage {
@@ -138,9 +159,9 @@ export default class VectorAPI implements VectorStorage {
 	 *
 	 * @param name - the name of the vector storage
 	 * @param key - the key of the vector to get
-	 * @returns the results of the vector search
+	 * @returns the result of the vector search
 	 */
-	async get(name: string, key: string): Promise<VectorSearchResult[]> {
+	async get(name: string, key: string): Promise<VectorSearchResult | null> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -157,13 +178,13 @@ export default class VectorAPI implements VectorStorage {
 
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
-				const resp = await GET<VectorSearchResponse>(
+				const resp = await GET<VectorGetResponse>(
 					`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
 					span.setStatus({ code: SpanStatusCode.OK });
-					return [];
+					return null;
 				}
 				if (resp.status === 200) {
 					if (resp.json?.success) {
