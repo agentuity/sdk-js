@@ -10,6 +10,7 @@ beforeEach(() => {
 	process.env = { ...originalEnv };
 
 	process.env.AGENTUITY_API_KEY = 'test-api-key';
+	process.env.AGENTUITY_SDK_KEY = 'test-sdk-key';
 	process.env.AGENTUITY_TRANSPORT_URL = 'https://test.agentuity.ai/';
 	process.env.AGENTUITY_URL = 'https://test.agentuity.ai/';
 
@@ -24,6 +25,7 @@ afterEach(() => {
 
 export const setupTestEnvironment = () => {
 	process.env.AGENTUITY_API_KEY = 'test-api-key';
+	process.env.AGENTUITY_SDK_KEY = 'test-sdk-key';
 	process.env.AGENTUITY_TRANSPORT_URL = 'https://test.agentuity.ai/';
 	process.env.AGENTUITY_URL = 'https://test.agentuity.ai/';
 };
