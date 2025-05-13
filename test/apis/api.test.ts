@@ -11,6 +11,7 @@ describe('API Client', () => {
 	beforeEach(() => {
 		originalEnv = { ...process.env };
 		process.env.AGENTUITY_API_KEY = 'test-api-key';
+		process.env.AGENTUITY_SDK_KEY = 'test-api-key';
 		process.env.AGENTUITY_TRANSPORT_URL = 'https://test.agentuity.ai/';
 
 		const mockSetup = createMockFetch();
@@ -33,16 +34,56 @@ describe('API Client', () => {
 	});
 
 	describe('send', () => {
+
+
 		it('should throw error if API key is not set', async () => {
 			process.env.AGENTUITY_API_KEY = undefined;
-
+			process.env.AGENTUITY_SDK_KEY = undefined;
 			await expect(
 				send({
 					method: 'GET',
 					path: '/test',
 					body: undefined as never,
 				})
-			).rejects.toThrow('AGENTUITY_API_KEY is not set');
+			).rejects.toThrow('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
+		});
+
+
+		it('should send request with correct headers', async () => {
+			process.env.AGENTUITY_SDK_KEY = undefined;
+			await send({
+				method: 'GET',
+				path: '/test',
+				body: undefined as never,
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url, options] = fetchCalls[0];
+
+			expect(url.toString()).toEqual('https://test.agentuity.ai/test');
+			const headers = options?.headers as Record<string, string>;
+			expect(headers?.Authorization).toEqual('Bearer test-api-key');
+			expect(headers?.['User-Agent']).toEqual('Agentuity JS SDK/1.0.0');
+			expect(headers?.['Content-Type']).toEqual('application/json');
+		});
+
+
+		it('should send request with correct headers', async () => {
+			process.env.AGENTUITY_API_KEY = undefined;
+			await send({
+				method: 'GET',
+				path: '/test',
+				body: undefined as never,
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url, options] = fetchCalls[0];
+
+			expect(url.toString()).toEqual('https://test.agentuity.ai/test');
+			const headers = options?.headers as Record<string, string>;
+			expect(headers?.Authorization).toEqual('Bearer test-api-key');
+			expect(headers?.['User-Agent']).toEqual('Agentuity JS SDK/1.0.0');
+			expect(headers?.['Content-Type']).toEqual('application/json');
 		});
 
 		it('should send request with correct headers', async () => {

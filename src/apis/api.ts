@@ -69,9 +69,9 @@ export async function send<K>(
 	forceBuffer = false,
 	attempt = 1
 ): Promise<APIResponse<K>> {
-	const apiKey = process.env.AGENTUITY_API_KEY;
+	const apiKey = process.env.AGENTUITY_SDK_KEY || process.env.AGENTUITY_API_KEY;
 	if (!apiKey) {
-		throw new Error('AGENTUITY_API_KEY is not set');
+		throw new Error('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
 	}
 	const url = new URL(
 		request.path,
