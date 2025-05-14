@@ -6,6 +6,11 @@
 
 - Added AGENTUITY_SDK_KEY (#107)
 
+### ⚠️ Breaking Changes
+
+- The environment variable `AGENTUITY_API_KEY` has been renamed to `AGENTUITY_SDK_KEY` for better clarity and consistency. You will need to update your environment variables and code references accordingly.
+- When using the Agentuity CLI, it will detect this change and offer to automatically migrate your code references.
+
 ## 0.0.114
 
 ### Patch Changes
