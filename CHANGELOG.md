@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.115
+
+### Added
+
+- Added AGENTUITY_SDK_KEY (#107)
+
 ## 0.0.114
 
 ### Patch Changes
