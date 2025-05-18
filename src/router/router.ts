@@ -188,6 +188,14 @@ async function agentRedirectRun(
 	}
 }
 
+function createEmptyStream() {
+	return new ReadableStream({
+		start(controller) {
+			controller.close();
+		},
+	});
+}
+
 /**
  * Creates a router handler for the specified configuration
  *
@@ -294,7 +302,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 					return await context.with(spanContext, async () => {
 						const body = req.body
 							? (req.body as unknown as ReadableStream<ReadableDataType>)
-							: new ReadableStream<ReadableDataType>();
+							: createEmptyStream();
 						const request = new AgentRequestHandler(
 							req.request.trigger,
 							body,

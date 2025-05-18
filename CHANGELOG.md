@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.116
+
+### Patch Changes
+
+- Fixed issue where empty POST body would cause a hang
+
 ## 0.0.115
 
 ### Added
