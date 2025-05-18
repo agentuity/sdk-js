@@ -145,7 +145,7 @@ export type JsonPrimitive =
  */
 export interface JsonArray extends Array<JsonPrimitive> {}
 
-export type JsonKey = string | number | symbol;
+export type JsonKey = string | number;
 
 /**
  * JSON object type
