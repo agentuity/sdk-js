@@ -151,9 +151,14 @@ export type JsonKey = string | number | symbol;
 /**
  * JSON object type
  */
-export type JsonObject = {
-	[key in JsonKey]: JsonPrimitive;
-};
+-export type JsonKey = string | number | symbol;
++export type JsonKey = string | number;
+
+ export type JsonPrimitive = string | number | boolean | null;
+
+ export type JsonObject = {
+     [key in JsonKey]: JsonPrimitive;
+ };
 
 /**
  * Composite JSON type (array or object)
