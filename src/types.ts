@@ -438,7 +438,7 @@ export interface RemoteAgent {
 	 * @param args - the arguments to pass to the agent
 	 * @returns the response from the agent
 	 */
-	run(args: InvocationArguments<JsonObject>): Promise<RemoteAgentResponse>;
+	run<T = unknown>(args: InvocationArguments<T>): Promise<RemoteAgentResponse>;
 }
 
 interface GetAgentRequestParamsById {

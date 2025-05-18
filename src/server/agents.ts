@@ -4,9 +4,8 @@ import type {
 	InvocationArguments,
 	RemoteAgentResponse,
 	ReadableDataType,
-	JsonObject,
-	ToJson,
 } from '../types';
+import { isJsonObject } from '../types';
 import type { ReadableStream } from 'node:stream/web';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
@@ -56,9 +55,12 @@ class LocalAgentInvoker implements RemoteAgent {
 		this.description = description;
 	}
 
-	async run<T extends JsonObject>(
-		args?: InvocationArguments<ToJson<T>>
+	async run<T = unknown>(
+		args?: InvocationArguments<T>
 	): Promise<RemoteAgentResponse> {
+		if (!isJsonObject(args?.metadata)) {
+			throw new Error('args.metadata must be a JsonObject');
+		}
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -165,9 +167,12 @@ class RemoteAgentInvoker implements RemoteAgent {
 		this.transactionId = transactionId;
 	}
 
-	async run<T extends JsonObject>(
-		args?: InvocationArguments<ToJson<T>>
+	async run<T = unknown>(
+		args?: InvocationArguments<T>
 	): Promise<RemoteAgentResponse> {
+		if (!isJsonObject(args?.metadata)) {
+			throw new Error('args.metadata must be a JsonObject');
+		}
 		const tracer = getTracer();
 		const currentContext = context.active();
 
