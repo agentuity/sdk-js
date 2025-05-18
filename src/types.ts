@@ -137,7 +137,6 @@ export type JsonPrimitive =
 	| number
 	| boolean
 	| null
-	| undefined
 	| JsonArray
 	| JsonObject;
 
