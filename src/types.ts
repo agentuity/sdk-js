@@ -148,14 +148,6 @@ export interface JsonArray extends Array<JsonPrimitive> {}
 
 export type JsonKey = string | number | symbol;
 
-export type ToJson<T> = T extends JsonPrimitive
-	? T
-	: T extends Array<infer U>
-		? ToJson<U>[]
-		: T extends object
-			? { [K in keyof T]-?: ToJson<T[K]> }
-			: never;
-
 /**
  * JSON object type
  */
