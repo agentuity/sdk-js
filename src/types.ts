@@ -69,6 +69,9 @@ export interface Data {
 	stream(): Promise<ReadableStream<ReadableDataType>>;
 }
 
+/**
+ * check if a value is a Data object
+ */
 export function isDataObject(value: unknown): value is Data {
 	if (value && typeof value === 'object' && 'contentType' in value) {
 		return true;
@@ -96,13 +99,19 @@ export type DataType =
 	| ReadableStream
 	| Data;
 
-export function isReadableStream(value: unknown): value is ReadableStream {
+/**
+ * check if a value is a ReadableStream
+ */
+function isReadableStream(value: unknown): value is ReadableStream {
 	if (typeof value === 'object' && value !== null) {
 		return 'getReader' in value;
 	}
 	return false;
 }
 
+/**
+ * check if a value is a valid DataType
+ */
 export function isDataType(value: unknown): value is DataType {
 	if (value === null || value === undefined) {
 		return false;
