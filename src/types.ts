@@ -145,19 +145,17 @@ export type JsonPrimitive =
  */
 export interface JsonArray extends Array<JsonPrimitive> {}
 
+/**
+ * valid keys for a JSON object
+ */
 export type JsonKey = string | number;
 
 /**
  * JSON object type
  */
--export type JsonKey = string | number | symbol;
-+export type JsonKey = string | number;
-
- export type JsonPrimitive = string | number | boolean | null;
-
- export type JsonObject = {
-     [key in JsonKey]: JsonPrimitive;
- };
+export type JsonObject = {
+	[key in JsonKey]: JsonPrimitive;
+};
 
 /**
  * Composite JSON type (array or object)
@@ -180,7 +178,6 @@ export function isJsonObject(value: unknown): value is JsonObject {
 	}
 	// if primitive types, they are ok
 	if (
-		typeof value === 'symbol' ||
 		typeof value === 'string' ||
 		typeof value === 'number' ||
 		typeof value === 'boolean'
