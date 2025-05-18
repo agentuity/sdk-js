@@ -69,6 +69,13 @@ export interface Data {
 	stream(): Promise<ReadableStream<ReadableDataType>>;
 }
 
+export function isDataObject(value: unknown): value is Data {
+	if (value && typeof value === 'object' && 'contentType' in value) {
+		return true;
+	}
+	return false;
+}
+
 export type ReadableDataType =
 	| Buffer
 	| Uint8Array
@@ -89,20 +96,72 @@ export type DataType =
 	| ReadableStream
 	| Data;
 
+export function isReadableStream(value: unknown): value is ReadableStream {
+	if (typeof value === 'object' && value !== null) {
+		return 'getReader' in value;
+	}
+	return false;
+}
+
+export function isDataType(value: unknown): value is DataType {
+	if (value === null || value === undefined) {
+		return false;
+	}
+	if (typeof value === 'string') {
+		return true;
+	}
+	if (isDataObject(value)) {
+		return true;
+	}
+	if (typeof value === 'object') {
+		if (
+			value instanceof Buffer ||
+			value instanceof Uint8Array ||
+			value instanceof ArrayBuffer ||
+			value instanceof Blob
+		) {
+			return true;
+		}
+		if (isReadableStream(value)) {
+			return true;
+		}
+	}
+	return isJsonObject(value);
+}
+
 /**
  * Primitive JSON value types
  */
-export type JsonPrimitive = string | number | boolean | null;
+export type JsonPrimitive =
+	| string
+	| number
+	| boolean
+	| null
+	| undefined
+	| JsonArray
+	| JsonObject;
 
 /**
  * JSON array type
  */
-export type JsonArray = Json[];
+export interface JsonArray extends Array<JsonPrimitive> {}
+
+export type JsonKey = string | number | symbol;
+
+export type ToJson<T> = T extends JsonPrimitive
+	? T
+	: T extends Array<infer U>
+		? ToJson<U>[]
+		: T extends object
+			? { [K in keyof T]-?: ToJson<T[K]> }
+			: never;
 
 /**
  * JSON object type
  */
-export type JsonObject = { [key: string]: Json };
+export type JsonObject = {
+	[key in JsonKey]: JsonPrimitive;
+};
 
 /**
  * Composite JSON type (array or object)
@@ -113,6 +172,33 @@ export type JsonComposite = JsonArray | JsonObject;
  * Any valid JSON value
  */
 export type Json = JsonPrimitive | JsonComposite;
+
+// Runtime type guard to check if unknown is a JsonObject
+export function isJsonObject(value: unknown): value is JsonObject {
+	if (value === null || value === undefined) {
+		return true; // these will be filtered out so they are ok
+	}
+	// validate all array elements are json objects
+	if (Array.isArray(value)) {
+		return value.every(isJsonObject);
+	}
+	// if primitive types, they are ok
+	if (
+		typeof value === 'symbol' ||
+		typeof value === 'string' ||
+		typeof value === 'number' ||
+		typeof value === 'boolean'
+	) {
+		return true;
+	}
+	// validate all object values are json objects
+	if (typeof value === 'object') {
+		return Object.keys(value).every((key) =>
+			isJsonObject(value[key as keyof typeof value])
+		);
+	}
+	return false;
+}
 
 /**
  * the result of a data operation when the data is found
@@ -174,10 +260,10 @@ export interface KeyValueStorage {
 	 * @param value - the value to set in any of the supported data types
 	 * @param params - the KeyValueStorageSetParams
 	 */
-	set(
+	set<T = unknown>(
 		name: string,
 		key: string,
-		value: DataType,
+		value: T,
 		params?: KeyValueStorageSetParams
 	): Promise<void>;
 
@@ -219,7 +305,7 @@ type VectorUpsertBase = {
 export type VectorUpsertParams = VectorUpsertBase &
 	(VectorUpsertEmbeddings | VectorUpsertText);
 
-export interface VectorSearchParams {
+export interface VectorSearchParams<T = unknown> {
 	/**
 	 * the query to search for
 	 */
@@ -235,7 +321,7 @@ export interface VectorSearchParams {
 	/**
 	 * the metadata to filter the results by
 	 */
-	metadata?: JsonObject;
+	metadata?: T;
 }
 
 /**
@@ -304,7 +390,7 @@ export interface VectorStorage {
 	delete(name: string, ...ids: string[]): Promise<number>;
 }
 
-export interface InvocationArguments {
+export interface InvocationArguments<T = unknown> {
 	/**
 	 * the data to pass to the agent
 	 */
@@ -316,7 +402,7 @@ export interface InvocationArguments {
 	/**
 	 * the metadata to pass to the agent
 	 */
-	metadata?: JsonObject;
+	metadata?: T;
 }
 
 export interface RemoteAgentResponse {
@@ -352,7 +438,7 @@ export interface RemoteAgent {
 	 * @param args - the arguments to pass to the agent
 	 * @returns the response from the agent
 	 */
-	run(args: InvocationArguments): Promise<RemoteAgentResponse>;
+	run(args: InvocationArguments<JsonObject>): Promise<RemoteAgentResponse>;
 }
 
 interface GetAgentRequestParamsById {
@@ -502,7 +588,7 @@ export interface AgentRedirectResponse {
 	/**
 	 * the invocation arguments
 	 */
-	invocation?: InvocationArguments;
+	invocation?: InvocationArguments<JsonObject>;
 }
 
 /**
@@ -516,95 +602,98 @@ export interface AgentResponse {
 	 * @param args - the arguments to pass to the agent. if undefined, will pass the current request data
 	 * @returns the response from the agent
 	 */
-	handoff(
+	handoff<M = unknown>(
 		agent: GetAgentRequestParams,
-		args?: InvocationArguments
+		args?: InvocationArguments<M>
 	): Promise<AgentRedirectResponse>;
 
 	/**
 	 * return an empty response with optional metadata
 	 */
-	empty(metadata?: JsonObject): Promise<AgentResponseData>;
+	empty<M = unknown>(metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a JSON response with optional metadata
 	 */
-	json(data: Json, metadata?: JsonObject): Promise<AgentResponseData>;
+	json<T = unknown, M = unknown>(
+		data: T,
+		metadata?: M
+	): Promise<AgentResponseData>;
 
 	/**
 	 * return a text response with optional metadata
 	 */
-	text(data: string, metadata?: JsonObject): Promise<AgentResponseData>;
+	text<M = unknown>(data: string, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a binary response with optional metadata
 	 */
-	binary(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	binary<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a PDF response with optional metadata
 	 */
-	pdf(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	pdf<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a PNG response with optional metadata
 	 */
-	png(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	png<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a JPEG response with optional metadata
 	 */
-	jpeg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	jpeg<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a GIF response with optional metadata
 	 */
-	gif(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	gif<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a WebP response with optional metadata
 	 */
-	webp(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	webp<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a MP3 response with optional metadata
 	 */
-	mp3(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	mp3<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a MP4 response with optional metadata
 	 */
-	mp4(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	mp4<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a M4A response with optional metadata
 	 */
-	m4a(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	m4a<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a M4P response with optional metadata
 	 */
-	m4p(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	m4p<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a WebM response with optional metadata
 	 */
-	webm(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	webm<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a HTML response with optional metadata
 	 */
-	html(data: string, metadata?: JsonObject): Promise<AgentResponseData>;
+	html<M = unknown>(data: string, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a WAV response with optional metadata
 	 */
-	wav(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	wav<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return an OGG response with optional metadata
 	 */
-	ogg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData>;
+	ogg<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData>;
 
 	/**
 	 * return a response with specific data and content type with optional metadata
@@ -614,16 +703,19 @@ export interface AgentResponse {
 	 * @param metadata - the metadata to return
 	 * @returns the response data
 	 */
-	data(
+	data<M = unknown>(
 		data: DataType,
 		contentType: string,
-		metadata?: JsonObject
+		metadata?: M
 	): Promise<AgentResponseData>;
 
 	/**
 	 * return a markdown response with optional metadata
 	 */
-	markdown(content: string, metadata?: JsonObject): Promise<AgentResponseData>;
+	markdown<M = unknown>(
+		content: string,
+		metadata?: M
+	): Promise<AgentResponseData>;
 
 	/**
 	 * stream a response to the client. the content type will default to application/octet-stream if not provided.
@@ -633,10 +725,10 @@ export interface AgentResponse {
 	 * @param metadata - the metadata to return as headers
 	 * @returns the response data
 	 */
-	stream(
+	stream<M = unknown>(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
 		contentType?: string,
-		metadata?: JsonObject
+		metadata?: M
 	): Promise<AgentResponseData>;
 }
 

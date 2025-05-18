@@ -4,6 +4,8 @@ import type {
 	InvocationArguments,
 	RemoteAgentResponse,
 	ReadableDataType,
+	JsonObject,
+	ToJson,
 } from '../types';
 import type { ReadableStream } from 'node:stream/web';
 import { POST } from '../apis/api';
@@ -54,7 +56,9 @@ class LocalAgentInvoker implements RemoteAgent {
 		this.description = description;
 	}
 
-	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
+	async run<T extends JsonObject>(
+		args?: InvocationArguments<ToJson<T>>
+	): Promise<RemoteAgentResponse> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -161,7 +165,9 @@ class RemoteAgentInvoker implements RemoteAgent {
 		this.transactionId = transactionId;
 	}
 
-	async run(args?: InvocationArguments): Promise<RemoteAgentResponse> {
+	async run<T extends JsonObject>(
+		args?: InvocationArguments<ToJson<T>>
+	): Promise<RemoteAgentResponse> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 

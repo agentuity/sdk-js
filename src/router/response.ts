@@ -2,13 +2,13 @@ import type {
 	AgentResponse,
 	InvocationArguments,
 	GetAgentRequestParams,
-	Json,
 	AgentResponseData,
 	JsonObject,
 	DataType,
 	AgentRedirectResponse,
 	ReadableDataType,
 } from '../types';
+import { isJsonObject } from '../types';
 import type { ReadableStream } from 'node:stream/web';
 import { DataHandler } from './data';
 import { safeStringify, fromDataType } from '../server/util';
@@ -21,184 +21,265 @@ export default class AgentResponseHandler implements AgentResponse {
 	/**
 	 * redirect the current request another agent within the same project
 	 */
-	async handoff(
+	async handoff<M = unknown>(
 		agent: GetAgentRequestParams,
 		args?: InvocationArguments
 	): Promise<AgentRedirectResponse> {
-		const result: AgentRedirectResponse = {
-			redirect: true,
-			agent,
-			invocation: args,
-		};
-		return result;
+		if (isJsonObject(args?.metadata)) {
+			const result: AgentRedirectResponse = {
+				redirect: true,
+				agent,
+				invocation: args as JsonObject,
+			};
+			return result;
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return an empty response with optional metadata
 	 */
-	async empty(metadata?: JsonObject): Promise<AgentResponseData> {
-		return {
-			data: new DataHandler('', 'text/plain'),
-			metadata,
-		};
+	async empty<M = unknown>(metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return {
+				data: new DataHandler('', 'text/plain'),
+				metadata,
+			};
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a JSON response with optional metadata
 	 */
-	async json(data: Json, metadata?: JsonObject): Promise<AgentResponseData> {
-		return {
-			data: new DataHandler(safeStringify(data), 'application/json'),
-			metadata,
-		};
+	async json<T = unknown, M = unknown>(
+		data: T,
+		metadata?: M
+	): Promise<AgentResponseData> {
+		if (!isJsonObject(data)) {
+			throw new Error('data must be a JsonObject');
+		}
+		if (isJsonObject(metadata)) {
+			return {
+				data: new DataHandler(safeStringify(data), 'application/json'),
+				metadata,
+			};
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a text response with optional metadata
 	 */
-	async text(data: string, metadata?: JsonObject): Promise<AgentResponseData> {
-		return {
-			data: new DataHandler(data, 'text/plain'),
-			metadata,
-		};
+	async text<M = unknown>(
+		data: string,
+		metadata?: M
+	): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return {
+				data: new DataHandler(data, 'text/plain'),
+				metadata,
+			};
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a binary response with optional metadata
 	 */
-	binary(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'application/octet-stream', metadata);
+	binary<M = unknown>(
+		data: DataType,
+		metadata?: M
+	): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'application/octet-stream', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a PDF response with optional metadata
 	 */
-	pdf(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'application/pdf', metadata);
+	pdf<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'application/pdf', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a PNG response with optional metadata
 	 */
-	png(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'image/png', metadata);
+	png<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'image/png', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a JPEG response with optional metadata
 	 */
-	jpeg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'image/jpeg', metadata);
+	jpeg<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'image/jpeg', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a GIF response with optional metadata
 	 */
-	gif(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'image/gif', metadata);
+	gif<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'image/gif', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a WebP response with optional metadata
 	 */
-	webp(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'image/webp', metadata);
+	webp<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'image/webp', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a MP3 response with optional metadata
 	 */
-	mp3(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/mpeg', metadata);
+	mp3<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/mpeg', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a MP4 response with optional metadata
 	 */
-	mp4(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/mp4', metadata);
+	mp4<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/mp4', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a M4A response with optional metadata
 	 */
-	m4a(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/m4a', metadata);
+	m4a<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/m4a', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a M4P response with optional metadata
 	 */
-	m4p(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/m4p', metadata);
+	m4p<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/m4p', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a WebM response with optional metadata
 	 */
-	webm(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/webm', metadata);
+	webm<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/webm', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a HTML response with optional metadata
 	 */
-	async html(data: string, metadata?: JsonObject): Promise<AgentResponseData> {
-		return {
-			data: new DataHandler(data, 'text/html'),
-			metadata,
-		};
+	async html<M = unknown>(
+		data: string,
+		metadata?: M
+	): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return {
+				data: new DataHandler(data, 'text/html'),
+				metadata,
+			};
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a WAV response with optional metadata
 	 */
-	wav(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/wav', metadata);
+	wav<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/wav', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return an OGG response with optional metadata
 	 */
-	ogg(data: DataType, metadata?: JsonObject): Promise<AgentResponseData> {
-		return fromDataType(data, 'audio/ogg', metadata);
+	ogg<M = unknown>(data: DataType, metadata?: M): Promise<AgentResponseData> {
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, 'audio/ogg', metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * stream a response to the client
 	 */
-	async stream(
+	async stream<M = unknown>(
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
 		contentType?: string,
-		metadata?: JsonObject
+		metadata?: M
 	): Promise<AgentResponseData> {
-		return {
-			data: new DataHandler(stream, contentType ?? 'application/octet-stream'),
-			metadata,
-		};
+		if (isJsonObject(metadata)) {
+			return {
+				data: new DataHandler(
+					stream,
+					contentType ?? 'application/octet-stream'
+				),
+				metadata,
+			};
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a response with specific data and content type with optional metadata
 	 */
-	data(
+	data<M = unknown>(
 		data: DataType,
 		contentType: string,
-		metadata?: JsonObject
+		metadata?: M
 	): Promise<AgentResponseData> {
-		return fromDataType(data, contentType, metadata);
+		if (isJsonObject(metadata)) {
+			return fromDataType(data, contentType, metadata);
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 
 	/**
 	 * return a markdown response with optional metadata
 	 */
-	async markdown(
+	async markdown<M = unknown>(
 		content: string,
-		metadata?: JsonObject
+		metadata?: M
 	): Promise<AgentResponseData> {
-		return {
-			data: new DataHandler(content, 'text/markdown'),
-			metadata,
-		};
+		if (isJsonObject(metadata)) {
+			return {
+				data: new DataHandler(content, 'text/markdown'),
+				metadata,
+			};
+		}
+		throw new Error('metadata must be a JsonObject');
 	}
 }
