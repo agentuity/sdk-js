@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.118
+
+### Patch Changes
+
+- 70791ff: Improve error handling
+
 ## 0.0.117
 
 ### Patch Changes

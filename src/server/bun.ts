@@ -53,6 +53,7 @@ export class BunServer implements Server {
 			routeMap.set(key, route);
 		}
 
+		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		const { sdkVersion, logger } = this.config;
 		const hostname =
 			process.env.AGENTUITY_ENV === 'development' ? '127.0.0.1' : '0.0.0.0';
@@ -228,6 +229,7 @@ export class BunServer implements Server {
 													code: SpanStatusCode.ERROR,
 													message: (error as Error).message,
 												});
+												span.setAttribute('http.status_code', '500');
 												return new Response('Internal Server Error', {
 													status: 500,
 													headers: injectTraceContextToHeaders(),
@@ -249,8 +251,12 @@ export class BunServer implements Server {
 				});
 			},
 			error(error) {
-				logger.error('unhandled error: %s', error);
-				return new Response(`Unhandled Error: ${error.message}`, {
+				const { stack, message } = error as Error;
+				let errorMessage = message;
+				if (devmode) {
+					errorMessage = stack ?? errorMessage;
+				}
+				return new Response(errorMessage, {
 					status: 500,
 					headers: {
 						'Content-Type': 'text/plain',
