@@ -2,10 +2,10 @@ import type {
 	DataResult,
 	DataResultFound,
 	DataResultNotFound,
-	DataType,
 	KeyValueStorage,
 	KeyValueStorageSetParams,
 } from '../types';
+import { isDataType } from '../types';
 import { DELETE, GET, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
@@ -85,12 +85,16 @@ export default class KeyValueAPI implements KeyValueStorage {
 	 * @param value - the value to set
 	 * @param ttl - the time to live of the key
 	 */
-	async set(
+	async set<T = unknown>(
 		name: string,
 		key: string,
-		value: DataType,
+		value: T,
 		params?: KeyValueStorageSetParams
 	): Promise<void> {
+		if (!isDataType(value)) {
+			throw new Error('value must be a DataType');
+		}
+
 		const tracer = getTracer();
 		const currentContext = context.active();
 
