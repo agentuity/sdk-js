@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.118
+
+### Patch Changes
+
+- Logger enhancements
+
 ## 0.0.117
 
 ### Patch Changes
