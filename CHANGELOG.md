@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Logger enhancements
 - 70791ff: Improve error handling
 
 ## 0.0.117

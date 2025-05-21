@@ -32,19 +32,19 @@ export class ConsoleLogRecordExporter implements LogRecordExporter {
 		for (const log of logs) {
 			switch (log.severityNumber) {
 				case SeverityNumber.DEBUG:
-					this.logger.debug(log.body as string);
+					this.logger.debug(log.body);
 					break;
 				case SeverityNumber.INFO:
-					this.logger.info(log.body as string);
+					this.logger.info(log.body);
 					break;
 				case SeverityNumber.WARN:
-					this.logger.warn(log.body as string);
+					this.logger.warn(log.body);
 					break;
 				case SeverityNumber.ERROR:
-					this.logger.error(log.body as string);
+					this.logger.error(log.body);
 					break;
 				default:
-					this.logger.info(log.body as string);
+					this.logger.info(log.body);
 					break;
 			}
 		}
