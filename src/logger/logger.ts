@@ -8,7 +8,7 @@ export interface Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	debug(message: string | number, ...args: unknown[]): void;
+	debug(message: unknown, ...args: unknown[]): void;
 
 	/**
 	 * Log an info message
@@ -16,7 +16,7 @@ export interface Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	info(message: string | number, ...args: unknown[]): void;
+	info(message: unknown, ...args: unknown[]): void;
 
 	/**
 	 * Log a warning message
@@ -24,7 +24,7 @@ export interface Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	warn(message: string | number, ...args: unknown[]): void;
+	warn(message: unknown, ...args: unknown[]): void;
 
 	/**
 	 * Log an error message
@@ -32,7 +32,7 @@ export interface Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	error(message: string | number, ...args: unknown[]): void;
+	error(message: unknown, ...args: unknown[]): void;
 
 	/**
 	 * Create a child logger with additional context

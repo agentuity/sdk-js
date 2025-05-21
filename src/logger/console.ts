@@ -1,4 +1,4 @@
-import { formatWithOptions } from 'node:util';
+import { formatWithOptions, inspect } from 'node:util';
 import type { Logger } from './logger';
 import type { Json } from '../types';
 import { __originalConsole } from '../otel/logger';
@@ -33,7 +33,7 @@ export default class ConsoleLogger implements Logger {
 	 * @returns The formatted message with context
 	 * @private
 	 */
-	private formatMessage(message: string | number, args: unknown[]): string {
+	private formatMessage(message: unknown, args: unknown[]): string {
 		// Format the context string
 		const contextStr =
 			this.context && Object.keys(this.context).length > 0
@@ -48,9 +48,19 @@ export default class ConsoleLogger implements Logger {
 						.join(' ')
 				: '';
 
-		let _message = message;
-		if (typeof _message === 'object') {
-			_message = safeStringify(_message);
+		// Format the message based on its type
+		let _message: string;
+		if (typeof message === 'string') {
+			_message = message;
+		} else if (typeof message === 'number' || typeof message === 'boolean') {
+			_message = String(message);
+		} else if (message === null) {
+			_message = 'null';
+		} else if (message === undefined) {
+			_message = 'undefined';
+		} else {
+			// Use inspect for objects for better formatting
+			_message = inspect(message, { depth: null, colors: false });
 		}
 
 		// Format the message with args
@@ -64,7 +74,7 @@ export default class ConsoleLogger implements Logger {
 					...args
 				);
 			} else {
-				formattedMessage = String(_message);
+				formattedMessage = _message;
 			}
 		} catch (err) {
 			// If formatting fails, use a simple concatenation
@@ -89,7 +99,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	debug(message: string | number, ...args: unknown[]): void {
+	debug(message: unknown, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.debug(`${black}[DEBUG]${reset} ${formattedMessage}`);
@@ -106,7 +116,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	info(message: string | number, ...args: unknown[]): void {
+	info(message: unknown, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.info(`${green}[INFO]${reset}  ${formattedMessage}`);
@@ -123,7 +133,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	warn(message: string | number, ...args: unknown[]): void {
+	warn(message: unknown, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.warn(`${yellow}[WARN]${reset}  ${formattedMessage}`);
@@ -140,7 +150,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	error(message: string | number, ...args: unknown[]): void {
+	error(message: unknown, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.error(`${red}[ERROR]${reset} ${formattedMessage}`);

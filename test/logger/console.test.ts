@@ -160,6 +160,58 @@ describe('ConsoleLogger', () => {
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain('123');
 		});
+
+		it('should handle boolean as first argument', () => {
+			const logger = new ConsoleLogger();
+			
+			logger.info(true);
+			
+			expect(mockConsole.info).toHaveBeenCalled();
+			const message = mockConsole.info.mock.calls[0][0];
+			expect(message).toContain('true');
+		});
+
+		it('should handle null as first argument', () => {
+			const logger = new ConsoleLogger();
+			
+			logger.info(null);
+			
+			expect(mockConsole.info).toHaveBeenCalled();
+			const message = mockConsole.info.mock.calls[0][0];
+			expect(message).toContain('null');
+		});
+
+		it('should handle undefined as first argument', () => {
+			const logger = new ConsoleLogger();
+			
+			logger.info(undefined);
+			
+			expect(mockConsole.info).toHaveBeenCalled();
+			const message = mockConsole.info.mock.calls[0][0];
+			expect(message).toContain('undefined');
+		});
+
+		it('should handle object as first argument', () => {
+			const logger = new ConsoleLogger();
+			const obj = { name: 'test', value: 42 };
+			
+			logger.info(obj);
+			
+			expect(mockConsole.info).toHaveBeenCalled();
+			const message = mockConsole.info.mock.calls[0][0];
+			expect(message).toContain("{ name: 'test', value: 42 }");
+		});
+
+		it('should handle array as first argument', () => {
+			const logger = new ConsoleLogger();
+			const arr = [1, 'two', { three: 3 }];
+			
+			logger.info(arr);
+			
+			expect(mockConsole.info).toHaveBeenCalled();
+			const message = mockConsole.info.mock.calls[0][0];
+			expect(message).toContain("[ 1, 'two', { three: 3 } ]");
+		});
 	});
 
 	describe('child method', () => {
