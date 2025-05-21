@@ -373,7 +373,6 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							span.setStatus({ code: SpanStatusCode.OK });
 							return handlerResponse;
 						} catch (err) {
-							logger.error('Error in agent run: %s', err);
 							recordException(span, err);
 							throw err;
 						}

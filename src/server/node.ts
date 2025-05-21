@@ -101,6 +101,7 @@ export class NodeServer implements Server {
 	 */
 	async start(): Promise<void> {
 		const { sdkVersion } = this;
+		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
 				res.writeHead(200, {
@@ -294,8 +295,14 @@ export class NodeServer implements Server {
 								} catch (err) {
 									this.logger.error('Error injecting trace context: %s', err);
 								}
+								res.setHeader('Content-Type', 'text/plain');
 								res.writeHead(500);
-								res.end();
+								const { stack, message } = err as Error;
+								let errorMessage = message;
+								if (devmode) {
+									errorMessage = stack ?? errorMessage;
+								}
+								res.end(errorMessage);
 								span.recordException(err as Error);
 								span.setAttribute('http.status_code', '500');
 								span.setStatus({
