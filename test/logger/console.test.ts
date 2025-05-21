@@ -150,6 +150,16 @@ describe('ConsoleLogger', () => {
 			expect(mockConsole.info).toHaveBeenCalled();
 			expect(mockConsole.error).toHaveBeenCalled();
 		});
+
+		it('should handle number as first argument', () => {
+			const logger = new ConsoleLogger();
+			
+			logger.info(123);
+			
+			expect(mockConsole.info).toHaveBeenCalled();
+			const message = mockConsole.info.mock.calls[0][0];
+			expect(message).toContain('123');
+		});
 	});
 
 	describe('child method', () => {

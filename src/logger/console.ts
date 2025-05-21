@@ -33,7 +33,7 @@ export default class ConsoleLogger implements Logger {
 	 * @returns The formatted message with context
 	 * @private
 	 */
-	private formatMessage(message: string, args: unknown[]): string {
+	private formatMessage(message: string | number, args: unknown[]): string {
 		// Format the context string
 		const contextStr =
 			this.context && Object.keys(this.context).length > 0
@@ -64,7 +64,7 @@ export default class ConsoleLogger implements Logger {
 					...args
 				);
 			} else {
-				formattedMessage = _message;
+				formattedMessage = String(_message);
 			}
 		} catch (err) {
 			// If formatting fails, use a simple concatenation
@@ -89,7 +89,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	debug(message: string, ...args: unknown[]): void {
+	debug(message: string | number, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.debug(`${black}[DEBUG]${reset} ${formattedMessage}`);
@@ -106,7 +106,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	info(message: string, ...args: unknown[]): void {
+	info(message: string | number, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.info(`${green}[INFO]${reset}  ${formattedMessage}`);
@@ -123,7 +123,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	warn(message: string, ...args: unknown[]): void {
+	warn(message: string | number, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.warn(`${yellow}[WARN]${reset}  ${formattedMessage}`);
@@ -140,7 +140,7 @@ export default class ConsoleLogger implements Logger {
 	 * @param message - The message to log
 	 * @param args - Additional arguments to log
 	 */
-	error(message: string, ...args: unknown[]): void {
+	error(message: string | number, ...args: unknown[]): void {
 		try {
 			const formattedMessage = this.formatMessage(message, args);
 			__originalConsole.error(`${red}[ERROR]${reset} ${formattedMessage}`);
