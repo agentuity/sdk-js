@@ -4,6 +4,7 @@ import type {
 	VectorSearchParams,
 	VectorSearchResult,
 } from '../types';
+import { isJsonObject } from '../types';
 import { DELETE, GET, POST, PUT } from './api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
@@ -213,10 +214,13 @@ export default class VectorAPI implements VectorStorage {
 	 * @param params - the parameters for the vector search
 	 * @returns the results of the vector search
 	 */
-	async search(
+	async search<T = unknown>(
 		name: string,
-		params: VectorSearchParams
+		params: VectorSearchParams<T>
 	): Promise<VectorSearchResult[]> {
+		if (!isJsonObject(params.metadata)) {
+			throw new Error('params.metadata must be a JsonObject');
+		}
 		const tracer = getTracer();
 		const currentContext = context.active();
 

@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.117
+
+### Patch Changes
+
+- Better type handling for metadata where can be any valid JSON object
+
 ## 0.0.116
 
 ### Patch Changes
