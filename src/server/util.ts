@@ -268,6 +268,8 @@ export async function fromDataType(
 	throw new Error('Invalid data type (fromDataType)');
 }
 
+const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
+
 export async function createStreamingResponse(
 	origin: string | null,
 	server: string,
@@ -277,8 +279,22 @@ export async function createStreamingResponse(
 	const responseheaders = injectTraceContextToHeaders({
 		Server: server,
 	});
+	let resp: AgentResponseData;
 
-	const resp = await routeResult;
+	try {
+		resp = await routeResult;
+	} catch (error) {
+		const { stack, message } = error as Error;
+		let errorMessage = message;
+		if (devmode) {
+			errorMessage = stack ?? errorMessage;
+		}
+		responseheaders['Content-Type'] = 'text/plain';
+		return new Response(errorMessage, {
+			status: 500,
+			headers: responseheaders,
+		});
+	}
 	if (resp.metadata) {
 		for (const key in resp.metadata) {
 			let value = resp.metadata[key];
