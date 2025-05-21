@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Better type handling for metadata where can be any valid JSON object
+- Better type handling for metadata where can be any valid JSON object ([#110](https://github.com/agentuity/sdk-js/pull/110))
 
 ## 0.0.116
 
