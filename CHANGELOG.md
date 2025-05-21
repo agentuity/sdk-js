@@ -1,4 +1,10 @@
-# @agentuity/sdk
+# @agentuity/sdk Changelog
+
+## 0.0.118
+
+### Patch Changes
+
+- Improve error handling ([#111](https://github.com/agentuity/sdk-js/pull/111))
 
 ## 0.0.64
 
