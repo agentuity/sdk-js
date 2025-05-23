@@ -241,11 +241,16 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 				);
 			await otlpLogExporter
 				?.shutdown()
-				.catch((e) => logger.warn('error in shutdown of otel exporter. %s', e));
+				.catch(
+					(e) =>
+						!devmode && logger.warn('error in shutdown of otel exporter. %s', e)
+				);
 			await instrumentationSDK
 				?.shutdown()
-				.catch((e) =>
-					logger.warn('error in shutdown of otel instrumentation. %s', e)
+				.catch(
+					(e) =>
+						!devmode &&
+						logger.warn('error in shutdown of otel instrumentation. %s', e)
 				);
 			logger.debug('shut down OpenTelemetry');
 		}

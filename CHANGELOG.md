@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.119
+
+### Patch Changes
+
+- Prevent multiple logs for the same error
+
 ## 0.0.118
 
 ### Patch Changes
