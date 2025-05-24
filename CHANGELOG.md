@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.120
+
+### Patch Changes
+
+- bdf2cdc: Add support for inbound email on request
+
 ## 0.0.119
 
 ### Patch Changes

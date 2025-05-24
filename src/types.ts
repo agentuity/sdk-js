@@ -1,6 +1,7 @@
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
+import type { Email } from './io/email';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -67,6 +68,11 @@ export interface Data {
 	 * the stream of the data
 	 */
 	stream(): Promise<ReadableStream<ReadableDataType>>;
+
+	/**
+	 * the email data represented as a Email. If the data is not an email in rfc822 format, this will throw an error.
+	 */
+	email(): Promise<Email>;
 }
 
 /**
