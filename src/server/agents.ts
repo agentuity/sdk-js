@@ -113,7 +113,7 @@ class LocalAgentInvoker implements RemoteAgent {
 				}
 				throw new Error(await resp.text());
 			} catch (ex) {
-				recordException(span, ex);
+				recordException(span, ex, true);
 				throw ex;
 			} finally {
 				span.end();

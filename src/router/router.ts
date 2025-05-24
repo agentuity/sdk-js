@@ -112,13 +112,21 @@ export function getAgentDetail(): Record<string, string | undefined> | null {
  * @param span - The span to record the exception in
  * @param ex - The exception to record
  */
-export function recordException(span: Span, ex: unknown) {
-	const { logger } = asyncStorage.getStore() as { logger: Logger };
-	if (logger) {
-		logger.error('%s', ex);
-	} else {
-		console.error(ex);
+export function recordException(span: Span, ex: unknown, skipLog = false) {
+	// annotate the exception with a flag to avoid double logging
+	const __exception = ex as { __exception_recorded?: true };
+	if (__exception?.__exception_recorded) {
+		return;
 	}
+	if (!skipLog) {
+		const { logger } = asyncStorage.getStore() as { logger: Logger };
+		if (logger) {
+			logger.error('%s', ex);
+		} else {
+			console.error(ex);
+		}
+	}
+	__exception.__exception_recorded = true;
 	span.recordException(ex as Exception);
 	span.setStatus({
 		code: SpanStatusCode.ERROR,
