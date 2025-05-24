@@ -1,5 +1,4 @@
 import {
-	type AddressObject,
 	type Attachment,
 	type ParsedMail,
 	type Headers,
