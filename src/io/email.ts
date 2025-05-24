@@ -110,6 +110,10 @@ export class Email {
  * Parse an email from a buffer and return an Email object.
  */
 export async function parseEmail(data: Buffer): Promise<Email> {
-	const message = await simpleParser(data);
-	return new Email(message);
+	try {
+		const message = await simpleParser(data);
+		return new Email(message);
+	} catch (error) {
+		throw new Error(`Failed to parse email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+	}
 }
