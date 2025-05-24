@@ -1,8 +1,8 @@
 # @agentuity/sdk Changelog
 
-## [0.0.119] - 2025-05-24
+## 0.0.119
 
-### Fixed
+### Patch Changes
 
 - Logger message arg accepts number type ([#113](https://github.com/agentuity/sdk-js/pull/113))
 - Prevent multiple logs for the same exception ([#115](https://github.com/agentuity/sdk-js/pull/115))
