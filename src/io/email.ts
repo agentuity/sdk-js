@@ -52,13 +52,14 @@ export class Email {
 	 * If the email has multiple recipients, the email addresses are comma separated.
 	 */
 	to(): string | null {
-		const to = this._message.to as unknown as AddressObject;
-		if ('text' in to) {
-			return to.text;
+		if (!this._message.to) {
+			return null;
 		}
 		if (Array.isArray(this._message.to)) {
-			const tos = this._message.to as AddressObject[];
-			return tos.map((to) => to.text).join(', ');
+			return this._message.to.map((addr) => addr.text.trim()).join(', ');
+		}
+		if (typeof this._message.to === 'object' && 'text' in this._message.to) {
+			return this._message.to.text;
 		}
 		return null;
 	}
