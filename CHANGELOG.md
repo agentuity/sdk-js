@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.121
+
+### Patch Changes
+
+- Add support for agents to be able to reply to incoming email
+
 ## 0.0.120
 
 ### Patch Changes

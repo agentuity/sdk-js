@@ -13,6 +13,7 @@ import type { ServerRoute } from './types';
 import { createRouter } from '../router';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
+import EmailAPI from '../apis/email';
 
 /**
  * Creates a unified server based on the runtime environment
@@ -153,6 +154,7 @@ interface ServerContextRequest {
 
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
+const email = new EmailAPI();
 
 /**
  * Creates an agent context for server operations
@@ -172,6 +174,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		meter: req.meter,
 		kv,
 		vector,
+		email,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
 		scope: 'local',

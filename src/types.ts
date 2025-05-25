@@ -398,6 +398,26 @@ export interface VectorStorage {
 	delete(name: string, ...ids: string[]): Promise<number>;
 }
 
+/**
+ * EmailService provides a way to send email replies to incoming emails
+ */
+export interface EmailService {
+	/**
+	 * send an email reply to an incoming email
+	 *
+	 * @param agentId - the id of the agent to send the reply to
+	 * @param email - the email to send the reply to in RFC822 format
+	 * @param authToken - the authorization token to use to send the reply
+	 * @param messageId - the message id of the email
+	 */
+	sendReply(
+		agentId: string,
+		email: string,
+		authToken: string,
+		messageId: string
+	): Promise<void>;
+}
+
 export interface InvocationArguments<T = unknown> {
 	/**
 	 * the data to pass to the agent
@@ -546,6 +566,11 @@ export interface AgentContext {
 	 * the vector storage
 	 */
 	vector: VectorStorage;
+
+	/**
+	 * the email service
+	 */
+	email: EmailService;
 }
 
 /**
