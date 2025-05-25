@@ -1,10 +1,10 @@
 # @agentuity/sdk Changelog
 
-## 0.0.121
+## [0.0.121] - 2025-05-25
 
-### Patch Changes
+### Added
 
-- Add support for agents to be able to reply to incoming email
+- Add support for agents to be able to reply to incoming email ([#118](https://github.com/agentuity/sdk-js/pull/118))
 
 ## 0.0.120
 
