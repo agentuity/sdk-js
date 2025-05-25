@@ -406,7 +406,7 @@ export interface EmailService {
 	 * send an email reply to an incoming email
 	 *
 	 * @param agentId - the id of the agent to send the reply to
-	 * @param email - the email to send the reply to
+	 * @param email - the email to send the reply to in RFC822 format
 	 * @param authToken - the authorization token to use to send the reply
 	 * @param messageId - the message id of the email
 	 */
