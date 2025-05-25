@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.120",
+	"version": "0.0.121",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
@@ -66,6 +66,7 @@
 		"@types/bun": "latest",
 		"@types/js-yaml": "^4.0.9",
 		"@types/mailparser": "^3.4.6",
+		"@types/nodemailer": "^6.4.17",
 		"tsup": "^8.4.0"
 	},
 	"peerDependencies": {
@@ -89,6 +90,7 @@
 		"@opentelemetry/sdk-node": "^0.57.2",
 		"@opentelemetry/semantic-conventions": "^1.30.0",
 		"js-yaml": "^4.1.0",
-		"mailparser": "^3.7.3"
+		"mailparser": "^3.7.3",
+		"nodemailer": "^7.0.3"
 	}
 }

@@ -13,6 +13,7 @@ interface BaseApiRequest {
 	path: string;
 	timeout?: number;
 	headers?: Record<string, string>;
+	authToken?: string;
 }
 
 /**
@@ -69,7 +70,9 @@ export async function send<K>(
 	forceBuffer = false,
 	attempt = 1
 ): Promise<APIResponse<K>> {
-	const apiKey = process.env.AGENTUITY_SDK_KEY || process.env.AGENTUITY_API_KEY;
+	const apiKey =
+		request.authToken ??
+		(process.env.AGENTUITY_SDK_KEY || process.env.AGENTUITY_API_KEY);
 	if (!apiKey) {
 		throw new Error('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
 	}
@@ -167,7 +170,8 @@ export async function POST<K>(
 	path: string,
 	body: Body,
 	headers?: Record<string, string>,
-	timeout?: number
+	timeout?: number,
+	authToken?: string
 ) {
 	return send<K>({
 		method: 'POST',
@@ -175,6 +179,7 @@ export async function POST<K>(
 		body,
 		headers,
 		timeout,
+		authToken,
 	} as PostApiRequest);
 }
 
