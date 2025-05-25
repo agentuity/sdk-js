@@ -17,7 +17,7 @@ export default class EmailApi implements EmailService {
 		const currentContext = context.active();
 
 		// Create a child span using the current context
-		const span = tracer.startSpan('agentuity.email.send', {}, currentContext);
+		const span = tracer.startSpan('agentuity.email.reply', {}, currentContext);
 
 		try {
 			// Create a new context with the child span
@@ -26,7 +26,7 @@ export default class EmailApi implements EmailService {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				span.setAttribute('@agentuity/agentId', agentId);
-				span.setAttribute('messageId', messageId);
+				span.setAttribute('@agentuity/emailMessageId', messageId);
 
 				const resp = await POST(
 					`/email/2025-03-17/${agentId}/reply`,
@@ -43,7 +43,7 @@ export default class EmailApi implements EmailService {
 					return;
 				}
 				throw new Error(
-					`error sending email: ${resp.response.statusText} (${resp.response.status})`
+					`error sending email reply: ${resp.response.statusText} (${resp.response.status})`
 				);
 			});
 		} catch (ex) {
