@@ -353,10 +353,6 @@ export interface VectorSearchResult {
 	 */
 	embedding?: number[];
 	/**
-	 * the embeddings of the vector object when it was stored
-	 */
-	embeddings?: number[];
-	/**
 	 * the text of the vector object when it was stored
 	 */
 	document?: string;
