@@ -369,6 +369,19 @@ export function getRequestFromHeaders(
 	};
 }
 
+function safeParseIfLooksLikeJson(value: unknown) {
+	if (typeof value !== 'string') {
+		return value;
+	}
+	if (value.charAt(0) === '{' && value.charAt(value.length - 1) === '}') {
+		return safeParse(value);
+	}
+	if (value.charAt(0) === '[' && value.charAt(value.length - 1) === ']') {
+		return safeParse(value);
+	}
+	return value;
+}
+
 /**
  * Extracts metadata from headers
  *
@@ -379,32 +392,33 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 	const metadata: JsonObject = {};
 	for (const [key, value] of Object.entries(headers)) {
 		if (key.startsWith('x-agentuity-')) {
-			if (key === 'x-agentuity-metadata') {
-				const md = safeParse(value) as JsonObject;
-				if (md) {
-					for (const [k, v] of Object.entries(md)) {
-						metadata[k] = v;
+			switch (key) {
+				case 'x-agentuity-metadata': {
+					const md = safeParse(value) as JsonObject;
+					if (md) {
+						for (const [k, v] of Object.entries(md)) {
+							metadata[k] = safeParseIfLooksLikeJson(v as string);
+						}
 					}
+					continue;
 				}
-				continue;
-			}
-			const mdkey = key.substring(12);
-			if (value.charAt(0) === '{' && value.charAt(value.length - 1) === '}') {
-				metadata[mdkey] = safeParse(value);
-			} else {
-				metadata[mdkey] = value;
-			}
-		}
-	}
-	if (
-		'headers' in metadata &&
-		typeof metadata.headers === 'object' &&
-		metadata.headers
-	) {
-		// check to see if we have embedded headers metadata and if so, merge it into the main metadata
-		for (const [key, value] of Object.entries(metadata.headers)) {
-			if (key.startsWith('x-agentuity-')) {
-				if (typeof value === 'string') {
+				case 'x-agentuity-headers': {
+					const md = safeParse(value) as JsonObject;
+					const kv: Record<string, string> = {};
+					if ('content-type' in headers) {
+						kv['content-type'] = headers['content-type'];
+					}
+					for (const [k, v] of Object.entries(md)) {
+						if (k.startsWith('x-agentuity-')) {
+							metadata[k.substring(12)] = safeParseIfLooksLikeJson(v as string);
+						} else {
+							kv[k] = safeParseIfLooksLikeJson(v as string);
+						}
+					}
+					metadata.headers = kv;
+					break;
+				}
+				default: {
 					const mdkey = key.substring(12);
 					if (
 						value.charAt(0) === '{' &&
@@ -414,7 +428,7 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 					} else {
 						metadata[mdkey] = value;
 					}
-					delete (metadata.headers as JsonObject)[key];
+					break;
 				}
 			}
 		}
