@@ -315,7 +315,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							req.request.trigger,
 							body,
 							req.request.contentType,
-							req.request.metadata ?? {}
+							req.request.metadata ?? { headers: req.headers }
 						);
 						const response = new AgentResponseHandler();
 						const context = {
