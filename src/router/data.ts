@@ -2,6 +2,7 @@ import { ReadableStream } from 'node:stream/web';
 import type { Data, ReadableDataType, Json } from '../types';
 import { safeParse } from '../server/util';
 import { parseEmail, type Email } from '../io/email';
+import { parseSms, type TwilioSms } from '../io/twilio';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -211,6 +212,14 @@ export class DataHandler implements Data {
 		}
 		const data = await this.data();
 		return parseEmail(data);
+	}
+
+	async twilio(): Promise<TwilioSms> {
+		if (this.contentType !== 'application/json') {
+			throw new Error('The content type is not a valid sms');
+		}
+		const data = await this.data();
+		return parseSms(data);
 	}
 
 	private isTextChunkable() {
