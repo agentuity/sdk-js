@@ -153,9 +153,9 @@ describe('ConsoleLogger', () => {
 
 		it('should handle number as first argument', () => {
 			const logger = new ConsoleLogger();
-			
+
 			logger.info(123);
-			
+
 			expect(mockConsole.info).toHaveBeenCalled();
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain('123');
@@ -163,9 +163,9 @@ describe('ConsoleLogger', () => {
 
 		it('should handle boolean as first argument', () => {
 			const logger = new ConsoleLogger();
-			
+
 			logger.info(true);
-			
+
 			expect(mockConsole.info).toHaveBeenCalled();
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain('true');
@@ -173,9 +173,9 @@ describe('ConsoleLogger', () => {
 
 		it('should handle null as first argument', () => {
 			const logger = new ConsoleLogger();
-			
+
 			logger.info(null);
-			
+
 			expect(mockConsole.info).toHaveBeenCalled();
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain('null');
@@ -183,9 +183,9 @@ describe('ConsoleLogger', () => {
 
 		it('should handle undefined as first argument', () => {
 			const logger = new ConsoleLogger();
-			
+
 			logger.info(undefined);
-			
+
 			expect(mockConsole.info).toHaveBeenCalled();
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain('undefined');
@@ -194,9 +194,9 @@ describe('ConsoleLogger', () => {
 		it('should handle object as first argument', () => {
 			const logger = new ConsoleLogger();
 			const obj = { name: 'test', value: 42 };
-			
+
 			logger.info(obj);
-			
+
 			expect(mockConsole.info).toHaveBeenCalled();
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain("{ name: 'test', value: 42 }");
@@ -205,9 +205,9 @@ describe('ConsoleLogger', () => {
 		it('should handle array as first argument', () => {
 			const logger = new ConsoleLogger();
 			const arr = [1, 'two', { three: 3 }];
-			
+
 			logger.info(arr);
-			
+
 			expect(mockConsole.info).toHaveBeenCalled();
 			const message = mockConsole.info.mock.calls[0][0];
 			expect(message).toContain("[ 1, 'two', { three: 3 } ]");

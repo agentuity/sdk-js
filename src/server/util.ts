@@ -366,11 +366,12 @@ function safeParseIfLooksLikeJson(value: unknown) {
 	if (typeof value !== 'string') {
 		return value;
 	}
-	if (value.charAt(0) === '{' && value.charAt(value.length - 1) === '}') {
-		return safeParse(value);
-	}
-	if (value.charAt(0) === '[' && value.charAt(value.length - 1) === ']') {
-		return safeParse(value);
+	const trimmed = value.trim();
+	if (
+		(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+		(trimmed.startsWith('[') && trimmed.endsWith(']'))
+	) {
+		return safeParse(trimmed, value);
 	}
 	return value;
 }
@@ -388,7 +389,7 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 			switch (key) {
 				case 'x-agentuity-metadata': {
 					const md = safeParse(value) as JsonObject;
-					if (md) {
+					if (md && typeof md === 'object' && !Array.isArray(md)) {
 						for (const [k, v] of Object.entries(md)) {
 							metadata[k] = safeParseIfLooksLikeJson(v as string);
 						}
@@ -401,7 +402,7 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 					if ('content-type' in headers) {
 						kv['content-type'] = headers['content-type'];
 					}
-					if (md) {
+					if (md && typeof md === 'object' && !Array.isArray(md)) {
 						for (const [k, v] of Object.entries(md)) {
 							if (k.startsWith('x-agentuity-')) {
 								metadata[k.substring(12)] = safeParseIfLooksLikeJson(
@@ -417,14 +418,7 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 				}
 				default: {
 					const mdkey = key.substring(12);
-					if (
-						value.charAt(0) === '{' &&
-						value.charAt(value.length - 1) === '}'
-					) {
-						metadata[mdkey] = safeParse(value);
-					} else {
-						metadata[mdkey] = value;
-					}
+					metadata[mdkey] = safeParseIfLooksLikeJson(value);
 					break;
 				}
 			}
