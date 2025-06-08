@@ -311,12 +311,11 @@ export async function createStreamingResponse(
 	}
 	if (origin) {
 		responseheaders['Access-Control-Allow-Origin'] = origin;
-	} else {
-		responseheaders['Access-Control-Allow-Origin'] = '*';
+		responseheaders['Access-Control-Allow-Methods'] =
+			'GET, PUT, DELETE, PATCH, OPTIONS, POST';
+		responseheaders['Access-Control-Allow-Headers'] =
+			'Content-Type, Authorization';
 	}
-	responseheaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
-	responseheaders['Access-Control-Allow-Headers'] =
-		'Content-Type, Authorization';
 
 	if (resp instanceof Response) {
 		for (const [key, value] of Object.entries(responseheaders)) {

@@ -78,7 +78,6 @@ export class BunServer implements Server {
 				},
 				'/_health': new Response('OK', {
 					headers: {
-						'x-agentuity-binary': 'true',
 						'x-agentuity-version': sdkVersion,
 					},
 				}),
@@ -135,114 +134,108 @@ export class BunServer implements Server {
 						});
 					},
 				},
-				'/:agentId': {
-					OPTIONS: async () => {
+				'/:agentId': async (req) => {
+					const method = req.method;
+
+					if (method === 'OPTIONS') {
 						return new Response('OK', {
 							headers: {
 								'Access-Control-Allow-Origin': '*',
-								'Access-Control-Allow-Methods': 'OPTIONS, POST',
+								'Access-Control-Allow-Methods':
+									'GET, PUT, DELETE, PATCH, OPTIONS, POST',
 								'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 							},
 						});
-					},
-					POST: async (req) => {
-						const url = new URL(req.url);
-						const method = req.method;
+					}
 
-						this.server?.timeout(req, timeout);
+					const url = new URL(req.url);
+					this.server?.timeout(req, timeout);
 
-						// Extract trace context from headers
-						const extractedContext = extractTraceContextFromBunRequest(req);
+					// Extract trace context from headers
+					const extractedContext = extractTraceContextFromBunRequest(req);
 
-						// Execute the request handler within the extracted context
-						return context.with(
-							extractedContext,
-							async (): Promise<Response> => {
-								// Create a span for this incoming request
-								return trace.getTracer('http-server').startActiveSpan(
-									`HTTP ${method}`,
-									{
-										kind: SpanKind.SERVER,
-										attributes: {
-											'http.method': method,
-											'http.url': req.url,
-											'http.host': url.host,
-											'http.user_agent': req.headers.get('user-agent') || '',
-											'http.path': url.pathname,
-										},
-									},
-									async (span): Promise<Response> => {
-										try {
-											const routeKey = `${method}:${url.pathname}`;
-											const route = routeMap.get(routeKey);
+					// Execute the request handler within the extracted context
+					return context.with(extractedContext, async (): Promise<Response> => {
+						// Create a span for this incoming request
+						return trace.getTracer('http-server').startActiveSpan(
+							`HTTP ${method}`,
+							{
+								kind: SpanKind.SERVER,
+								attributes: {
+									'http.method': method,
+									'http.url': req.url,
+									'http.host': url.host,
+									'http.user_agent': req.headers.get('user-agent') || '',
+									'http.path': url.pathname,
+								},
+							},
+							async (span): Promise<Response> => {
+								try {
+									const routeKey = `${method}:${url.pathname}`;
+									const route = routeMap.get(routeKey);
 
-											if (!route) {
-												logger.error(
-													'agent not found: %s for: %s',
-													method,
-													url.pathname
-												);
-												span.setStatus({
-													code: SpanStatusCode.ERROR,
-													message: `No Agent found at ${url.pathname}`,
-												});
-												return new Response('Not Found', {
-													status: 404,
-													headers: injectTraceContextToHeaders(),
-												});
-											}
-
-											span.setAttribute(
-												'@agentuity/agentName',
-												route.agent.name
-											);
-											span.setAttribute('@agentuity/agentId', route.agent.id);
-											logger.debug('request: %s %s', method, url.pathname);
-
-											const runId = span.spanContext().traceId;
-
-											try {
-												const routeResult = route.handler({
-													body:
-														(req.body as unknown as
-															| ReadableStream<ReadableDataType>
-															| AsyncIterable<ReadableDataType>) ?? undefined,
-													url: req.url,
-													headers: req.headers.toJSON(),
-													request: getRequestFromHeaders(
-														req.headers.toJSON(),
-														runId
-													),
-													setTimeout: (val: number) =>
-														this.server?.timeout(req, val),
-												});
-
-												return createStreamingResponse(
-													req.headers.get('origin'),
-													`Agentuity BunJS/${sdkVersion}`,
-													span,
-													routeResult as Promise<AgentResponseData>
-												);
-											} catch (error) {
-												span.recordException(error as Error);
-												span.setStatus({
-													code: SpanStatusCode.ERROR,
-													message: (error as Error).message,
-												});
-												span.setAttribute('http.status_code', '500');
-												return new Response('Internal Server Error', {
-													status: 500,
-													headers: injectTraceContextToHeaders(),
-												});
-											}
-										} finally {
-											span.end();
-										}
+									if (!route) {
+										logger.error(
+											'agent not found: %s for: %s',
+											method,
+											url.pathname
+										);
+										span.setStatus({
+											code: SpanStatusCode.ERROR,
+											message: `No Agent found at ${url.pathname}`,
+										});
+										return new Response('Not Found', {
+											status: 404,
+											headers: injectTraceContextToHeaders(),
+										});
 									}
-								);
+
+									span.setAttribute('@agentuity/agentName', route.agent.name);
+									span.setAttribute('@agentuity/agentId', route.agent.id);
+									logger.debug('request: %s %s', method, url.pathname);
+
+									const runId = span.spanContext().traceId;
+
+									try {
+										const routeResult = route.handler({
+											body:
+												(req.body as unknown as
+													| ReadableStream<ReadableDataType>
+													| AsyncIterable<ReadableDataType>) ?? undefined,
+											url: req.url,
+											headers: req.headers.toJSON(),
+											request: getRequestFromHeaders(
+												req.headers.toJSON(),
+												runId
+											),
+											setTimeout: (val: number) =>
+												this.server?.timeout(req, val),
+										});
+
+										return createStreamingResponse(
+											req.headers.get('origin'),
+											`Agentuity BunJS/${sdkVersion}`,
+											span,
+											routeResult as Promise<AgentResponseData>
+										);
+									} catch (error) {
+										span.recordException(error as Error);
+										span.setStatus({
+											code: SpanStatusCode.ERROR,
+											message: (error as Error).message,
+										});
+										span.setAttribute('http.status_code', '500');
+										return new Response('Internal Server Error', {
+											status: 500,
+											headers: injectTraceContextToHeaders(),
+										});
+									}
+								} finally {
+									span.end();
+								}
 							}
 						);
-					},
+					});
 				},
 			},
 			async fetch() {
