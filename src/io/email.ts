@@ -13,6 +13,8 @@ import type {
 import { fromDataType } from '../server/util';
 import { DataHandler } from '../router/data';
 import { send } from '../apis/api';
+import { getTracer, recordException } from '../router/router';
+import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 
 /**
  * An attachment to an incoming email
@@ -70,12 +72,29 @@ class RemoteEmailAttachment implements IncomingEmailAttachment {
 	}
 
 	async data(): Promise<Data> {
-		return send({ url: this._url, method: 'GET' }, true).then((res) => {
-			return new DataHandler(
-				res.response.body as unknown as ReadableStream<ReadableDataType>,
-				res.headers.get('content-type') ?? 'application/octet-stream'
-			);
-		});
+		const tracer = getTracer();
+		const currentContext = context.active();
+		const span = tracer.startSpan(
+			'agentuity.email.attachment',
+			{},
+			currentContext
+		);
+		try {
+			const spanContext = trace.setSpan(currentContext, span);
+			return await context.with(spanContext, async () => {
+				const res = await send({ url: this._url, method: 'GET' }, true);
+				span.setStatus({ code: SpanStatusCode.OK });
+				return new DataHandler(
+					res.response.body as unknown as ReadableStream<ReadableDataType>,
+					res.headers.get('content-type') ?? 'application/octet-stream'
+				);
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
 	}
 }
 
