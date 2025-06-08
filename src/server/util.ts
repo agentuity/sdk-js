@@ -299,13 +299,7 @@ export async function createStreamingResponse(
 		for (const key in resp.metadata) {
 			let value = resp.metadata[key];
 			if (typeof value === 'string') {
-				if (
-					value &&
-					value.charAt(0) === '{' &&
-					value.charAt(value.length - 1) === '}'
-				) {
-					value = safeParse(value, value);
-				}
+				value = safeParseIfLooksLikeJson(value) ?? value;
 			} else {
 				value = JSON.stringify(value);
 			}
@@ -408,11 +402,15 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 					if ('content-type' in headers) {
 						kv['content-type'] = headers['content-type'];
 					}
-					for (const [k, v] of Object.entries(md)) {
-						if (k.startsWith('x-agentuity-')) {
-							metadata[k.substring(12)] = safeParseIfLooksLikeJson(v as string);
-						} else {
-							kv[k] = safeParseIfLooksLikeJson(v as string);
+					if (md) {
+						for (const [k, v] of Object.entries(md)) {
+							if (k.startsWith('x-agentuity-')) {
+								metadata[k.substring(12)] = safeParseIfLooksLikeJson(
+									v as string
+								);
+							} else {
+								kv[k] = safeParseIfLooksLikeJson(v as string);
+							}
 						}
 					}
 					metadata.headers = kv;

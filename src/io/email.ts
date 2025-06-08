@@ -294,8 +294,12 @@ export class Email {
 				}
 				const mail = new MailComposer({
 					inReplyTo: this.messageId() ?? undefined,
+					references: this.messageId() ?? undefined,
 					date: new Date(),
-					from: this.to() as string,
+					from: {
+						name: context.agent.name,
+						address: this.to() as string,
+					},
 					to: {
 						name: this.fromName() ?? undefined,
 						address: this.fromEmail() ?? undefined,
