@@ -105,7 +105,6 @@ export class NodeServer implements Server {
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
 				res.writeHead(200, {
-					'x-agentuity-binary': 'true',
 					'x-agentuity-version': sdkVersion,
 				});
 				res.end();
@@ -124,7 +123,8 @@ export class NodeServer implements Server {
 			if (req.method === 'OPTIONS') {
 				res.writeHead(200, {
 					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Methods':
+						'GET, PUT, DELETE, PATCH, OPTIONS, POST',
 					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 				});
 				res.end();
@@ -182,12 +182,6 @@ export class NodeServer implements Server {
 				}
 				res.writeHead(404);
 				res.end();
-			}
-
-			if (req.method !== 'POST') {
-				res.writeHead(405);
-				res.end();
-				return;
 			}
 
 			// Extract trace context from headers

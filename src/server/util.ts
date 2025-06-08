@@ -299,13 +299,7 @@ export async function createStreamingResponse(
 		for (const key in resp.metadata) {
 			let value = resp.metadata[key];
 			if (typeof value === 'string') {
-				if (
-					value &&
-					value.charAt(0) === '{' &&
-					value.charAt(value.length - 1) === '}'
-				) {
-					value = safeParse(value, value);
-				}
+				value = safeParseIfLooksLikeJson(value) ?? value;
 			} else {
 				value = JSON.stringify(value);
 			}
@@ -317,12 +311,11 @@ export async function createStreamingResponse(
 	}
 	if (origin) {
 		responseheaders['Access-Control-Allow-Origin'] = origin;
-	} else {
-		responseheaders['Access-Control-Allow-Origin'] = '*';
+		responseheaders['Access-Control-Allow-Methods'] =
+			'GET, PUT, DELETE, PATCH, OPTIONS, POST';
+		responseheaders['Access-Control-Allow-Headers'] =
+			'Content-Type, Authorization';
 	}
-	responseheaders['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
-	responseheaders['Access-Control-Allow-Headers'] =
-		'Content-Type, Authorization';
 
 	if (resp instanceof Response) {
 		for (const [key, value] of Object.entries(responseheaders)) {
@@ -369,6 +362,20 @@ export function getRequestFromHeaders(
 	};
 }
 
+function safeParseIfLooksLikeJson(value: unknown) {
+	if (typeof value !== 'string') {
+		return value;
+	}
+	const trimmed = value.trim();
+	if (
+		(trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+		(trimmed.startsWith('[') && trimmed.endsWith(']'))
+	) {
+		return safeParse(trimmed, value);
+	}
+	return value;
+}
+
 /**
  * Extracts metadata from headers
  *
@@ -379,42 +386,40 @@ export function metadataFromHeaders(headers: Record<string, string>) {
 	const metadata: JsonObject = {};
 	for (const [key, value] of Object.entries(headers)) {
 		if (key.startsWith('x-agentuity-')) {
-			if (key === 'x-agentuity-metadata') {
-				const md = safeParse(value) as JsonObject;
-				if (md) {
-					for (const [k, v] of Object.entries(md)) {
-						metadata[k] = v;
+			switch (key) {
+				case 'x-agentuity-metadata': {
+					const md = safeParse(value) as JsonObject;
+					if (md && typeof md === 'object' && !Array.isArray(md)) {
+						for (const [k, v] of Object.entries(md)) {
+							metadata[k] = safeParseIfLooksLikeJson(v as string);
+						}
 					}
+					continue;
 				}
-				continue;
-			}
-			const mdkey = key.substring(12);
-			if (value.charAt(0) === '{' && value.charAt(value.length - 1) === '}') {
-				metadata[mdkey] = safeParse(value);
-			} else {
-				metadata[mdkey] = value;
-			}
-		}
-	}
-	if (
-		'headers' in metadata &&
-		typeof metadata.headers === 'object' &&
-		metadata.headers
-	) {
-		// check to see if we have embedded headers metadata and if so, merge it into the main metadata
-		for (const [key, value] of Object.entries(metadata.headers)) {
-			if (key.startsWith('x-agentuity-')) {
-				if (typeof value === 'string') {
-					const mdkey = key.substring(12);
-					if (
-						value.charAt(0) === '{' &&
-						value.charAt(value.length - 1) === '}'
-					) {
-						metadata[mdkey] = safeParse(value);
-					} else {
-						metadata[mdkey] = value;
+				case 'x-agentuity-headers': {
+					const md = safeParse(value) as JsonObject;
+					const kv: Record<string, string> = {};
+					if ('content-type' in headers) {
+						kv['content-type'] = headers['content-type'];
 					}
-					delete (metadata.headers as JsonObject)[key];
+					if (md && typeof md === 'object' && !Array.isArray(md)) {
+						for (const [k, v] of Object.entries(md)) {
+							if (k.startsWith('x-agentuity-')) {
+								metadata[k.substring(12)] = safeParseIfLooksLikeJson(
+									v as string
+								);
+							} else {
+								kv[k] = safeParseIfLooksLikeJson(v as string);
+							}
+						}
+					}
+					metadata.headers = kv;
+					break;
+				}
+				default: {
+					const mdkey = key.substring(12);
+					metadata[mdkey] = safeParseIfLooksLikeJson(value);
+					break;
 				}
 			}
 		}
