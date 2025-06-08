@@ -1,14 +1,43 @@
+import type { ReadableStream } from 'node:stream/web';
 import { type ParsedMail, type Headers, simpleParser } from 'mailparser';
 import { inspect } from 'node:util';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import type { Address, Attachment } from 'nodemailer/lib/mailer';
-import type { AgentContext, AgentRequest, DataType } from '../types';
+import type {
+	AgentContext,
+	AgentRequest,
+	Data,
+	DataType,
+	ReadableDataType,
+} from '../types';
 import { fromDataType } from '../server/util';
+import { DataHandler } from '../router/data';
+import { send } from '../apis/api';
 
 /**
- * An attachment to an email
+ * An attachment to an incoming email
  */
-export interface EmailAttachment {
+export interface IncomingEmailAttachment {
+	/**
+	 * the filename of the attachment
+	 */
+	filename: string;
+
+	/**
+	 * the data payload of the attachment. This is a promise that resolves to a Data object.
+	 */
+	data(): Promise<Data>;
+
+	/**
+	 * the content disposition of the attachment. if not provided, it will be 'attachment'.
+	 */
+	contentDisposition: 'attachment' | 'inline';
+}
+
+/**
+ * An attachment to an outgoing email
+ */
+export interface OutgoingEmailAttachment {
 	/**
 	 * the filename of the attachment
 	 */
@@ -23,6 +52,31 @@ export interface EmailAttachment {
 	 * the content disposition of the attachment. if not provided, it will be 'attachment'.
 	 */
 	contentDisposition?: 'attachment' | 'inline' | undefined;
+}
+
+class RemoteEmailAttachment implements IncomingEmailAttachment {
+	public readonly filename: string;
+	public readonly contentDisposition: 'attachment' | 'inline';
+	private readonly _url: string;
+
+	constructor(
+		filename: string,
+		url: string,
+		contentDisposition?: 'attachment' | 'inline'
+	) {
+		this.filename = filename;
+		this.contentDisposition = contentDisposition ?? 'attachment';
+		this._url = url;
+	}
+
+	async data(): Promise<Data> {
+		return send({ url: this._url, method: 'GET' }, true).then((res) => {
+			return new DataHandler(
+				res.response.body as unknown as ReadableStream<ReadableDataType>,
+				res.headers.get('content-type') ?? 'application/octet-stream'
+			);
+		});
+	}
 }
 
 /**
@@ -47,7 +101,7 @@ export interface EmailReply {
 	/**
 	 * the optional attachments to the email
 	 */
-	attachments?: EmailAttachment[];
+	attachments?: OutgoingEmailAttachment[];
 }
 
 /**
@@ -145,13 +199,21 @@ export class Email {
 	/**
 	 * The attachments of the email or an empty array if there are no attachments.
 	 */
-	attachments(): Attachment[] {
-		return (this._message.attachments ?? []).map((att) => ({
-			filename: att.filename || 'attachment',
-			content: att.content,
-			contentType: att.contentType,
-			contentDisposition: 'attachment' as const,
-		}));
+	attachments(): IncomingEmailAttachment[] {
+		if (!this._message.attachments || this._message.attachments.length === 0) {
+			return [];
+		}
+		return this._message.attachments.map((att) => {
+			const hv = att.headers.get('content-disposition') as {
+				value: string;
+				params: Record<string, string>;
+			};
+			return new RemoteEmailAttachment(
+				hv.params.filename,
+				hv.params.url,
+				hv.value as 'attachment' | 'inline' | undefined
+			);
+		});
 	}
 
 	private makeReplySubject(subject: string | undefined): string {

@@ -45,6 +45,7 @@ export class DataHandler implements Data {
 		| ReadableStream<ReadableDataType>
 		| AsyncIterable<ReadableDataType>;
 	private _buffer: Buffer;
+	private _email?: Email;
 
 	constructor(
 		stream:
@@ -209,8 +210,12 @@ export class DataHandler implements Data {
 		if (this.contentType !== 'message/rfc822') {
 			throw new Error('The content type is not a valid email');
 		}
+		if (this._email) {
+			return this._email;
+		}
 		const data = await this.data();
-		return parseEmail(data);
+		this._email = await parseEmail(data);
+		return this._email;
 	}
 
 	private isTextChunkable() {
