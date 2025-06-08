@@ -83,11 +83,14 @@ class RemoteEmailAttachment implements IncomingEmailAttachment {
 			const spanContext = trace.setSpan(currentContext, span);
 			return await context.with(spanContext, async () => {
 				const res = await send({ url: this._url, method: 'GET' }, true);
-				span.setStatus({ code: SpanStatusCode.OK });
-				return new DataHandler(
-					res.response.body as unknown as ReadableStream<ReadableDataType>,
-					res.headers.get('content-type') ?? 'application/octet-stream'
-				);
+				if (res.status === 200) {
+					span.setStatus({ code: SpanStatusCode.OK });
+					return new DataHandler(
+						res.response.body as unknown as ReadableStream<ReadableDataType>,
+						res.headers.get('content-type') ?? 'application/octet-stream'
+					);
+				}
+				throw new Error(`Failed to fetch attachment: ${res.status}`);
 			});
 		} catch (ex) {
 			recordException(span, ex);
@@ -227,6 +230,14 @@ export class Email {
 				value: string;
 				params: Record<string, string>;
 			};
+			if (!hv || !hv.params) {
+				throw new Error(
+					'Invalid attachment headers: missing content-disposition'
+				);
+			}
+			if (!hv.params.filename || !hv.params.url) {
+				throw new Error('Invalid attachment headers: missing filename or url');
+			}
 			return new RemoteEmailAttachment(
 				hv.params.filename,
 				hv.params.url,
