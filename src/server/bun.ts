@@ -10,6 +10,7 @@ import {
 	createStreamingResponse,
 	toWelcomePrompt,
 	getRequestFromHeaders,
+	shouldIgnoreStaticFile,
 } from './util';
 import type {
 	AgentResponseData,
@@ -134,7 +135,7 @@ export class BunServer implements Server {
 						});
 					},
 				},
-				'/:agentId': async (req) => {
+				'/*': async (req) => {
 					const method = req.method;
 
 					if (method === 'OPTIONS') {
@@ -171,10 +172,22 @@ export class BunServer implements Server {
 							},
 							async (span): Promise<Response> => {
 								try {
-									const routeKey = `${method}:${url.pathname}`;
+									const agentId = url.pathname.split('/')[1]; // in case we have extra path segments, we need to get the first one for agents
+									const routeKey = `POST:/${agentId}`;
 									const route = routeMap.get(routeKey);
 
 									if (!route) {
+										// ignore common static files
+										if (
+											method === 'GET' &&
+											shouldIgnoreStaticFile(url.pathname)
+										) {
+											span.setAttribute('http.status_code', '404');
+											return new Response('Not Found', {
+												status: 404,
+												headers: injectTraceContextToHeaders(),
+											});
+										}
 										logger.error(
 											'agent not found: %s for: %s',
 											method,

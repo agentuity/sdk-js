@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.123
+
+### Patch Changes
+
+- Improve handling of multiple path segments and different methods
+
 ## 0.0.122
 
 ### Patch Changes

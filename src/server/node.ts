@@ -17,6 +17,7 @@ import {
 	createStreamingResponse,
 	toWelcomePrompt,
 	getRequestFromHeaders,
+	shouldIgnoreStaticFile,
 } from './util';
 import type { AgentResponseData, AgentWelcomeResult } from '../types';
 import { Readable } from 'node:stream';
@@ -206,6 +207,15 @@ export class NodeServer implements Server {
 						try {
 							const route = this.routes.find((r) => r.path === req.url);
 							if (!route) {
+								if (
+									req.method === 'GET' &&
+									shouldIgnoreStaticFile(req.url ?? '/')
+								) {
+									span.setAttribute('http.status_code', '404');
+									res.writeHead(404, injectTraceContextToHeaders());
+									res.end();
+									return;
+								}
 								this.logger.error(
 									'agent not found: %s for: %s',
 									req.method,

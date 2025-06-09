@@ -465,3 +465,22 @@ export function headersToRecord(headers: Headers): Record<string, string> {
 	});
 	return record;
 }
+
+/**
+ * these are a set of files that should be ignored by the server if not served by the agent
+ */
+export function shouldIgnoreStaticFile(pathname: string) {
+	return (
+		pathname === '/favicon.ico' ||
+		pathname === '/robots.txt' ||
+		pathname === '/humans.txt' ||
+		pathname === '/security.txt' ||
+		pathname === '/sitemap.xml' ||
+		pathname === '/favicon.png' ||
+		pathname === '/apple-touch-icon.png' ||
+		pathname === '/apple-touch-icon-precomposed.png' ||
+		pathname === '/crossdomain.xml' ||
+		pathname === '/browserconfig.xml' ||
+		pathname === '/manifest.json'
+	);
+}
