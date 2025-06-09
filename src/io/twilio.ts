@@ -74,7 +74,7 @@ export class TwilioSms {
                 span.setAttribute("@agentuity/agentId", ctx.agent.id);
                 span.setAttribute("@agentuity/twilioMessageId", this.messageId);
                 const resp = await POST(
-                    "/twilio/reply",
+                    "/sms/twilio/reply",
                     safeStringify({
                         from: this.from,
                         to: this.to,
