@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.122
+
+### Patch Changes
+
+- 34b7c12: Adds support for large email attachments
+
 ## 0.0.121
 
 ### Added
