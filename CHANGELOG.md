@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Refactor Bun handler to consolidate logic and make sure all paths go through it
+- Refactor Bun handler to consolidate logic and make sure all paths go through it ([#128](https://github.com/agentuity/sdk-js/pull/128))
 
 ## 0.0.123
 
