@@ -2,9 +2,10 @@
 
 ## 0.0.123
 
-### Patch Changes
+### Fixed
 
-- Improve handling of multiple path segments and different methods
+- Improved handling of requests for common static files by returning a 404 response without unnecessary error logging
+- Enhanced support for multiple path segments and different HTTP methods in server routing ([#126](https://github.com/agentuity/sdk-js/pull/126))
 
 ## 0.0.122
 
