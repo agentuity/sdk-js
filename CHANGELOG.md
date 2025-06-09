@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.124
+
+### Patch Changes
+
+- Refactor Bun handler to consolidate logic and make sure all paths go through it
+
 ## 0.0.123
 
 ### Fixed
