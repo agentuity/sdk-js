@@ -1,6 +1,6 @@
 # @agentuity/sdk Changelog
 
-## [0.0.123] - 2025-06-09
+## 0.0.123
 
 ### Fixed
 
