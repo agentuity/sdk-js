@@ -1,4 +1,4 @@
-export interface DiscordMessageI {
+export interface DiscordMessageInterface {
 	/** The Id of the guild the message was sent in if any
 	 * Could be undefined if the message was sent in a DM
 	 * */
@@ -21,7 +21,20 @@ export interface DiscordMessageI {
 	content: string;
 }
 
-function isDiscordMessage(message: unknown): message is DiscordMessageI {
+/**
+ * Type guard to check if an unknown value is a valid DiscordMessageInterface.
+ * Uses a single-loop approach for efficiency:
+ * 1. First validates basic object structure
+ * 2. Creates a Set of message keys for O(1) lookups
+ * 3. Checks that all required keys exist in a single loop
+ * 4. Verifies that all keys in the message are either required or optional
+ *
+ * @param message - The value to check
+ * @returns True if the value is a valid DiscordMessageInterface, false otherwise
+ */
+function isDiscordMessage(
+	message: unknown
+): message is DiscordMessageInterface {
 	if (typeof message !== 'object') return false;
 	if (message === null) return false;
 	if (Array.isArray(message)) return false;
@@ -29,21 +42,43 @@ function isDiscordMessage(message: unknown): message is DiscordMessageI {
 	const messageKeys = Object.keys(message);
 	if (messageKeys.length !== 6) return false;
 
-	const requiredKeys = ['messageId', 'userId', 'username', 'content'];
-	const optionalKeys = ['guildId', 'channelId'];
+	// Define required and optional keys for validation
+	const requiredKeys = [
+		'messageId',
+		'channelId',
+		'userId',
+		'username',
+		'content',
+	];
+	const optionalKeys = ['guildId'];
 
+	// Create a Set for O(1) lookups
 	const messageKeysSet = new Set(messageKeys);
 
+	// Check that all required keys exist
 	for (const key of requiredKeys) {
 		if (!messageKeysSet.has(key)) return false;
+
+		// biome-ignore lint/suspicious/noExplicitAny: Checking valid message type
+		if (typeof (message as any)[key] !== 'string') return false;
 	}
 
+	// Validate optional guildId if present
+	if (
+		messageKeysSet.has('guildId') &&
+		// biome-ignore lint/suspicious/noExplicitAny: Checking valid message type
+		typeof (message as any).guildId !== 'string'
+	) {
+		return false;
+	}
+
+	// Verify all keys in the message are either required or optional
 	return messageKeys.every(
 		(key) => requiredKeys.includes(key) || optionalKeys.includes(key)
 	);
 }
 
-export class DiscordMessage implements DiscordMessageI {
+export class DiscordMessage implements DiscordMessageInterface {
 	private readonly _userId: string;
 	private readonly _guildId: string | undefined;
 	private readonly _channelId: string;
