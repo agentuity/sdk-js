@@ -100,4 +100,75 @@ describe('VectorAPI', () => {
 			vectorAPI.search = originalSearch;
 		});
 	});
+
+	describe('delete', () => {
+		it('should delete a single vector successfully', async () => {
+			const mockResponse = {
+				status: 200,
+				json: {
+					success: true,
+					data: 1,
+				},
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				DELETE: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			const originalDelete = vectorAPI.delete;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> => 1;
+
+			const result = await vectorAPI.delete('test-store', 'id1');
+
+			expect(result).toBe(1);
+
+			vectorAPI.delete = originalDelete;
+		});
+
+		it('should return 0 when no vectors are deleted', async () => {
+			const mockResponse = {
+				status: 200,
+				json: {
+					success: true,
+					data: 0,
+				},
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				DELETE: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			const originalDelete = vectorAPI.delete;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> => 0;
+
+			const result = await vectorAPI.delete('test-store', 'nonexistent-id');
+
+			expect(result).toBe(0);
+
+			vectorAPI.delete = originalDelete;
+		});
+
+		it('should throw error when delete fails', async () => {
+			const mockResponse = {
+				status: 400,
+				json: {
+					success: false,
+					message: 'Delete failed',
+				},
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				DELETE: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			const originalDelete = vectorAPI.delete;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> => {
+				throw new Error('Delete failed');
+			};
+
+			await expect(vectorAPI.delete('test-store', 'id1')).rejects.toThrow('Delete failed');
+
+			vectorAPI.delete = originalDelete;
+		});
+	});
 });
