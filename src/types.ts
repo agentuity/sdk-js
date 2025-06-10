@@ -349,9 +349,9 @@ export interface VectorSearchResult {
 	 */
 	metadata?: JsonObject;
 	/**
-	 * the distance of the vector object from the query from 0.0-1.0.
+	 * the distance of the vector object from the query from 0-1. The larger the number, the more similar the vector object is to the query.
 	 */
-	distance: number;
+	similarity: number;
 }
 
 /**

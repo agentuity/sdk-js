@@ -8,11 +8,11 @@ describe('VectorAPI', () => {
 	const mockTracer = {
 		startSpan: mock((name: string, options: unknown, ctx: unknown) => {
 			return {
-				setAttribute: mock(() => {}),
-				addEvent: mock(() => {}),
-				end: mock(() => {}),
-				setStatus: mock(() => {}),
-				recordException: mock(() => {}),
+				setAttribute: mock(() => { }),
+				addEvent: mock(() => { }),
+				end: mock(() => { }),
+				setStatus: mock(() => { }),
+				recordException: mock(() => { }),
 			};
 		}),
 	};
@@ -37,7 +37,7 @@ describe('VectorAPI', () => {
 
 		mock.module('../../src/router/router', () => ({
 			getTracer: () => mockTracer,
-			recordException: mock(() => {}),
+			recordException: mock(() => { }),
 			asyncStorage: {
 				getStore: () => ({
 					tracer: mockTracer,
@@ -49,7 +49,7 @@ describe('VectorAPI', () => {
 	describe('search', () => {
 		it('should return search results successfully', async () => {
 			const mockSearchResults: VectorSearchResult[] = [
-				{ id: '1', key: 'key1', distance: 0.9 },
+				{ id: '1', key: 'key1', metadata: { name: 'test' } },
 			];
 			const mockResponse = {
 				status: 200,
