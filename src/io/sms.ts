@@ -80,6 +80,7 @@ export class TwilioSms {
                         from: this.from,
                         to: this.to,
                         reply: reply,
+                        agentId: ctx.agent.id,
                     }),
                     {
                         "Content-Type": "application/json",
