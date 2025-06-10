@@ -158,7 +158,7 @@ export type JsonPrimitive =
 /**
  * JSON array type
  */
-export interface JsonArray extends Array<JsonPrimitive> { }
+export interface JsonArray extends Array<JsonPrimitive> {}
 
 /**
  * valid keys for a JSON object
@@ -349,14 +349,11 @@ export interface VectorSearchResult {
 	 */
 	metadata?: JsonObject;
 	/**
-	 * the embedding of the vector object when it was stored
+	 * the distance of the vector object from the query from 0-1. The larger the number, the more similar the vector object is to the query.
 	 */
-	embedding?: number[];
-	/**
-	 * the text of the vector object when it was stored
-	 */
-	document?: string;
+	similarity: number;
 }
+
 /**
  * VectorStorage provides a way to store and search for data using vector embeddings
  */
