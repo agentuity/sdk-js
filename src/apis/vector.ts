@@ -10,7 +10,6 @@ import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { safeStringify } from '../server/util';
 
-
 /**
  * Response for a successful vector upsert operation
  */

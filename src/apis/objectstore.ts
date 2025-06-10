@@ -167,7 +167,7 @@ export default class ObjectStoreAPI implements ObjectStore {
 					headers
 				);
 
-				if (resp.status === 201) {
+				if (resp.status >= 200 && resp.status < 300) {
 					span.setStatus({ code: SpanStatusCode.OK });
 					return;
 				}

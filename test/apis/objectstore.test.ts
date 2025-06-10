@@ -1,6 +1,10 @@
 import { describe, expect, it, mock, beforeEach } from 'bun:test';
 import ObjectStoreAPI from '../../src/apis/objectstore';
-import type { DataResult, DataResultFound, DataResultNotFound } from '../../src/types';
+import type {
+	DataResult,
+	DataResultFound,
+	DataResultNotFound,
+} from '../../src/types';
 import '../setup'; // Import global test setup
 import { DataHandler } from '../../src/router/data';
 
@@ -60,19 +64,12 @@ describe('ObjectStore API', () => {
 				GET: mock(() => Promise.resolve(mockResponse)),
 			}));
 
-			objectStore.get = async (bucket: string, key: string): Promise<DataResult> => {
-				const result: DataResultFound = {
-					exists: true,
-					data: new DataHandler('test data', 'text/plain'),
-				};
-				return result;
-			};
-
 			const result = await objectStore.get('test-bucket', 'test-key');
 
 			expect(result.exists).toBe(true);
 			if (result.exists) {
 				expect(await result.data.text()).toBe('test data');
+				expect(result.data.contentType).toBe('text/plain');
 			}
 		});
 
@@ -84,14 +81,6 @@ describe('ObjectStore API', () => {
 			mock.module('../../src/apis/api', () => ({
 				GET: mock(() => Promise.resolve(mockResponse)),
 			}));
-
-			objectStore.get = async (bucket: string, key: string): Promise<DataResult> => {
-				const result: DataResultNotFound = {
-					exists: false,
-					data: undefined as never,
-				};
-				return result;
-			};
 
 			const result = await objectStore.get('test-bucket', 'nonexistent-key');
 
@@ -111,11 +100,9 @@ describe('ObjectStore API', () => {
 				GET: mock(() => Promise.resolve(mockResponse)),
 			}));
 
-			objectStore.get = async (bucket: string, key: string): Promise<DataResult> => {
-				throw new Error('Internal server error');
-			};
-
-			await expect(objectStore.get('test-bucket', 'test-key')).rejects.toThrow('Internal server error');
+			await expect(objectStore.get('test-bucket', 'test-key')).rejects.toThrow(
+				'Internal server error'
+			);
 		});
 	});
 
@@ -130,15 +117,16 @@ describe('ObjectStore API', () => {
 			}));
 
 			mock.module('../../src/server/util', () => ({
-				fromDataType: mock(() => Promise.resolve({
-					data: new DataHandler('test data', 'text/plain'),
-				})),
+				fromDataType: mock(() =>
+					Promise.resolve({
+						data: new DataHandler('test data', 'text/plain'),
+					})
+				),
 			}));
 
-			objectStore.put = async (bucket: string, key: string, data: unknown): Promise<void> => {
-				// Mock implementation that doesn't throw
-				return Promise.resolve();
-			};
+			mock.module('../../src/types', () => ({
+				isDataType: mock(() => true),
+			}));
 
 			await expect(
 				objectStore.put('test-bucket', 'test-key', 'test data')
@@ -146,12 +134,19 @@ describe('ObjectStore API', () => {
 		});
 
 		it('should throw error for invalid data type', async () => {
+			// Create a fresh ObjectStore instance for this test to avoid mock interference
+			const freshObjectStore = new ObjectStoreAPI();
+
 			mock.module('../../src/types', () => ({
 				isDataType: mock(() => false),
 			}));
 
 			await expect(
-				objectStore.put('test-bucket', 'test-key', Symbol('invalid') as unknown)
+				freshObjectStore.put(
+					'test-bucket',
+					'test-key',
+					Symbol('invalid') as unknown
+				)
 			).rejects.toThrow('data must be a DataType');
 		});
 
@@ -169,14 +164,16 @@ describe('ObjectStore API', () => {
 			}));
 
 			mock.module('../../src/server/util', () => ({
-				fromDataType: mock(() => Promise.resolve({
-					data: new DataHandler('test data', 'text/plain'),
-				})),
+				fromDataType: mock(() =>
+					Promise.resolve({
+						data: new DataHandler('test data', 'text/plain'),
+					})
+				),
 			}));
 
-			objectStore.put = async (bucket: string, key: string, data: unknown): Promise<void> => {
-				throw new Error('Bad request: invalid bucket name');
-			};
+			mock.module('../../src/types', () => ({
+				isDataType: mock(() => true),
+			}));
 
 			await expect(
 				objectStore.put('test-bucket', 'test-key', 'test data')
@@ -194,10 +191,6 @@ describe('ObjectStore API', () => {
 				DELETE: mock(() => Promise.resolve(mockResponse)),
 			}));
 
-			objectStore.delete = async (bucket: string, key: string): Promise<boolean> => {
-				return true;
-			};
-
 			const result = await objectStore.delete('test-bucket', 'test-key');
 
 			expect(result).toBe(true);
@@ -211,10 +204,6 @@ describe('ObjectStore API', () => {
 			mock.module('../../src/apis/api', () => ({
 				DELETE: mock(() => Promise.resolve(mockResponse)),
 			}));
-
-			objectStore.delete = async (bucket: string, key: string): Promise<boolean> => {
-				return false;
-			};
 
 			const result = await objectStore.delete('test-bucket', 'nonexistent-key');
 
@@ -234,11 +223,9 @@ describe('ObjectStore API', () => {
 				DELETE: mock(() => Promise.resolve(mockResponse)),
 			}));
 
-			objectStore.delete = async (bucket: string, key: string): Promise<boolean> => {
-				throw new Error('Access denied');
-			};
-
-			await expect(objectStore.delete('test-bucket', 'test-key')).rejects.toThrow('Access denied');
+			await expect(
+				objectStore.delete('test-bucket', 'test-key')
+			).rejects.toThrow('Access denied');
 		});
 	});
 
@@ -254,11 +241,10 @@ describe('ObjectStore API', () => {
 				POST: mock(() => Promise.resolve(mockResponse)),
 			}));
 
-			objectStore.createPublicURL = async (bucket: string, key: string): Promise<string> => {
-				return mockUrl;
-			};
-
-			const result = await objectStore.createPublicURL('test-bucket', 'test-key');
+			const result = await objectStore.createPublicURL(
+				'test-bucket',
+				'test-key'
+			);
 
 			expect(result).toBe(mockUrl);
 		});
@@ -278,22 +264,13 @@ describe('ObjectStore API', () => {
 				}),
 			}));
 
-			objectStore.createPublicURL = async (
-				bucket: string, 
-				key: string, 
-				expiresDuration?: number
-			): Promise<string> => {
-				// Simulate the actual implementation
-				const requestBody: { expires?: number } = {};
-				if (expiresDuration) {
-					requestBody.expires = expiresDuration;
-				}
-				capturedBody = JSON.stringify(requestBody);
-				return mockUrl;
-			};
+			const result = await objectStore.createPublicURL(
+				'test-bucket',
+				'test-key',
+				3600000
+			);
 
-			await objectStore.createPublicURL('test-bucket', 'test-key', 3600000);
-
+			expect(result).toBe(mockUrl);
 			expect(capturedBody).toBe('{"expires":3600000}');
 		});
 
@@ -312,15 +289,12 @@ describe('ObjectStore API', () => {
 				}),
 			}));
 
-			objectStore.createPublicURL = async (bucket: string, key: string): Promise<string> => {
-				// Simulate the actual implementation
-				const requestBody: { expires?: number } = {};
-				capturedBody = JSON.stringify(requestBody);
-				return mockUrl;
-			};
+			const result = await objectStore.createPublicURL(
+				'test-bucket',
+				'test-key'
+			);
 
-			await objectStore.createPublicURL('test-bucket', 'test-key');
-
+			expect(result).toBe(mockUrl);
 			expect(capturedBody).toBe('{}');
 		});
 	});

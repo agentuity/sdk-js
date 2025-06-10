@@ -8,11 +8,11 @@ describe('VectorAPI', () => {
 	const mockTracer = {
 		startSpan: mock((name: string, options: unknown, ctx: unknown) => {
 			return {
-				setAttribute: mock(() => { }),
-				addEvent: mock(() => { }),
-				end: mock(() => { }),
-				setStatus: mock(() => { }),
-				recordException: mock(() => { }),
+				setAttribute: mock(() => {}),
+				addEvent: mock(() => {}),
+				end: mock(() => {}),
+				setStatus: mock(() => {}),
+				recordException: mock(() => {}),
 			};
 		}),
 	};
@@ -37,7 +37,7 @@ describe('VectorAPI', () => {
 
 		mock.module('../../src/router/router', () => ({
 			getTracer: () => mockTracer,
-			recordException: mock(() => { }),
+			recordException: mock(() => {}),
 			asyncStorage: {
 				getStore: () => ({
 					tracer: mockTracer,
@@ -116,7 +116,8 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, key: string): Promise<number> => 1;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> =>
+				1;
 
 			const result = await vectorAPI.delete('test-store', 'id1');
 
@@ -139,7 +140,8 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, key: string): Promise<number> => 0;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> =>
+				0;
 
 			const result = await vectorAPI.delete('test-store', 'nonexistent-id');
 
@@ -166,7 +168,9 @@ describe('VectorAPI', () => {
 				throw new Error('Delete failed');
 			};
 
-			await expect(vectorAPI.delete('test-store', 'id1')).rejects.toThrow('Delete failed');
+			await expect(vectorAPI.delete('test-store', 'id1')).rejects.toThrow(
+				'Delete failed'
+			);
 
 			vectorAPI.delete = originalDelete;
 		});
