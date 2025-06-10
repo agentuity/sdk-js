@@ -10,6 +10,7 @@ import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { safeStringify } from '../server/util';
 
+
 /**
  * Response for a successful vector upsert operation
  */
@@ -277,17 +278,17 @@ export default class VectorAPI implements VectorStorage {
 	 * delete a vector from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param ids - the ids of the vectors to delete
+	 * @param key - the key of the vector to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	async delete(name: string, ...ids: string[]): Promise<number> {
+	async delete(name: string, key: string): Promise<number> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.delete',
-			{ attributes: { name, ids: ids.length } },
+			{ attributes: { name, key } },
 			currentContext
 		);
 
@@ -298,8 +299,7 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE<VectorDeleteResponse>(
-					`/vector/2025-03-17/${encodeURIComponent(name)}`,
-					safeStringify(ids)
+					`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {

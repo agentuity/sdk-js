@@ -116,34 +116,11 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...ids: string[]): Promise<number> => 1;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> => 1;
 
 			const result = await vectorAPI.delete('test-store', 'id1');
 
 			expect(result).toBe(1);
-
-			vectorAPI.delete = originalDelete;
-		});
-
-		it('should delete multiple vectors successfully', async () => {
-			const mockResponse = {
-				status: 200,
-				json: {
-					success: true,
-					data: 3,
-				},
-			};
-
-			mock.module('../../src/apis/api', () => ({
-				DELETE: mock(() => Promise.resolve(mockResponse)),
-			}));
-
-			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...ids: string[]): Promise<number> => 3;
-
-			const result = await vectorAPI.delete('test-store', 'id1', 'id2', 'id3');
-
-			expect(result).toBe(3);
 
 			vectorAPI.delete = originalDelete;
 		});
@@ -162,7 +139,7 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...ids: string[]): Promise<number> => 0;
+			vectorAPI.delete = async (name: string, key: string): Promise<number> => 0;
 
 			const result = await vectorAPI.delete('test-store', 'nonexistent-id');
 
@@ -185,7 +162,7 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...ids: string[]): Promise<number> => {
+			vectorAPI.delete = async (name: string, key: string): Promise<number> => {
 				throw new Error('Delete failed');
 			};
 
