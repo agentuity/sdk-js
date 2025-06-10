@@ -44,9 +44,14 @@ export default class DiscordApi implements DiscordService {
 					channelId,
 				});
 
-				const resp = await POST(`/discord/${agentId}/reply`, payload, {
-					'Content-Type': 'application/json',
-				});
+				const resp = await POST(
+					`/discord/${encodeURIComponent(agentId)}/reply`,
+					payload,
+					{
+						'Content-Type': 'application/json',
+						Accept: 'application/json',
+					}
+				);
 
 				if (resp.status === 200) {
 					span.setStatus({ code: SpanStatusCode.OK });

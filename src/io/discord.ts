@@ -4,7 +4,7 @@ export interface DiscordMessageInterface {
 	/** The Id of the guild the message was sent in if any
 	 * Could be undefined if the message was sent in a DM
 	 * */
-	guildId?: string;
+	guildId: string;
 
 	/** The ID of the channel the message was sent in
 	 * */
@@ -95,7 +95,7 @@ export interface DiscordReply {
  */
 export class DiscordMessage implements DiscordMessageInterface {
 	private readonly _userId: string;
-	private readonly _guildId: string | undefined;
+	private readonly _guildId: string;
 	private readonly _channelId: string;
 	private readonly _username: string;
 	private readonly _messageId: string;
@@ -139,11 +139,6 @@ export class DiscordMessage implements DiscordMessageInterface {
 	get content() {
 		return this._content;
 	}
-
-	isDM() {
-		return this._guildId === undefined;
-	}
-
 	/**
 	 * Send a reply to this Discord message
 	 *
