@@ -1,3 +1,5 @@
+import type { AgentContext, AgentRequest } from '../types';
+
 export interface DiscordMessageInterface {
 	/** The Id of the guild the message was sent in if any
 	 * Could be undefined if the message was sent in a DM
@@ -78,6 +80,19 @@ function isDiscordMessage(
 	);
 }
 
+/**
+ * A reply to a Discord message
+ */
+export interface DiscordReply {
+	/**
+	 * The text content of the reply
+	 */
+	content: string;
+}
+
+/**
+ * A class representing a Discord message with common information for processing.
+ */
 export class DiscordMessage implements DiscordMessageInterface {
 	private readonly _userId: string;
 	private readonly _guildId: string | undefined;
@@ -120,12 +135,35 @@ export class DiscordMessage implements DiscordMessageInterface {
 	get username() {
 		return this._username;
 	}
+
 	get content() {
 		return this._content;
 	}
 
 	isDM() {
 		return this._guildId === undefined;
+	}
+
+	/**
+	 * Send a reply to this Discord message
+	 *
+	 * @param req - The agent request
+	 * @param context - The agent context
+	 * @param reply - The reply to send
+	 * @returns A promise that resolves when the reply is sent
+	 */
+	async sendReply(
+		_req: AgentRequest,
+		context: AgentContext,
+		reply: DiscordReply
+	): Promise<void> {
+		// Use the discord service from the context to send the reply
+		return context.discord.sendReply(
+			context.agent.id,
+			this._messageId,
+			this._channelId,
+			reply.content
+		);
 	}
 }
 

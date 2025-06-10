@@ -9,7 +9,7 @@ export default class DiscordApi implements DiscordService {
 	 *
 	 * @param agentId - the id of the agent to send the reply to
 	 * @param messageId - the message id of the discord message
-	 * @param guildId - the guild id of the discord message (undefined for DMs)
+	 * @param channelId - the channel id of the discord message
 	 * @param content - the content of the reply
 	 */
 	async sendReply(
@@ -36,6 +36,7 @@ export default class DiscordApi implements DiscordService {
 			return await context.with(spanContext, async () => {
 				span.setAttribute('@agentuity/agentId', agentId);
 				span.setAttribute('@agentuity/discordMessageId', messageId);
+				span.setAttribute('@agentuity/discordChannelId', channelId);
 
 				const payload = JSON.stringify({
 					content,
