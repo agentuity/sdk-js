@@ -2,7 +2,7 @@ import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
-import { DiscordMessage } from './io/discord';
+import type { DiscordMessage } from './io/discord';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -429,17 +429,17 @@ export interface EmailService {
  */
 export interface DiscordService {
 	/**
-	 * send a reply to a discord message
+	 * send a reply to a incoming Discord message
 	 *
 	 * @param agentId - the id of the agent to send the reply to
 	 * @param messageId - the message id of the discord message
-	 * @param guildId - the guild id of the discord message
+	 * @param guildId - the guild id of the discord message (undefined for DMs)
 	 * @param content - the content of the reply
 	 */
 	sendReply(
 		agentId: string,
 		messageId: string,
-		guildId: string,
+		guildId: string | undefined,
 		content: string
 	): Promise<void>;
 }
