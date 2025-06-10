@@ -433,13 +433,13 @@ export interface DiscordService {
 	 *
 	 * @param agentId - the id of the agent to send the reply to
 	 * @param messageId - the message id of the discord message
-	 * @param guildId - the guild id of the discord message (undefined for DMs)
+	 * @param channelId - the channel id of the discord message
 	 * @param content - the content of the reply
 	 */
 	sendReply(
 		agentId: string,
 		messageId: string,
-		guildId: string | undefined,
+		channelId: string,
 		content: string
 	): Promise<void>;
 }
@@ -597,6 +597,11 @@ export interface AgentContext {
 	 * the email service
 	 */
 	email: EmailService;
+
+	/**
+	 * the discord service
+	 */
+	discord: DiscordService;
 }
 
 /**
