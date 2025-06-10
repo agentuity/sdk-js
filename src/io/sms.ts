@@ -40,21 +40,22 @@ export class TwilioSms {
         return JSON.stringify(this._message);
     }
     get messageId(): string {
-        return this._message.MessageSid ?? "";
+        return this._message.MessageSid;
     }
 
     get to(): string {
-        return this._message.To ?? "";
+        return this._message.To;
     }
     get from(): string {
-        return this._message.From ?? "";
+        return this._message.From;
     }
 
     get text(): string {
-        return this._message.Body ?? "";
+        return this._message.Body;
     }
 
     async sendReply(req: AgentRequest, ctx: AgentContext, reply: string) {
+
         const tracer = getTracer();
         const currentContext = context.active();
 
@@ -78,7 +79,7 @@ export class TwilioSms {
                     safeStringify({
                         from: this.from,
                         to: this.to,
-                        text: reply,
+                        reply: reply,
                     }),
                     {
                         "Content-Type": "application/json",

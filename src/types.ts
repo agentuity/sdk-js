@@ -2,7 +2,7 @@ import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
-import { TwilioSms } from './io/twilio';
+import { TwilioSms } from './io/sms';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -77,7 +77,7 @@ export interface Data {
 	email(): Promise<Email>;
 
 
-	twilio(): Promise<TwilioSms>;
+	sms(): Promise<TwilioSms>;
 
 }
 
