@@ -2,6 +2,7 @@ import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
+import type { DiscordMessage } from './io/discord';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -15,6 +16,7 @@ export type TriggerType =
 	| 'queue'
 	| 'voice'
 	| 'email'
+	| 'discord'
 	| 'agent';
 
 /**
@@ -73,6 +75,11 @@ export interface Data {
 	 * the email data represented as a Email. If the data is not an email in rfc822 format, this will throw an error.
 	 */
 	email(): Promise<Email>;
+
+	/**
+	 * the discord message data represented as a DiscordMessage. If the data is not a valid discord message, this will throw an error.
+	 */
+	discordMessage(): Promise<DiscordMessage>;
 }
 
 /**
@@ -418,6 +425,26 @@ export interface EmailService {
 	): Promise<void>;
 }
 
+/**
+ * DiscordService provides a way to send a discord message replying to a incoming Discord message
+ */
+export interface DiscordService {
+	/**
+	 * send a reply to a incoming Discord message
+	 *
+	 * @param agentId - the id of the agent to send the reply to
+	 * @param messageId - the message id of the discord message
+	 * @param channelId - the channel id of the discord message
+	 * @param content - the content of the reply
+	 */
+	sendReply(
+		agentId: string,
+		messageId: string,
+		channelId: string,
+		content: string
+	): Promise<void>;
+}
+
 export interface InvocationArguments<T = unknown> {
 	/**
 	 * the data to pass to the agent
@@ -571,6 +598,11 @@ export interface AgentContext {
 	 * the email service
 	 */
 	email: EmailService;
+
+	/**
+	 * the discord service
+	 */
+	discord: DiscordService;
 }
 
 /**
