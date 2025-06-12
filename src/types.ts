@@ -16,6 +16,7 @@ export type TriggerType =
 	| 'queue'
 	| 'voice'
 	| 'email'
+	| 'discord'
 	| 'agent';
 
 /**
