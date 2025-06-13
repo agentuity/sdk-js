@@ -14,6 +14,7 @@ import { createRouter } from '../router';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 import EmailAPI from '../apis/email';
+import ObjectStoreAPI from '../apis/objectstore';
 
 /**
  * Creates a unified server based on the runtime environment
@@ -155,6 +156,7 @@ interface ServerContextRequest {
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
 const email = new EmailAPI();
+const objectstore = new ObjectStoreAPI();
 
 /**
  * Creates an agent context for server operations
@@ -175,6 +177,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		kv,
 		vector,
 		email,
+		objectstore,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
 		scope: 'local',
