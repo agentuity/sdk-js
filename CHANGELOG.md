@@ -1,5 +1,13 @@
 # @agentuity/sdk Changelog
 
+## 0.0.125
+
+### Patch Changes
+
+- 756ede6: Add support for new object store API
+- 21e5b97: Fix description for similarity property for vector search
+- 48d45cf: Fix issue with incorrect type for Vector delete API
+
 ## 0.0.124
 
 ### Patch Changes

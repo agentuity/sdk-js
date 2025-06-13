@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.124",
+	"version": "0.0.125",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
@@ -8,7 +8,10 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"type": "module",
-	"files": ["dist/**/*", "LICENSE.md"],
+	"files": [
+		"dist/**/*",
+		"LICENSE.md"
+	],
 	"engines": {
 		"node": ">=22"
 	},
@@ -21,9 +24,17 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": ["ai", "agents", "agentuity", "ai agent", "agent"],
+	"keywords": [
+		"ai",
+		"agents",
+		"agentuity",
+		"ai agent",
+		"agent"
+	],
 	"tsup": {
-		"entry": ["src/index.ts"],
+		"entry": [
+			"src/index.ts"
+		],
 		"format": "esm",
 		"splitting": false,
 		"sourcemap": true,
