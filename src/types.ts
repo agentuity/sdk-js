@@ -428,6 +428,26 @@ export interface ObjectStorePutParams {
 	 * the content encoding of the object
 	 */
 	contentEncoding?: string;
+
+	/**
+	 * the cache control header for the object
+	 */
+	cacheControl?: string;
+
+	/**
+	 * the content disposition header for the object
+	 */
+	contentDisposition?: string;
+
+	/**
+	 * the content language header for the object
+	 */
+	contentLanguage?: string;
+
+	/**
+	 * arbitrary metadata to attach to the object but not returned as part of the object when fetched via HTTP
+	 */
+	metadata?: Record<string, string>;
 }
 
 export interface ObjectStore {
