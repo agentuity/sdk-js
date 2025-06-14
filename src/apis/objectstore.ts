@@ -24,13 +24,14 @@ export default class ObjectStoreAPI implements ObjectStore {
 			try {
 				let body: Body;
 				const headers: Record<string, string> = {};
-				
+
 				if (typeof value === 'string') {
 					body = value;
 					headers['Content-Type'] = params?.contentType || 'text/plain';
 				} else {
 					body = value;
-					headers['Content-Type'] = params?.contentType || 'application/octet-stream';
+					headers['Content-Type'] =
+						params?.contentType || 'application/octet-stream';
 				}
 
 				if (params?.contentEncoding) {
