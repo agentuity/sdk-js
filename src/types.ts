@@ -369,6 +369,11 @@ export interface AgentContext {
 	 * the vector storage
 	 */
 	vector: VectorStorage;
+
+	/**
+	 * the object storage
+	 */
+	objectstore: ObjectStore;
 }
 
 export interface AgentRequest {
@@ -597,6 +602,67 @@ export interface AgentConfig {
 	 * the description of the agent
 	 */
 	description?: string;
+}
+
+export interface ObjectStorePutParams {
+	/**
+	 * the content type of the object
+	 */
+	contentType?: string;
+	/**
+	 * the content encoding of the object
+	 */
+	contentEncoding?: string;
+	/**
+	 * the cache control header for the object
+	 */
+	cacheControl?: string;
+	/**
+	 * the content disposition header for the object
+	 */
+	contentDisposition?: string;
+	/**
+	 * the content language header for the object
+	 */
+	contentLanguage?: string;
+	/**
+	 * arbitrary metadata to attach to the object as HTTP headers
+	 */
+	metadata?: Record<string, string>;
+}
+
+export interface ObjectStore {
+	/**
+	 * put an object into the object storage
+	 *
+	 * @param name - the name of the object storage
+	 * @param key - the key to store the object under
+	 * @param value - the value to store
+	 * @param params - optional parameters for the put operation
+	 */
+	put(
+		name: string,
+		key: string,
+		value: ArrayBuffer | string,
+		params?: ObjectStorePutParams
+	): Promise<void>;
+
+	/**
+	 * get an object from the object storage
+	 *
+	 * @param name - the name of the object storage
+	 * @param key - the key to get the object from
+	 * @returns the object data
+	 */
+	get(name: string, key: string): Promise<ArrayBuffer | null>;
+
+	/**
+	 * delete an object from the object storage
+	 *
+	 * @param name - the name of the object storage
+	 * @param key - the key to delete
+	 */
+	delete(name: string, key: string): Promise<void>;
 }
 
 export interface Session {

@@ -8,6 +8,7 @@ import type { ServerRoute } from './types';
 import { createRouter, getAgentId } from '../router';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
+import ObjectStoreAPI from '../apis/objectstore';
 
 async function createUnifiedServer(
 	config: UnifiedServerConfig
@@ -133,6 +134,7 @@ interface ServerContextRequest {
 
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
+const objectstore = new ObjectStoreAPI();
 
 export function createServerContext(req: ServerContextRequest): AgentContext {
 	return {
@@ -145,6 +147,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		tracer: req.tracer,
 		kv,
 		vector,
+		objectstore,
 		sdkVersion: req.sdkVersion,
 	} as AgentContext;
 }
