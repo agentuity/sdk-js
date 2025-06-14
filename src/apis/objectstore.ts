@@ -161,6 +161,24 @@ export default class ObjectStoreAPI implements ObjectStore {
 					headers['Content-Encoding'] = params.contentEncoding;
 				}
 
+				if (params?.cacheControl) {
+					headers['Cache-Control'] = params.cacheControl;
+				}
+
+				if (params?.contentDisposition) {
+					headers['Content-Disposition'] = params.contentDisposition;
+				}
+
+				if (params?.contentLanguage) {
+					headers['Content-Language'] = params.contentLanguage;
+				}
+
+				if (params?.metadata) {
+					for (const [key, value] of Object.entries(params.metadata)) {
+						headers[`x-metadata-${key}`] = value;
+					}
+				}
+
 				const resp = await PUT(
 					`/object/2025-03-17/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`,
 					stream as unknown as ReadableStream,
