@@ -445,7 +445,7 @@ export interface ObjectStorePutParams {
 	contentLanguage?: string;
 
 	/**
-	 * arbitrary metadata to attach to the object as HTTP headers
+	 * arbitrary metadata to attach to the object but not returned as part of the object when fetched via HTTP
 	 */
 	metadata?: Record<string, string>;
 }
