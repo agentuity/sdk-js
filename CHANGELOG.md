@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.126
+
+### Patch Changes
+
+- Better handling for yield / generators
+
 ## 0.0.125
 
 ### Patch Changes
