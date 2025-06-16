@@ -73,14 +73,18 @@ export class DataHandler implements Data {
 			let buffer: Buffer = Buffer.alloc(0);
 			if (this._readstream instanceof ReadableStream) {
 				const reader = this._readstream.getReader();
-				while (true) {
-					const { done, value } = await reader.read();
-					if (value) {
-						buffer = await toBuffer(buffer, value);
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (value) {
+							buffer = await toBuffer(buffer, value);
+						}
+						if (done) {
+							break;
+						}
 					}
-					if (done) {
-						break;
-					}
+				} finally {
+					reader.releaseLock();
 				}
 			} else {
 				for await (const chunk of this._readstream) {
