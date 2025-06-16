@@ -83,6 +83,10 @@ export class DataHandler implements Data {
 							break;
 						}
 					}
+				} catch (err) {
+					// propagate cancellation to the underlying source
+					await reader.cancel(err);
+					throw err;
 				} finally {
 					reader.releaseLock();
 				}
