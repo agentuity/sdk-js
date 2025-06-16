@@ -2,9 +2,13 @@
 
 ## 0.0.126
 
-### Patch Changes
+### Added
 
-- Better handling for yield / generators
+- Enhanced ObjectStore API with additional headers and metadata support ([#133](https://github.com/agentuity/sdk-js/pull/133))
+
+### Changed
+
+- Better handling for yield / generators ([#134](https://github.com/agentuity/sdk-js/pull/134))
 
 ## 0.0.125
 
