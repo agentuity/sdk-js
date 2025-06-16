@@ -7,7 +7,7 @@ import '../setup'; // Import global test setup
 describe('Router', () => {
 	describe('getSDKVersion', () => {
 		it('should throw error when no store is found', () => {
-			expect(() => getSDKVersion()).toThrow('no store');
+			expect(() => getSDKVersion()).toThrow('sdkVersion not set');
 		});
 	});
 
