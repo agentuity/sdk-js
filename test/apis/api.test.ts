@@ -34,8 +34,6 @@ describe('API Client', () => {
 	});
 
 	describe('send', () => {
-
-
 		it('should throw error if API key is not set', async () => {
 			process.env.AGENTUITY_API_KEY = undefined;
 			process.env.AGENTUITY_SDK_KEY = undefined;
@@ -47,7 +45,6 @@ describe('API Client', () => {
 				})
 			).rejects.toThrow('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
 		});
-
 
 		it('should send request with correct headers', async () => {
 			process.env.AGENTUITY_SDK_KEY = undefined;
@@ -66,7 +63,6 @@ describe('API Client', () => {
 			expect(headers?.['User-Agent']).toEqual('Agentuity JS SDK/1.0.0');
 			expect(headers?.['Content-Type']).toEqual('application/json');
 		});
-
 
 		it('should send request with correct headers', async () => {
 			process.env.AGENTUITY_API_KEY = undefined;

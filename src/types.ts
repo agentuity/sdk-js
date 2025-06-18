@@ -355,9 +355,9 @@ export interface VectorSearchResult {
 	 */
 	metadata?: JsonObject;
 	/**
-	 * the distance of the vector object from the query from 0.0-1.0.
+	 * the distance of the vector object from the query from 0-1. The larger the number, the more similar the vector object is to the query.
 	 */
-	distance: number;
+	similarity: number;
 }
 
 /**
@@ -398,10 +398,10 @@ export interface VectorStorage {
 	 * delete a vector from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param ids - the ids of the vectors to delete
+	 * @param key - the key of the vector to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	delete(name: string, ...ids: string[]): Promise<number>;
+	delete(name: string, key: string): Promise<number>;
 }
 
 /**
@@ -434,6 +434,82 @@ export interface SMSService {
 		authToken: string,
 		messageId: string
 	): Promise<void>;
+}
+
+export interface ObjectStorePutParams {
+	/**
+	 * the content type of the object
+	 */
+	contentType?: string;
+
+	/**
+	 * the content encoding of the object
+	 */
+	contentEncoding?: string;
+
+	/**
+	 * the cache control header for the object
+	 */
+	cacheControl?: string;
+
+	/**
+	 * the content disposition header for the object
+	 */
+	contentDisposition?: string;
+
+	/**
+	 * the content language header for the object
+	 */
+	contentLanguage?: string;
+
+	/**
+	 * arbitrary metadata to attach to the object but not returned as part of the object when fetched via HTTP
+	 */
+	metadata?: Record<string, string>;
+}
+
+export interface ObjectStore {
+	/**
+	 * get an object from the object store
+	 *
+	 * @param bucket - the bucket to get the object from
+	 * @param key - the key of the object to get
+	 * @returns the data result from the object store
+	 */
+	get(bucket: string, key: string): Promise<DataResult>;
+
+	/**
+	 * put an object into the object store
+	 */
+	put(
+		bucket: string,
+		key: string,
+		data: DataType,
+		params?: ObjectStorePutParams
+	): Promise<void>;
+
+	/**
+	 * delete an object from the object store
+	 *
+	 * @param bucket - the bucket to delete the object from
+	 * @param key - the key of the object to delete
+	 * @returns true if the object was deleted, false if the object did not exist
+	 */
+	delete(bucket: string, key: string): Promise<boolean>;
+
+	/**
+	 * create a public URL for an object. This URL can be used to access the object without authentication.
+	 *
+	 * @param bucket - the bucket to create the signed URL for
+	 * @param key - the key of the object to create the signed URL for
+	 * @param expiresDuration - the duration of the signed URL in milliseconds. If not provided, the default is 1 hour.
+	 * @returns the public URL
+	 */
+	createPublicURL(
+		bucket: string,
+		key: string,
+		expiresDuration?: number
+	): Promise<string>;
 }
 
 export interface InvocationArguments<T = unknown> {
@@ -589,6 +665,11 @@ export interface AgentContext {
 	 * the email service
 	 */
 	email: EmailService;
+
+	/**
+	 * the object store
+	 */
+	objectstore: ObjectStore;
 }
 
 /**

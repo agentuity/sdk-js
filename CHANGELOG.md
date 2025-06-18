@@ -1,5 +1,42 @@
 # @agentuity/sdk Changelog
 
+## 0.0.126
+
+### Added
+
+- Enhanced ObjectStore API with additional headers and metadata support ([#133](https://github.com/agentuity/sdk-js/pull/133))
+
+### Changed
+
+- Better handling for yield / generators ([#134](https://github.com/agentuity/sdk-js/pull/134))
+
+## 0.0.125
+
+### Patch Changes
+
+- 756ede6: Add support for new object store API
+- 21e5b97: Fix description for similarity property for vector search
+- 48d45cf: Fix issue with incorrect type for Vector delete API
+
+## 0.0.124
+
+### Patch Changes
+
+- Refactor Bun handler to consolidate logic and make sure all paths go through it ([#128](https://github.com/agentuity/sdk-js/pull/128))
+
+## 0.0.123
+
+### Fixed
+
+- Improved handling of requests for common static files by returning a 404 response without unnecessary error logging
+- Enhanced support for multiple path segments and different HTTP methods in server routing ([#126](https://github.com/agentuity/sdk-js/pull/126))
+
+## 0.0.122
+
+### Patch Changes
+
+- 34b7c12: Adds support for large email attachments
+
 ## 0.0.121
 
 ### Added

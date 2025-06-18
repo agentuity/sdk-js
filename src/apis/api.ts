@@ -8,38 +8,54 @@ export function setFetch(f: typeof fetch) {
 	apiFetch = f;
 }
 
-interface BaseApiRequest {
-	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
+interface ApiRequestWithPath {
+	/**
+	 * The path to send the request to
+	 */
 	path: string;
+}
+interface ApiRequestWithUrl {
+	/**
+	 * The full URL to send the request to
+	 */
+	url: string;
+}
+
+type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
+
+interface ApiRequestBase {
+	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
 	timeout?: number;
 	headers?: Record<string, string>;
 	authToken?: string;
 }
+
+type BaseApiRequest = ApiRequestOptions & ApiRequestBase;
 
 /**
  * Represents the body of an API request
  */
 export type Body = string | ArrayBuffer | ReadableStream | Blob | FormData;
 
-interface GetApiRequest extends BaseApiRequest {
+type GetApiRequest = BaseApiRequest & {
 	method: 'GET';
-	body: never;
-}
+	body?: never;
+};
 
-interface PostApiRequest extends BaseApiRequest {
+type PostApiRequest = BaseApiRequest & {
 	method: 'POST';
 	body: Body;
-}
+};
 
-interface PutApiRequest extends BaseApiRequest {
+type PutApiRequest = BaseApiRequest & {
 	method: 'PUT';
 	body: Body;
-}
+};
 
-interface DeleteApiRequest extends BaseApiRequest {
+type DeleteApiRequest = BaseApiRequest & {
 	method: 'DELETE';
 	body?: Body;
-}
+};
 
 type ApiRequest =
 	| GetApiRequest
@@ -76,10 +92,13 @@ export async function send<K>(
 	if (!apiKey) {
 		throw new Error('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
 	}
-	const url = new URL(
-		request.path,
-		process.env.AGENTUITY_TRANSPORT_URL || 'https://agentuity.ai/'
-	);
+	const url =
+		'path' in request
+			? new URL(
+					request.path,
+					process.env.AGENTUITY_TRANSPORT_URL || 'https://agentuity.ai/'
+				)
+			: new URL(request.url);
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
