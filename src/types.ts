@@ -2,6 +2,7 @@ import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
+import type { Sms } from './io/sms';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -73,6 +74,10 @@ export interface Data {
 	 * the email data represented as a Email. If the data is not an email in rfc822 format, this will throw an error.
 	 */
 	email(): Promise<Email>;
+
+
+	sms(): Promise<Sms>;
+
 }
 
 /**
@@ -158,7 +163,7 @@ export type JsonPrimitive =
 /**
  * JSON array type
  */
-export interface JsonArray extends Array<JsonPrimitive> {}
+export interface JsonArray extends Array<JsonPrimitive> { }
 
 /**
  * valid keys for a JSON object
@@ -413,6 +418,18 @@ export interface EmailService {
 	sendReply(
 		agentId: string,
 		email: string,
+		authToken: string,
+		messageId: string
+	): Promise<void>;
+}
+
+export interface SMSService {
+	/**
+	 * send an SMS to a phone number
+	 */
+	sendReply(
+		agentId: string,
+		phoneNumber: string,
 		authToken: string,
 		messageId: string
 	): Promise<void>;
