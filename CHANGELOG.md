@@ -1,5 +1,15 @@
 # @agentuity/sdk Changelog
 
+## 0.0.127
+
+### Added
+
+- SMS Twilio IO support ([#124](https://github.com/agentuity/sdk-js/pull/124))
+
+### Fixed
+
+- Stream releaseLock handling to prevent errors ([#136](https://github.com/agentuity/sdk-js/pull/136))
+
 ## 0.0.126
 
 ### Added
