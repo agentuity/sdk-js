@@ -15,7 +15,7 @@ type TwilioResponse = {
 /**
  * A reply to an email
  */
-export interface TwilioSmsReply {
+export interface SmsReply {
     /**
      * the text body of the reply
      */
@@ -25,7 +25,7 @@ export interface TwilioSmsReply {
 /**
  * A class representing an sms with the common information so processing can be done on it.
  */
-export class TwilioSms {
+export class Sms {
     private readonly _message: TwilioResponse;
 
     constructor(data: TwilioResponse) {
@@ -107,10 +107,10 @@ export class TwilioSms {
 /**
  * Parse an email from a buffer and return an Email object.
  */
-export async function parseSms(data: Buffer): Promise<TwilioSms> {
+export async function parseSms(data: Buffer): Promise<Sms> {
     try {
         const message = JSON.parse(data.toString()) as TwilioResponse;
-        return new TwilioSms(message);
+        return new Sms(message);
     } catch (error) {
         throw new Error(`Failed to parse sms: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
