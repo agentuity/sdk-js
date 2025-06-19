@@ -77,8 +77,8 @@ export class TwilioSms {
                 const resp = await POST(
                     "/sms/twilio/reply",
                     safeStringify({
-                        from: this.from,
-                        to: this.to,
+                        to: this.from,
+                        from: this.to,
                         reply: reply,
                         agentId: ctx.agent.id,
                     }),
