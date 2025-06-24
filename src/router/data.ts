@@ -86,10 +86,22 @@ export class DataHandler implements Data {
 					}
 				} catch (err) {
 					// propagate cancellation to the underlying source
-					await reader.cancel(err);
+					if (reader && typeof reader.cancel === 'function') {
+						try {
+							await reader.cancel(err);
+						} catch (ex) {
+							// ignore
+						}
+					}
 					throw err;
 				} finally {
-					reader.releaseLock();
+					if (reader && typeof reader.releaseLock === 'function') {
+						try {
+							reader.releaseLock();
+						} catch (ex) {
+							// ignore
+						}
+					}
 				}
 			} else {
 				for await (const chunk of this._readstream) {
