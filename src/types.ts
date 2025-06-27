@@ -359,6 +359,17 @@ export interface VectorSearchResult {
 	similarity: number;
 }
 
+export interface VectorSearchResultWithDocument extends VectorSearchResult {
+	/**
+	 * the document that was used to create the vector object
+	 */
+	document?: string;
+	/**
+	 * the embeddings of the vector object
+	 */
+	embeddings?: Array<number>;
+}
+
 /**
  * VectorStorage provides a way to store and search for data using vector embeddings
  */
@@ -379,7 +390,7 @@ export interface VectorStorage {
 	 * @param key - the key of the vector to get
 	 * @returns the results of the vector search
 	 */
-	get(name: string, key: string): Promise<VectorSearchResult | null>;
+	get(name: string, key: string): Promise<VectorSearchResultWithDocument | null>;
 
 	/**
 	 * search for vectors in the vector storage
