@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.130
+
+### Patch Changes
+
+- 8effdad: shortened discord interface from 'discordMessage' to 'discord'
+
 ## 0.0.129
 
 ### Added
