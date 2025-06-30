@@ -352,7 +352,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 								config,
 								config.context.agent,
 								agent,
-								[redirect.invocation ?? req.request]
+								[redirect.invocation ?? { ...req.request, data: request.data }]
 							);
 							span.setStatus({ code: SpanStatusCode.OK });
 							return redirectResponse;
