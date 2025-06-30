@@ -14,6 +14,7 @@ import { createRouter } from '../router';
 import KeyValueAPI from '../apis/keyvalue';
 import VectorAPI from '../apis/vector';
 import EmailAPI from '../apis/email';
+import DiscordAPI from '../apis/discord';
 import ObjectStoreAPI from '../apis/objectstore';
 
 /**
@@ -156,6 +157,7 @@ interface ServerContextRequest {
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
 const email = new EmailAPI();
+const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
 
 /**
@@ -177,6 +179,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		kv,
 		vector,
 		email,
+		discord,
 		objectstore,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,

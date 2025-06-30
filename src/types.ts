@@ -2,6 +2,7 @@ import type { Meter, Tracer } from '@opentelemetry/api';
 import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
+import type { DiscordMessage } from './io/discord';
 import type { Sms } from './io/sms';
 
 /**
@@ -16,6 +17,7 @@ export type TriggerType =
 	| 'queue'
 	| 'voice'
 	| 'email'
+	| 'discord'
 	| 'agent';
 
 /**
@@ -75,9 +77,12 @@ export interface Data {
 	 */
 	email(): Promise<Email>;
 
+	/**
+	 * the discord message data represented as a DiscordMessage. If the data is not a valid discord message, this will throw an error.
+	 */
+	discordMessage(): Promise<DiscordMessage>;
 
 	sms(): Promise<Sms>;
-
 }
 
 /**
@@ -163,7 +168,7 @@ export type JsonPrimitive =
 /**
  * JSON array type
  */
-export interface JsonArray extends Array<JsonPrimitive> { }
+export interface JsonArray extends Array<JsonPrimitive> {}
 
 /**
  * valid keys for a JSON object
@@ -390,7 +395,10 @@ export interface VectorStorage {
 	 * @param key - the key of the vector to get
 	 * @returns the results of the vector search
 	 */
-	get(name: string, key: string): Promise<VectorSearchResultWithDocument | null>;
+	get(
+		name: string,
+		key: string
+	): Promise<VectorSearchResultWithDocument | null>;
 
 	/**
 	 * search for vectors in the vector storage
@@ -431,6 +439,26 @@ export interface EmailService {
 		email: string,
 		authToken: string,
 		messageId: string
+	): Promise<void>;
+}
+
+/**
+ * DiscordService provides a way to send a discord message replying to a incoming Discord message
+ */
+export interface DiscordService {
+	/**
+	 * send a reply to a incoming Discord message
+	 *
+	 * @param agentId - the id of the agent to send the reply to
+	 * @param messageId - the message id of the discord message
+	 * @param channelId - the channel id of the discord message
+	 * @param content - the content of the reply
+	 */
+	sendReply(
+		agentId: string,
+		messageId: string,
+		channelId: string,
+		content: string
 	): Promise<void>;
 }
 
@@ -675,6 +703,11 @@ export interface AgentContext {
 	 * the email service
 	 */
 	email: EmailService;
+
+	/**
+	 * the discord service
+	 */
+	discord: DiscordService;
 
 	/**
 	 * the object store

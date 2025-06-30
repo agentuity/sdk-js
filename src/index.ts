@@ -2,6 +2,11 @@ export * from './server';
 export * from './logger';
 export * from './types';
 
+// Export APIs
+import EmailAPI from './apis/email';
+import DiscordAPI from './apis/discord';
+export { EmailAPI, DiscordAPI };
+
 import type { AgentConfig } from './types';
 import { run } from './autostart';
 
