@@ -1,5 +1,12 @@
 # @agentuity/sdk Changelog
 
+## 0.0.129
+
+### Patch Changes
+
+- 09894c5: Release stream lock in all cases especially error scenarios
+- 11e65ab: Fix issue with handoff not passing data from previous request
+
 ## 0.0.128
 
 ### Fixed
