@@ -1,5 +1,16 @@
 # @agentuity/sdk Changelog
 
+## 0.0.129
+
+### Added
+
+- Discord Integration ([#130](https://github.com/agentuity/sdk-js/pull/130))
+- New type to retrieve document ([#140](https://github.com/agentuity/sdk-js/pull/140))
+
+### Fixed
+
+- Issue with handoff not passing original data if not overridden ([#139](https://github.com/agentuity/sdk-js/pull/139))
+
 ## 0.0.128
 
 ### Fixed
