@@ -277,7 +277,7 @@ export default class VectorAPI implements VectorStorage {
 	 * delete a vector from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param key  - the ids of the vectors to delete
+	 * @param key - the key of the vector to delete
 	 * @returns the number of vector objects that were deleted
 	 */
 	async delete(name: string, key: string): Promise<number> {

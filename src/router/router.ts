@@ -32,51 +32,56 @@ interface RouterConfig {
 	port: number;
 }
 
-/**
- * Storage for async local context
- */
-export const asyncStorage = new AsyncLocalStorage();
+interface AgentContextStore {
+	agentId?: string;
+	agentName?: string;
+	projectId?: string;
+	deploymentId?: string;
+	orgId?: string;
+	logger?: Logger;
+}
+
+export const asyncStorage = new AsyncLocalStorage<AgentContextStore>();
+
+// Globals to store context values
+let globalTracer: Tracer | undefined;
+let globalMeter: Meter | undefined;
+let globalSDKVersion: string | undefined;
 
 /**
- * Gets the tracer from the async local storage
+ * Gets the tracer from the global context
  *
  * @returns The tracer instance
- * @throws Error if no store is found
+ * @throws Error if not set
  */
 export function getTracer(): Tracer {
-	const store = asyncStorage.getStore();
-	if (!store) {
-		throw new Error('no store');
+	if (!globalTracer) {
+		throw new Error('tracer not set');
 	}
-	const { tracer } = store as { tracer: Tracer };
-	return tracer;
+	return globalTracer;
 }
 
 /**
- * Gets the meter from the async local storage
+ * Gets the meter from the global context
  *
  * @returns The meter instance
- * @throws Error if no store is found
+ * @throws Error if not set
  */
 export function getMeter(): Meter {
-	const store = asyncStorage.getStore();
-	if (!store) {
-		throw new Error('no store');
+	if (!globalMeter) {
+		throw new Error('meter not set');
 	}
-	const { meter } = store as { meter: Meter };
-	return meter;
+	return globalMeter;
 }
 
 /**
  * get the version of the Agentuity SDK
  */
 export function getSDKVersion(): string {
-	const store = asyncStorage.getStore();
-	if (!store) {
-		throw new Error('no store');
+	if (!globalSDKVersion) {
+		throw new Error('sdkVersion not set');
 	}
-	const { sdkVersion } = store as { sdkVersion: string };
-	return sdkVersion;
+	return globalSDKVersion;
 }
 
 /**
@@ -84,26 +89,10 @@ export function getSDKVersion(): string {
  * null if not executing in an agent context
  */
 export function getAgentDetail(): Record<string, string | undefined> | null {
-	const store = asyncStorage.getStore() as {
-		agentId?: string;
-		agentName?: string;
-		projectId?: string;
-		deploymentId?: string;
-		orgId?: string;
-	};
-	if (!store) {
-		return null;
-	}
-	if ('agentId' in store) {
-		return {
-			agentId: store.agentId,
-			agentName: store.agentName,
-			projectId: store.projectId,
-			deploymentId: store.deploymentId,
-			orgId: store.orgId,
-		};
-	}
-	return null;
+	const store = asyncStorage.getStore();
+	if (!store) return null;
+	const { logger: _logger, ...details } = store;
+	return Object.keys(details).length > 0 ? details : null;
 }
 
 /**
@@ -119,9 +108,9 @@ export function recordException(span: Span, ex: unknown, skipLog = false) {
 		return;
 	}
 	if (!skipLog) {
-		const { logger } = asyncStorage.getStore() as { logger: Logger };
-		if (logger) {
-			logger.error('%s', ex);
+		const store = asyncStorage.getStore() as { logger?: Logger } | undefined;
+		if (store?.logger) {
+			store.logger.error('%s', ex);
 		} else {
 			console.error(ex);
 		}
@@ -137,7 +126,6 @@ export function recordException(span: Span, ex: unknown, skipLog = false) {
 async function agentRedirectRun(
 	logger: Logger,
 	config: RouterConfig,
-	runId: string,
 	fromAgent: AgentConfig,
 	remoteAgent: RemoteAgent,
 	params: Parameters<RemoteAgent['run']>
@@ -163,34 +151,28 @@ async function agentRedirectRun(
 		// Create a new context with the child span
 		const spanContext = trace.setSpan(currentContext, span);
 
-		// Execute the operation within the new context
-		return await asyncStorage.run(
-			{
-				span,
-				runId,
-				projectId: config.context.projectId,
-				deploymentId: config.context.deploymentId,
-				orgId: config.context.orgId,
-				agentId: remoteAgent.id,
-				agentName: remoteAgent.name,
-				logger,
-				tracer: config.context.tracer,
-				meter: config.context.meter,
-				sdkVersion: config.context.sdkVersion,
-			},
-			async () => {
-				return await context.with(spanContext, async () => {
-					try {
-						const res = await remoteAgent.run(...params);
-						span.setStatus({ code: SpanStatusCode.OK });
-						return res;
-					} catch (err) {
-						recordException(span, err);
-						throw err;
-					}
-				});
-			}
-		);
+		const agentDetail: AgentContextStore = {
+			agentId: remoteAgent.id,
+			agentName: remoteAgent.name,
+			projectId: config.context.projectId,
+			deploymentId: config.context.deploymentId,
+			orgId: config.context.orgId,
+			logger,
+		};
+
+		// Use asyncStorage for agent details
+		return await asyncStorage.run(agentDetail, async () => {
+			return await context.with(spanContext, async () => {
+				try {
+					const res = await remoteAgent.run(...params);
+					span.setStatus({ code: SpanStatusCode.OK });
+					return res;
+				} catch (err) {
+					recordException(span, err);
+					throw err;
+				}
+			});
+		});
 	} finally {
 		span.end();
 	}
@@ -224,6 +206,11 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		unit: 'concurrent',
 		valueType: ValueType.INT,
 	});
+
+	// Set globals for this router
+	globalTracer = config.context.tracer;
+	globalMeter = config.context.meter;
+	globalSDKVersion = config.context.sdkVersion;
 
 	return async (req: ServerRequest): Promise<AgentResponseData | Response> => {
 		const agentId = config.context.agent.id;
@@ -291,102 +278,94 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 				'@agentuity/orgId': config.context.orgId,
 			});
 
-			// Execute the operation within the new context
-			return await asyncStorage.run(
-				{
-					span,
-					runId,
-					projectId: config.context.projectId,
-					deploymentId: config.context.deploymentId,
-					orgId: config.context.orgId,
-					agentId,
-					agentName: config.context.agent.name,
-					logger,
-					tracer: config.context.tracer,
-					meter: config.context.meter,
-					sdkVersion: config.context.sdkVersion,
-				},
-				async () => {
-					return await context.with(spanContext, async () => {
-						const body = req.body
-							? (req.body as unknown as ReadableStream<ReadableDataType>)
-							: createEmptyStream();
-						const request = new AgentRequestHandler(
-							req.request.trigger,
-							body,
-							req.request.contentType,
-							req.request.metadata ?? {}
+			const agentDetail: AgentContextStore = {
+				agentId: config.context.agent.id,
+				agentName: config.context.agent.name,
+				projectId: config.context.projectId,
+				deploymentId: config.context.deploymentId,
+				orgId: config.context.orgId,
+				logger,
+			};
+
+			return await asyncStorage.run(agentDetail, async () => {
+				return await context.with(spanContext, async () => {
+					const body = req.body
+						? (req.body as unknown as ReadableStream<ReadableDataType>)
+						: createEmptyStream();
+					const request = new AgentRequestHandler(
+						req.request.trigger,
+						body,
+						req.request.contentType,
+						req.request.metadata ?? { headers: req.headers }
+					);
+					const response = new AgentResponseHandler();
+					const contextObj = {
+						...config.context,
+						logger,
+						runId,
+						getAgent: (params: GetAgentRequestParams) =>
+							resolver.getAgent(params),
+						scope: req.request.scope,
+					} as AgentContext;
+					try {
+						let handlerResponse = await config.handler(
+							request,
+							response,
+							contextObj
 						);
-						const response = new AgentResponseHandler();
-						const context = {
-							...config.context,
-							logger,
-							runId,
-							getAgent: (params: GetAgentRequestParams) =>
-								resolver.getAgent(params),
-							scope: req.request.scope,
-						} as AgentContext;
-						try {
-							let handlerResponse = await config.handler(
-								request,
-								response,
-								context
+
+						if (handlerResponse === undefined) {
+							throw new Error(
+								'handler returned undefined instead of a response'
 							);
-
-							if (handlerResponse === undefined) {
-								throw new Error(
-									'handler returned undefined instead of a response'
-								);
-							}
-
-							if (handlerResponse === null) {
-								throw new Error('handler returned null instead of a response');
-							}
-
-							if (handlerResponse instanceof Response) {
-								return await handlerResponse;
-							}
-
-							if (typeof handlerResponse === 'string') {
-								handlerResponse = await response.text(handlerResponse);
-							} else if (
-								'contentType' in handlerResponse &&
-								'payload' in handlerResponse
-							) {
-								const r = handlerResponse as AgentResponseData;
-								handlerResponse = {
-									data: r.data,
-									metadata: r.metadata,
-								};
-							} else if (
-								'redirect' in handlerResponse &&
-								handlerResponse.redirect &&
-								'agent' in handlerResponse
-							) {
-								const redirect = handlerResponse as AgentRedirectResponse;
-								const agent = await context.getAgent(redirect.agent);
-								req.setTimeout(255); // increase the timeout for the redirect
-								const redirectResponse = await agentRedirectRun(
-									logger,
-									config,
-									runId,
-									config.context.agent,
-									agent,
-									[redirect.invocation ?? req.request]
-								);
-								span.setStatus({ code: SpanStatusCode.OK });
-								return redirectResponse;
-							}
-
-							span.setStatus({ code: SpanStatusCode.OK });
-							return handlerResponse;
-						} catch (err) {
-							recordException(span, err);
-							throw err;
 						}
-					});
-				}
-			);
+
+						if (handlerResponse === null) {
+							throw new Error('handler returned null instead of a response');
+						}
+
+						if (handlerResponse instanceof Response) {
+							return await handlerResponse;
+						}
+
+						if (typeof handlerResponse === 'string') {
+							handlerResponse = await response.text(handlerResponse);
+						} else if (
+							'contentType' in handlerResponse &&
+							'payload' in handlerResponse
+						) {
+							const r = handlerResponse as AgentResponseData;
+							handlerResponse = {
+								data: r.data,
+								metadata: r.metadata,
+							};
+						} else if (
+							'redirect' in handlerResponse &&
+							handlerResponse.redirect &&
+							'agent' in handlerResponse
+						) {
+							const redirect = handlerResponse as AgentRedirectResponse;
+							const agent = await contextObj.getAgent(redirect.agent);
+							req.setTimeout(255); // increase the timeout for the redirect
+							const redirectResponse = await agentRedirectRun(
+								logger,
+								config,
+								config.context.agent,
+								agent,
+								[redirect.invocation ?? { ...req.request, data: request.data }]
+							);
+							span.setStatus({ code: SpanStatusCode.OK });
+							return redirectResponse;
+						}
+
+						span.setStatus({ code: SpanStatusCode.OK });
+						return handlerResponse;
+					} catch (err) {
+						recordException(span, err);
+						throw err;
+					}
+				});
+			});
 		} finally {
 			executingCount--;
 			executing.record(executingCount, {

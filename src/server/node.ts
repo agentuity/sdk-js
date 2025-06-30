@@ -17,6 +17,7 @@ import {
 	createStreamingResponse,
 	toWelcomePrompt,
 	getRequestFromHeaders,
+	shouldIgnoreStaticFile,
 } from './util';
 import type { AgentResponseData, AgentWelcomeResult } from '../types';
 import { Readable } from 'node:stream';
@@ -105,7 +106,6 @@ export class NodeServer implements Server {
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
 				res.writeHead(200, {
-					'x-agentuity-binary': 'true',
 					'x-agentuity-version': sdkVersion,
 				});
 				res.end();
@@ -124,7 +124,8 @@ export class NodeServer implements Server {
 			if (req.method === 'OPTIONS') {
 				res.writeHead(200, {
 					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Methods':
+						'GET, PUT, DELETE, PATCH, OPTIONS, POST',
 					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 				});
 				res.end();
@@ -184,12 +185,6 @@ export class NodeServer implements Server {
 				res.end();
 			}
 
-			if (req.method !== 'POST') {
-				res.writeHead(405);
-				res.end();
-				return;
-			}
-
 			// Extract trace context from headers
 			const extractedContext = extractTraceContextFromNodeRequest(req);
 
@@ -212,6 +207,15 @@ export class NodeServer implements Server {
 						try {
 							const route = this.routes.find((r) => r.path === req.url);
 							if (!route) {
+								if (
+									req.method === 'GET' &&
+									shouldIgnoreStaticFile(req.url ?? '/')
+								) {
+									span.setAttribute('http.status_code', '404');
+									res.writeHead(404, injectTraceContextToHeaders());
+									res.end();
+									return;
+								}
 								this.logger.error(
 									'agent not found: %s for: %s',
 									req.method,

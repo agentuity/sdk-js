@@ -3,6 +3,7 @@ import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
 import type { DiscordMessage } from './io/discord';
+import type { Sms } from './io/sms';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -80,6 +81,8 @@ export interface Data {
 	 * the discord message data represented as a DiscordMessage. If the data is not a valid discord message, this will throw an error.
 	 */
 	discordMessage(): Promise<DiscordMessage>;
+
+	sms(): Promise<Sms>;
 }
 
 /**
@@ -356,9 +359,20 @@ export interface VectorSearchResult {
 	 */
 	metadata?: JsonObject;
 	/**
-	 * the distance of the vector object from the query from 0.0-1.0.
+	 * the distance of the vector object from the query from 0-1. The larger the number, the more similar the vector object is to the query.
 	 */
-	distance: number;
+	similarity: number;
+}
+
+export interface VectorSearchResultWithDocument extends VectorSearchResult {
+	/**
+	 * the document that was used to create the vector object
+	 */
+	document?: string;
+	/**
+	 * the embeddings of the vector object
+	 */
+	embeddings?: Array<number>;
 }
 
 /**
@@ -381,7 +395,10 @@ export interface VectorStorage {
 	 * @param key - the key of the vector to get
 	 * @returns the results of the vector search
 	 */
-	get(name: string, key: string): Promise<VectorSearchResult | null>;
+	get(
+		name: string,
+		key: string
+	): Promise<VectorSearchResultWithDocument | null>;
 
 	/**
 	 * search for vectors in the vector storage
@@ -399,10 +416,10 @@ export interface VectorStorage {
 	 * delete a vector from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param ids - the ids of the vectors to delete
+	 * @param key - the key of the vector to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	delete(name: string, ...ids: string[]): Promise<number>;
+	delete(name: string, key: string): Promise<number>;
 }
 
 /**
@@ -443,6 +460,94 @@ export interface DiscordService {
 		channelId: string,
 		content: string
 	): Promise<void>;
+}
+
+export interface SMSService {
+	/**
+	 * send an SMS to a phone number
+	 */
+	sendReply(
+		agentId: string,
+		phoneNumber: string,
+		authToken: string,
+		messageId: string
+	): Promise<void>;
+}
+
+export interface ObjectStorePutParams {
+	/**
+	 * the content type of the object
+	 */
+	contentType?: string;
+
+	/**
+	 * the content encoding of the object
+	 */
+	contentEncoding?: string;
+
+	/**
+	 * the cache control header for the object
+	 */
+	cacheControl?: string;
+
+	/**
+	 * the content disposition header for the object
+	 */
+	contentDisposition?: string;
+
+	/**
+	 * the content language header for the object
+	 */
+	contentLanguage?: string;
+
+	/**
+	 * arbitrary metadata to attach to the object but not returned as part of the object when fetched via HTTP
+	 */
+	metadata?: Record<string, string>;
+}
+
+export interface ObjectStore {
+	/**
+	 * get an object from the object store
+	 *
+	 * @param bucket - the bucket to get the object from
+	 * @param key - the key of the object to get
+	 * @returns the data result from the object store
+	 */
+	get(bucket: string, key: string): Promise<DataResult>;
+
+	/**
+	 * put an object into the object store
+	 */
+	put(
+		bucket: string,
+		key: string,
+		data: DataType,
+		params?: ObjectStorePutParams
+	): Promise<void>;
+
+	/**
+	 * delete an object from the object store
+	 *
+	 * @param bucket - the bucket to delete the object from
+	 * @param key - the key of the object to delete
+	 * @returns true if the object was deleted, false if the object did not exist
+	 */
+	delete(bucket: string, key: string): Promise<boolean>;
+
+	/**
+	 * create a public URL for an object. This URL can be used to access the object without authentication.
+	 *
+	 * @param bucket - the bucket to create the signed URL for
+	 * @param key - the key of the object to create the signed URL for
+	 * @param expiresDuration - the duration of the signed URL in milliseconds. If not provided, the default is 1 hour.
+	 * @returns the public URL
+	 */
+	createPublicURL(
+		bucket: string,
+		key: string,
+		expiresDuration?: number
+	): Promise<string>;
 }
 
 export interface InvocationArguments<T = unknown> {
@@ -603,6 +708,11 @@ export interface AgentContext {
 	 * the discord service
 	 */
 	discord: DiscordService;
+
+	/**
+	 * the object store
+	 */
+	objectstore: ObjectStore;
 }
 
 /**

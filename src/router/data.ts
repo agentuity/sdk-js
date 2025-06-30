@@ -3,6 +3,7 @@ import type { Data, ReadableDataType, Json } from '../types';
 import { safeParse } from '../server/util';
 import { parseEmail, type Email } from '../io/email';
 import { DiscordMessage, parseDiscordMessage } from '../io/discord';
+import { parseSms, type Sms } from '../io/sms';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -46,6 +47,7 @@ export class DataHandler implements Data {
 		| ReadableStream<ReadableDataType>
 		| AsyncIterable<ReadableDataType>;
 	private _buffer: Buffer;
+	private _email?: Email;
 
 	constructor(
 		stream:
@@ -73,13 +75,33 @@ export class DataHandler implements Data {
 			let buffer: Buffer = Buffer.alloc(0);
 			if (this._readstream instanceof ReadableStream) {
 				const reader = this._readstream.getReader();
-				while (true) {
-					const { done, value } = await reader.read();
-					if (value) {
-						buffer = await toBuffer(buffer, value);
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (value) {
+							buffer = await toBuffer(buffer, value);
+						}
+						if (done) {
+							break;
+						}
 					}
-					if (done) {
-						break;
+				} catch (err) {
+					// propagate cancellation to the underlying source
+					if (reader && typeof reader.cancel === 'function') {
+						try {
+							await reader.cancel(err);
+						} catch (ex) {
+							// ignore
+						}
+					}
+					throw err;
+				} finally {
+					if (reader && typeof reader.releaseLock === 'function') {
+						try {
+							reader.releaseLock();
+						} catch (ex) {
+							// ignore
+						}
 					}
 				}
 			} else {
@@ -210,8 +232,20 @@ export class DataHandler implements Data {
 		if (this.contentType !== 'message/rfc822') {
 			throw new Error('The content type is not a valid email');
 		}
+		if (this._email) {
+			return this._email;
+		}
 		const data = await this.data();
-		return parseEmail(data);
+		this._email = await parseEmail(data);
+		return this._email;
+	}
+
+	async sms(): Promise<Sms> {
+		if (this.contentType !== 'application/json') {
+			throw new Error('The content type is not a valid sms');
+		}
+		const data = await this.data();
+		return parseSms(data);
 	}
 
 	async discordMessage(): Promise<DiscordMessage> {
