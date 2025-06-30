@@ -248,7 +248,7 @@ export class DataHandler implements Data {
 		return parseSms(data);
 	}
 
-	async discordMessage(): Promise<DiscordMessage> {
+	async discord(): Promise<DiscordMessage> {
 		if (this.contentType !== 'application/json') {
 			throw new Error('The content type is not a valid discord message');
 		}

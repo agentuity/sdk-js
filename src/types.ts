@@ -80,7 +80,7 @@ export interface Data {
 	/**
 	 * the discord message data represented as a DiscordMessage. If the data is not a valid discord message, this will throw an error.
 	 */
-	discordMessage(): Promise<DiscordMessage>;
+	discord(): Promise<DiscordMessage>;
 
 	sms(): Promise<Sms>;
 }
