@@ -2,11 +2,14 @@
 
 ## 0.0.129
 
-### Patch Changes
+### Added
 
-- 09894c5: Release stream lock in all cases especially error scenarios
-- 11e65ab: Fix issue with handoff not passing data from previous request
-- 37c5c1a: Add support for Discord IO integration
+- Add support for Discord IO integration ([#130](https://github.com/agentuity/sdk-js/pull/130))
+
+### Fixed
+
+- Release stream lock in all cases especially error scenarios ([#136](https://github.com/agentuity/sdk-js/pull/136))
+- Fix issue with handoff not passing data from previous request ([#139](https://github.com/agentuity/sdk-js/pull/139))
 
 ## 0.0.128
 
