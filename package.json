@@ -67,6 +67,7 @@
 		"@types/js-yaml": "^4.0.9",
 		"@types/mailparser": "^3.4.6",
 		"@types/nodemailer": "^6.4.17",
+		"mailparser": "^3.7.4",
 		"tsup": "^8.4.0"
 	},
 	"peerDependencies": {
@@ -90,7 +91,6 @@
 		"@opentelemetry/sdk-node": "^0.57.2",
 		"@opentelemetry/semantic-conventions": "^1.30.0",
 		"js-yaml": "^4.1.0",
-		"mailparser": "^3.7.3",
 		"nodemailer": "^7.0.3"
 	}
 }
