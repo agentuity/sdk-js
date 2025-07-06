@@ -2,7 +2,7 @@ import { ReadableStream } from 'node:stream/web';
 import type { Data, ReadableDataType, Json } from '../types';
 import { safeParse } from '../server/util';
 import { parseEmail, type Email } from '../io/email';
-import { DiscordMessage, parseDiscordMessage } from '../io/discord';
+import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
 import { parseSms, type Sms } from '../io/sms';
 
 const invalidJsonSymbol = Symbol('invalid json');

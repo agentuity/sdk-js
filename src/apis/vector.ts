@@ -302,7 +302,7 @@ export default class VectorAPI implements VectorStorage {
 					return 0;
 				}
 
-				let resp;
+				let resp: Awaited<ReturnType<typeof DELETE<VectorDeleteResponse>>>;
 				
 				if (keys.length === 1) {
 					resp = await DELETE<VectorDeleteResponse>(
