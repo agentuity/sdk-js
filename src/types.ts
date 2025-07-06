@@ -413,13 +413,13 @@ export interface VectorStorage {
 	): Promise<VectorSearchResult[]>;
 
 	/**
-	 * delete a vector from the vector storage
+	 * delete vectors from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param key - the key of the vector to delete
+	 * @param keys - the keys of the vectors to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	delete(name: string, key: string): Promise<number>;
+	delete(name: string, ...keys: string[]): Promise<number>;
 }
 
 /**

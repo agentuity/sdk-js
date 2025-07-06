@@ -274,20 +274,20 @@ export default class VectorAPI implements VectorStorage {
 	}
 
 	/**
-	 * delete a vector from the vector storage
+	 * delete vectors from the vector storage
 	 *
 	 * @param name - the name of the vector storage
-	 * @param key - the key of the vector to delete
+	 * @param keys - the keys of the vectors to delete
 	 * @returns the number of vector objects that were deleted
 	 */
-	async delete(name: string, key: string): Promise<number> {
+	async delete(name: string, ...keys: string[]): Promise<number> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
 		// Create a child span using the current context
 		const span = tracer.startSpan(
 			'agentuity.vector.delete',
-			{ attributes: { name, key } },
+			{ attributes: { name, keys: keys.join(',') } },
 			currentContext
 		);
 
@@ -297,9 +297,24 @@ export default class VectorAPI implements VectorStorage {
 
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
-				const resp = await DELETE<VectorDeleteResponse>(
-					`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
-				);
+				if (keys.length === 0) {
+					span.setStatus({ code: SpanStatusCode.OK });
+					return 0;
+				}
+
+				let resp;
+				
+				if (keys.length === 1) {
+					resp = await DELETE<VectorDeleteResponse>(
+						`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(keys[0])}`
+					);
+				} else {
+					resp = await DELETE<VectorDeleteResponse>(
+						`/vector/2025-03-17/${encodeURIComponent(name)}`,
+						safeStringify({ keys })
+					);
+				}
+				
 				if (resp.status === 200) {
 					if (resp.json?.success) {
 						span.addEvent('delete_count', resp.json.data);
