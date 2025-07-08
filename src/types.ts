@@ -325,19 +325,42 @@ export type VectorUpsertParams = VectorUpsertBase &
 
 export interface VectorSearchParams<T = unknown> {
 	/**
-	 * the query to search for
+	 * The text query to search for in the vector storage. This will be converted to embeddings
+	 * and used to find semantically similar documents.
+	 * 
+	 * @example "comfortable office chair"
+	 * @example "machine learning algorithms"
 	 */
 	query: string;
+	
 	/**
-	 * the limit of the number of results to return
+	 * Maximum number of search results to return. If not specified, the server default will be used.
+	 * Must be a positive integer.
+	 * 
+	 * @default Server default (typically 10)
+	 * @example 5
+	 * @example 20
 	 */
 	limit?: number;
+	
 	/**
-	 * the similarity of the results to return from 0.0-1.0. The higher the number, the more similar the results will be.
+	 * Minimum similarity threshold for results. Only vectors with similarity scores greater than or equal
+	 * to this value will be returned. Value must be between 0.0 and 1.0, where 1.0 means exact match
+	 * and 0.0 means no similarity requirement.
+	 * 
+	 * @minimum 0.0
+	 * @maximum 1.0
+	 * @example 0.7 // Only return results with 70% or higher similarity
+	 * @example 0.5 // Return results with 50% or higher similarity
 	 */
 	similarity?: number;
+	
 	/**
-	 * the metadata to filter the results by
+	 * Metadata filters to apply to the search. Only vectors whose metadata matches all specified
+	 * key-value pairs will be included in results. Must be a valid JSON object if provided.
+	 * 
+	 * @example { category: "furniture", inStock: true }
+	 * @example { userId: "123", type: "product" }
 	 */
 	metadata?: T;
 }
