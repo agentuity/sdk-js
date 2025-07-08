@@ -5,7 +5,7 @@
 ### Patch Changes
 
 - c1fed39: Improve documentation of vector search parameters and tighten vector search metadata type definition
-- 6548924: Add support for bulk delete in vector
+- 6548924: Add support for bulk delete in vector - The `vector.delete()` method now accepts multiple keys as variadic arguments, allowing efficient bulk deletion of vectors. Supports both single key deletion (`delete(name, key)`) and bulk deletion (`delete(name, key1, key2, key3)`) patterns.
 
 ## 0.0.130
 

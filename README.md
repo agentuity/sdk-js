@@ -35,6 +35,51 @@ The Agentuity TypeScript SDK is a powerful toolkit for building, deploying, and 
 - Implementing intelligent data processing systems
 - Building AI-powered APIs and services
 
+## Vector Storage Examples
+
+The SDK provides powerful vector storage capabilities for semantic search and AI applications. Here are some common usage patterns:
+
+### Vector Delete Operations
+
+```typescript
+// Delete a single vector
+const deletedCount = await ctx.vector.delete('my-vectors', 'vector-key-1');
+console.log(`Deleted ${deletedCount} vector(s)`); // Output: Deleted 1 vector(s)
+
+// Delete multiple vectors in bulk (more efficient than individual calls)
+const deletedCount = await ctx.vector.delete('my-vectors', 'key-1', 'key-2', 'key-3');
+console.log(`Deleted ${deletedCount} vector(s)`); // Output: Deleted 3 vector(s)
+
+// Delete with array spread
+const keysToDelete = ['key-1', 'key-2', 'key-3'];
+const deletedCount = await ctx.vector.delete('my-vectors', ...keysToDelete);
+
+// Handle cases where some vectors might not exist
+const deletedCount = await ctx.vector.delete('my-vectors', 'existing-key', 'non-existent-key');
+console.log(`Deleted ${deletedCount} vector(s)`); // Output: Deleted 1 vector(s)
+```
+
+### Other Vector Operations
+
+```typescript
+// Upsert vectors
+await ctx.vector.upsert('my-vectors', 
+  { key: 'doc-1', document: 'This is a sample document', metadata: { category: 'sample' } },
+  { key: 'doc-2', document: 'Another document', metadata: { category: 'example' } }
+);
+
+// Search vectors
+const results = await ctx.vector.search('my-vectors', {
+  query: 'sample document',
+  limit: 10,
+  similarity: 0.7,
+  metadata: { category: 'sample' }
+});
+
+// Get a specific vector
+const vector = await ctx.vector.get('my-vectors', 'doc-1');
+```
+
 ## Getting Started
 
 To use this SDK in a real project, you should install the Agentuity CLI.
