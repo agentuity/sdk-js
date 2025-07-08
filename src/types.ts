@@ -337,7 +337,7 @@ export interface VectorSearchParams<T = unknown> {
 	 * Maximum number of search results to return. If not specified, the server default will be used.
 	 * Must be a positive integer.
 	 * 
-	 * @default Server default (typically 10)
+	 * @default Default is 10
 	 * @example 5
 	 * @example 20
 	 */
