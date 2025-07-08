@@ -1,5 +1,12 @@
 # @agentuity/sdk Changelog
 
+## 0.0.131
+
+### Patch Changes
+
+- c1fed39: Improve documentation of vector search parameters and tighten vector search metadata type definition
+- 6548924: Add support for bulk delete in vector
+
 ## 0.0.130
 
 ### Patch Changes
