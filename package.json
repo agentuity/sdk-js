@@ -90,7 +90,7 @@
 		"@opentelemetry/sdk-node": "^0.57.2",
 		"@opentelemetry/semantic-conventions": "^1.30.0",
 		"js-yaml": "^4.1.0",
-		"mailparser": "^3.7.3",
+		"mailparser": "^3.7.4",
 		"nodemailer": "^7.0.3"
 	}
 }
