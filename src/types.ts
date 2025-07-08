@@ -356,6 +356,9 @@ export interface VectorSearchParams<T = unknown> {
 	similarity?: number;
 	
 	/**
+-export interface VectorSearchParams<T = unknown> {
++export interface VectorSearchParams<T extends JsonObject = JsonObject> {
+	/**
 	 * Metadata filters to apply to the search. Only vectors whose metadata matches all specified
 	 * key-value pairs will be included in results. Must be a valid JSON object if provided.
 	 * 
