@@ -292,11 +292,21 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 					const body = req.body
 						? (req.body as unknown as ReadableStream<ReadableDataType>)
 						: createEmptyStream();
+					const headers = req.headers;
+					if (req.request.metadata && !('headers' in req.request.metadata)) {
+						req.request.metadata.headers = headers;
+					}
+					if (req.request.metadata && !('method' in req.request.metadata)) {
+						req.request.metadata.method = req.method;
+					}
+					if (req.request.metadata && !('url' in req.request.metadata)) {
+						req.request.metadata.url = req.url;
+					}
 					const request = new AgentRequestHandler(
 						req.request.trigger,
 						body,
 						req.request.contentType,
-						req.request.metadata ?? { headers: req.headers }
+						req.request.metadata ?? { headers }
 					);
 					const response = new AgentResponseHandler();
 					const contextObj = {
