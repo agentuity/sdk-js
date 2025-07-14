@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.132
+
+### Patch Changes
+
+- 1ef8c9f: DevMode: fallback values for headers, url and method in metadata
+
 ## 0.0.131
 
 ### Patch Changes
