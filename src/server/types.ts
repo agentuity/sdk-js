@@ -21,6 +21,7 @@ export interface IncomingRequest extends DataPayload {
  * Represents a server request with URL, headers, and the incoming request
  */
 export interface ServerRequest {
+	method: string;
 	url: string;
 	request: IncomingRequest;
 	headers: Record<string, string>;

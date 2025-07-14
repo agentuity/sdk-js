@@ -220,6 +220,7 @@ export class BunServer implements Server {
 												| ReadableStream<ReadableDataType>
 												| AsyncIterable<ReadableDataType>) ?? undefined,
 										url: req.url,
+										method,
 										headers: req.headers.toJSON(),
 										request: getRequestFromHeaders(req.headers.toJSON(), runId),
 										setTimeout: (val: number) => void 0,

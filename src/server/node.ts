@@ -262,6 +262,7 @@ export class NodeServer implements Server {
 										runId
 									),
 									url: req.url ?? '',
+									method: req.method ?? '',
 									headers: this.getHeaders(req),
 									setTimeout: (val: number) => req.setTimeout(val),
 								};
