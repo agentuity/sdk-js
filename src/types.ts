@@ -327,34 +327,34 @@ export interface VectorSearchParams<T = unknown> {
 	/**
 	 * The text query to search for in the vector storage. This will be converted to embeddings
 	 * and used to find semantically similar documents.
-	 * 
+	 *
 	 * @example "comfortable office chair"
 	 * @example "machine learning algorithms"
 	 */
 	query: string;
-	
+
 	/**
 	 * Maximum number of search results to return. If not specified, the server default will be used.
 	 * Must be a positive integer.
-	 * 
+	 *
 	 * @default Default is 10
 	 * @example 5
 	 * @example 20
 	 */
 	limit?: number;
-	
+
 	/**
 	 * Minimum similarity threshold for results. Only vectors with similarity scores greater than or equal
 	 * to this value will be returned. Value must be between 0.0 and 1.0, where 1.0 means exact match
 	 * and 0.0 means no similarity requirement.
-	 * 
+	 *
 	 * @minimum 0.0
 	 * @maximum 1.0
 	 * @example 0.7 // Only return results with 70% or higher similarity
 	 * @example 0.5 // Return results with 50% or higher similarity
 	 */
 	similarity?: number;
-	
+
 	/**
 -export interface VectorSearchParams<T = unknown> {
 +export interface VectorSearchParams<T extends JsonObject = JsonObject> {
@@ -459,12 +459,17 @@ export interface EmailService {
 	 * @param email - the email to send the reply to in RFC822 format
 	 * @param authToken - the authorization token to use to send the reply
 	 * @param messageId - the message id of the email
+	 * @param from - the email address to send the reply from (NOTE: you can only override the email address if you have configured custom email sending)
 	 */
 	sendReply(
 		agentId: string,
 		email: string,
 		authToken: string,
-		messageId: string
+		messageId: string,
+		from?: {
+			name?: string;
+			email?: string;
+		}
 	): Promise<void>;
 }
 

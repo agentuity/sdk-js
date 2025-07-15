@@ -116,8 +116,10 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> =>
-				1;
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => 1;
 
 			const result = await vectorAPI.delete('test-store', 'id1');
 
@@ -140,8 +142,10 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> =>
-				0;
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => 0;
 
 			const result = await vectorAPI.delete('test-store', 'nonexistent-id');
 
@@ -164,7 +168,10 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> => {
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => {
 				throw new Error('Delete failed');
 			};
 
@@ -189,8 +196,10 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> =>
-				keys.length;
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => keys.length;
 
 			const result = await vectorAPI.delete('test-store', 'id1', 'id2', 'id3');
 
@@ -201,8 +210,10 @@ describe('VectorAPI', () => {
 
 		it('should handle empty keys array', async () => {
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> =>
-				0;
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => 0;
 
 			const result = await vectorAPI.delete('test-store');
 			expect(result).toBe(0);
@@ -224,8 +235,10 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> =>
-				1;
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => 1;
 
 			const result = await vectorAPI.delete('test-store', 'single-id');
 
@@ -248,13 +261,16 @@ describe('VectorAPI', () => {
 			}));
 
 			const originalDelete = vectorAPI.delete;
-			vectorAPI.delete = async (name: string, ...keys: string[]): Promise<number> => {
+			vectorAPI.delete = async (
+				name: string,
+				...keys: string[]
+			): Promise<number> => {
 				throw new Error('Bulk delete failed');
 			};
 
-			await expect(vectorAPI.delete('test-store', 'id1', 'id2')).rejects.toThrow(
-				'Bulk delete failed'
-			);
+			await expect(
+				vectorAPI.delete('test-store', 'id1', 'id2')
+			).rejects.toThrow('Bulk delete failed');
 
 			vectorAPI.delete = originalDelete;
 		});
