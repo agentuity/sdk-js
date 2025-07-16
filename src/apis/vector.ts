@@ -303,7 +303,7 @@ export default class VectorAPI implements VectorStorage {
 				}
 
 				let resp: Awaited<ReturnType<typeof DELETE<VectorDeleteResponse>>>;
-				
+
 				if (keys.length === 1) {
 					resp = await DELETE<VectorDeleteResponse>(
 						`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(keys[0])}`
@@ -314,7 +314,7 @@ export default class VectorAPI implements VectorStorage {
 						safeStringify({ keys })
 					);
 				}
-				
+
 				if (resp.status === 200) {
 					if (resp.json?.success) {
 						span.addEvent('delete_count', resp.json.data);

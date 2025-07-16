@@ -266,7 +266,11 @@ export class Email {
 	async sendReply(
 		req: AgentRequest,
 		context: AgentContext,
-		reply: EmailReply
+		reply: EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
 	): Promise<string> {
 		const authToken = req.metadata?.['email-auth-token'] as string;
 		if (!authToken) {
@@ -297,8 +301,8 @@ export class Email {
 					references: this.messageId() ?? undefined,
 					date: new Date(),
 					from: {
-						name: context.agent.name,
-						address: this.to() as string,
+						name: from?.name ?? context.agent.name,
+						address: from?.email ?? (this.to() as string),
 					},
 					to: {
 						name: this.fromName() ?? undefined,

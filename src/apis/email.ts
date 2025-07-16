@@ -42,8 +42,10 @@ export default class EmailApi implements EmailService {
 					span.setStatus({ code: SpanStatusCode.OK });
 					return;
 				}
+				const body = await resp.response.text();
+				span.setStatus({ code: SpanStatusCode.ERROR, message: body });
 				throw new Error(
-					`error sending email reply: ${resp.response.statusText} (${resp.response.status})`
+					`error sending email reply: ${resp.response.statusText} (${resp.response.status})${body}`
 				);
 			});
 		} catch (ex) {
