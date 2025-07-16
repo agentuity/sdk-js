@@ -6,6 +6,8 @@
 
 - Enable the ability to use custom email domains for email replies ([#149](https://github.com/agentuity/sdk-js/pull/149))
 
+Contact us if you would like to enable custom email addresses to your organization.
+
 ## 0.0.132
 
 ### Patch Changes
