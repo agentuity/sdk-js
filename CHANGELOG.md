@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.133
+
+### Patch Changes
+
+- e4fc40e: Enable the ability to use custom email domains for email replies
+
 ## 0.0.132
 
 ### Patch Changes
