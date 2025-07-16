@@ -1,10 +1,12 @@
 # @agentuity/sdk Changelog
 
-## 0.0.133
+## [0.0.133] - 2025-07-16
 
-### Patch Changes
+### Added
 
-- e4fc40e: Enable the ability to use custom email domains for email replies
+- Enable the ability to use custom email domains for email replies ([#149](https://github.com/agentuity/sdk-js/pull/149))
+
+Contact us if you would like to enable custom email addresses to your organization.
 
 ## 0.0.132
 
