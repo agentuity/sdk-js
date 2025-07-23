@@ -4,7 +4,7 @@ import { safeParse } from '../server/util';
 import { parseEmail, type Email } from '../io/email';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
 import { parseSms, type Sms } from '../io/sms';
-import { parseTelegram, Telegram } from '../io/telegram';
+import { parseTelegram, type Telegram } from '../io/telegram';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
