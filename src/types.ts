@@ -4,6 +4,7 @@ import type { ReadableStream } from 'node:stream/web';
 import type { Email } from './io/email';
 import type { DiscordMessage } from './io/discord';
 import type { Sms } from './io/sms';
+import type { Telegram } from './io/telegram';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -82,7 +83,15 @@ export interface Data {
 	 */
 	discord(): Promise<DiscordMessage>;
 
+	/**
+	 * the sms data represented as a Sms. If the data is not a valid sms, this will throw an error.
+	 */
 	sms(): Promise<Sms>;
+
+	/**
+	 * the telegram message data represented as a TelegramMessage. If the data is not a valid telegram message, this will throw an error.
+	 */
+	telegram(): Promise<Telegram>;
 }
 
 /**
@@ -168,7 +177,7 @@ export type JsonPrimitive =
 /**
  * JSON array type
  */
-export interface JsonArray extends Array<JsonPrimitive> {}
+export interface JsonArray extends Array<JsonPrimitive> { }
 
 /**
  * valid keys for a JSON object

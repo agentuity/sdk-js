@@ -4,6 +4,7 @@ import { safeParse } from '../server/util';
 import { parseEmail, type Email } from '../io/email';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
 import { parseSms, type Sms } from '../io/sms';
+import { parseTelegram, Telegram } from '../io/telegram';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -254,6 +255,14 @@ export class DataHandler implements Data {
 		}
 		const data = await this.data();
 		return parseDiscordMessage(data);
+	}
+
+	async telegram(): Promise<Telegram> {
+		if (this.contentType !== 'application/json') {
+			throw new Error('The content type is not a valid telegram message');
+		}
+		const data = await this.data();
+		return parseTelegram(data);
 	}
 
 	private isTextChunkable() {
