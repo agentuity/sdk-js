@@ -19,6 +19,7 @@ export type TriggerType =
 	| 'voice'
 	| 'email'
 	| 'discord'
+	| 'telegram'
 	| 'agent';
 
 /**
