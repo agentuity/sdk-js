@@ -41,11 +41,9 @@ export interface TelegramReply {
  */
 export class Telegram {
     private readonly _message: TelegramResponse;
-    private readonly _bot_token: string;
 
-    constructor(bot_token: string, data: TelegramResponse) {
+    constructor(data: TelegramResponse) {
         this._message = data;
-        this._bot_token = bot_token;
     }
 
     [inspect.custom]() {
@@ -130,7 +128,6 @@ export class Telegram {
                         reply_to_message_id: this.messageId,
                         agentId: ctx.agent.id,
                         parseMode: options.parseMode,
-                        botToken: this._bot_token,
                     }),
                     {
                         'Content-Type': 'application/json',
@@ -162,12 +159,8 @@ export class Telegram {
  */
 export async function parseTelegram(data: Buffer): Promise<Telegram> {
     try {
-        const msg = JSON.parse(data.toString()) as {
-            bot_token: string;
-            message: TelegramResponse;
-        };
-        console.log('telegram message', msg);
-        return new Telegram(msg.bot_token, msg.message);
+        const msg = JSON.parse(data.toString()) as TelegramResponse;
+        return new Telegram(msg);
     } catch (error) {
         throw new Error(
             `Failed to parse telegram message: ${error instanceof Error ? error.message : 'Unknown error'}`
