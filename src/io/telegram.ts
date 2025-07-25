@@ -90,11 +90,12 @@ export class Telegram {
         return this._message.date;
     }
 
-    async sendReply(
+    private async _sendReply(
         req: AgentRequest,
         ctx: AgentContext,
-        reply: string,
         options: {
+            reply?: string;
+            action?: 'typing';
             parseMode?: 'MarkdownV2' | 'HTML';
         } = {}
     ) {
@@ -124,7 +125,8 @@ export class Telegram {
                     '/telegram/reply',
                     safeStringify({
                         chatId: this.chatId,
-                        message: reply,
+                        message: options.reply,
+                        action: options.action,
                         reply_to_message_id: this.messageId,
                         agentId: ctx.agent.id,
                         parseMode: options.parseMode,
@@ -152,6 +154,24 @@ export class Telegram {
             span.end();
         }
     }
+
+    async sendReply(
+        req: AgentRequest,
+        ctx: AgentContext,
+        reply: string,
+        options: {
+            parseMode?: 'MarkdownV2' | 'HTML';
+        } = {}
+    ) {
+        return this._sendReply(req, ctx, { reply, parseMode: options.parseMode });
+    }
+
+    async sendTyping(
+        req: AgentRequest,
+        ctx: AgentContext,
+    ) {
+        return this._sendReply(req, ctx, { action: 'typing' });
+    }
 }
 
 /**
@@ -160,6 +180,7 @@ export class Telegram {
 export async function parseTelegram(data: Buffer): Promise<Telegram> {
     try {
         const msg = JSON.parse(data.toString()) as TelegramResponse;
+        console.log('=====----->', msg);
         return new Telegram(msg);
     } catch (error) {
         throw new Error(
