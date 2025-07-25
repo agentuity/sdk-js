@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.134
+
+### Patch Changes
+
+- b62160b: Added Telegram IO
+
 ## [0.0.133] - 2025-07-16
 
 ### Added
