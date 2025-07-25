@@ -127,7 +127,6 @@ export class Telegram {
                         chatId: this.chatId,
                         message: options.reply,
                         action: options.action,
-                        reply_to_message_id: this.messageId,
                         agentId: ctx.agent.id,
                         parseMode: options.parseMode,
                     }),
