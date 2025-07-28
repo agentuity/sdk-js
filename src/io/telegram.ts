@@ -43,9 +43,9 @@ export class Telegram {
     private readonly _message: TelegramResponse;
 
     constructor(data: TelegramResponse) {
-+        if (!data.message_id || !data.chat || !data.from) {
-+            throw new Error('Invalid Telegram message: missing required fields');
-+        }
+        if (!data.message_id || !data.chat || !data.from) {
+            throw new Error('Invalid Telegram message: missing required fields');
+        }
         this._message = data;
     }
 
@@ -86,14 +86,12 @@ export class Telegram {
     }
 
     get text(): string {
--        return this._message.text;
-+        return this._message.text || '';
+        return this._message.text || '';
     }
 
     get date(): number {
         return this._message.date;
     }
-}
 
     private async _sendReply(
         req: AgentRequest,
