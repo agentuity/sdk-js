@@ -1,5 +1,5 @@
 import { inspect } from 'node:util';
-import type { AgentRequest, AgentContext } from '../types';
+import type { AgentRequest, AgentContext, TelegramService } from '../types';
 import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import { POST } from '../apis/api';
@@ -39,7 +39,7 @@ export interface TelegramReply {
 /**
  * A class representing a telegram message with the common information so processing can be done on it.
  */
-export class Telegram {
+export class Telegram implements TelegramService {
     private readonly _message: TelegramResponse;
 
     constructor(data: TelegramResponse) {

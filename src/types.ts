@@ -515,6 +515,28 @@ export interface SMSService {
 	): Promise<void>;
 }
 
+export interface TelegramService {
+
+	/**
+	 * send a reply to a incoming Telegram message
+	 */
+	sendReply(
+		req: AgentRequest,
+		ctx: AgentContext,
+		reply: string,
+		options: { parseMode?: 'MarkdownV2' | 'HTML' }
+	): Promise<void>;
+
+	/**
+	 * send a typing indicator to a incoming Telegram message
+	 * expires after 5 seconds or when a message is sent
+	 */
+	sendTyping(
+		req: AgentRequest,
+		ctx: AgentContext,
+	): Promise<void>;
+}
+
 export interface ObjectStorePutParams {
 	/**
 	 * the content type of the object
