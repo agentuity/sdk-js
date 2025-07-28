@@ -179,7 +179,6 @@ export class Telegram {
 export async function parseTelegram(data: Buffer): Promise<Telegram> {
     try {
         const msg = JSON.parse(data.toString()) as TelegramResponse;
-        console.log('=====----->', msg);
         return new Telegram(msg);
     } catch (error) {
         throw new Error(
