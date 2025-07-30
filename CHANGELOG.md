@@ -1,10 +1,10 @@
 # @agentuity/sdk Changelog
 
-## 0.0.134
+## [0.0.134] - 2025-07-28
 
-### Patch Changes
+### Added
 
-- b62160b: Added Telegram IO
+- Telegram IO integration with support for parsing and replying to Telegram messages ([#151](https://github.com/agentuity/sdk-js/pull/151))
 
 ## [0.0.133] - 2025-07-16
 
