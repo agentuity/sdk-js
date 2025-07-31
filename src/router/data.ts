@@ -1,10 +1,11 @@
 import { ReadableStream } from 'node:stream/web';
-import type { Data, ReadableDataType, Json } from '../types';
+import type { Data, ReadableDataType, Json, JsonObject } from '../types';
 import { safeParse } from '../server/util';
 import { parseEmail, type Email } from '../io/email';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
 import { parseSms, type Sms } from '../io/sms';
 import { parseTelegram, type Telegram } from '../io/telegram';
+import { parseSlack, type Slack } from '../io/slack';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -44,6 +45,7 @@ const toBuffer = async (
  */
 export class DataHandler implements Data {
 	private readonly _type: string;
+	private readonly _metadata?: JsonObject;
 	private _readstream?:
 		| ReadableStream<ReadableDataType>
 		| AsyncIterable<ReadableDataType>;
@@ -56,9 +58,11 @@ export class DataHandler implements Data {
 			| Buffer
 			| ReadableStream<ReadableDataType>
 			| AsyncIterable<ReadableDataType>,
-		contentType: string
+		contentType: string,
+		metadata?: JsonObject
 	) {
 		this._type = contentType ?? 'application/octet-stream';
+		this._metadata = metadata;
 		if (typeof stream === 'string') {
 			this._buffer = Buffer.from(stream);
 		} else if (stream instanceof Buffer) {
@@ -263,6 +267,19 @@ export class DataHandler implements Data {
 		}
 		const data = await this.data();
 		return parseTelegram(data);
+	}
+
+	async slack(): Promise<Slack> {
+		if (this.contentType !== 'application/json') {
+			throw new Error('The content type is not a valid slack message');
+		}
+		const data = await this.data();
+		
+		// Get message type from metadata, default to 'slack-event'
+		const messageType = this._metadata?.['msg-type'] as 'slack-event' | 'slack-message' | undefined;
+		const slackMessageType: 'slack-event' | 'slack-message' = messageType === 'slack-message' ? 'slack-message' : 'slack-event';
+		
+		return parseSlack(data, slackMessageType);
 	}
 
 	private isTextChunkable() {
