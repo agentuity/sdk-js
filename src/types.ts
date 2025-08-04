@@ -185,7 +185,7 @@ export type JsonPrimitive =
 /**
  * JSON array type
  */
-export interface JsonArray extends Array<JsonPrimitive> { }
+export interface JsonArray extends Array<JsonPrimitive> {}
 
 /**
  * valid keys for a JSON object
@@ -523,7 +523,6 @@ export interface SMSService {
 }
 
 export interface TelegramService {
-
 	/**
 	 * send a reply to a incoming Telegram message
 	 */
@@ -538,10 +537,7 @@ export interface TelegramService {
 	 * send a typing indicator to a incoming Telegram message
 	 * expires after 5 seconds or when a message is sent
 	 */
-	sendTyping(
-		req: AgentRequest,
-		ctx: AgentContext,
-	): Promise<void>;
+	sendTyping(req: AgentRequest, ctx: AgentContext): Promise<void>;
 }
 
 export interface SlackService {
@@ -980,16 +976,23 @@ export interface AgentResponse {
 
 	/**
 	 * stream a response to the client. the content type will default to application/octet-stream if not provided.
+	 * For object types (non-ReadableDataType), automatically converts to JSON newline format and defaults content type to application/json.
 	 *
 	 * @param stream - the stream to return
 	 * @param contentType - the content type of the stream
 	 * @param metadata - the metadata to return as headers
+	 * @param transformer - optional transformer function or generator function to transform/filter each item.
+	 *                     Function: (item) => value | null | undefined - returns single value or skips
+	 *                     Generator: function* (item) { yield value; } - yields single value (alternative syntax)
 	 * @returns the response data
 	 */
-	stream<M = unknown>(
-		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
+	stream<T = unknown, U = T, M = unknown>(
+		stream: ReadableStream<T> | AsyncIterable<T>,
 		contentType?: string,
-		metadata?: M
+		metadata?: M,
+		transformer?:
+			| ((item: T) => U | null | undefined)
+			| ((item: T) => Generator<U, void, unknown>)
 	): Promise<AgentResponseData>;
 }
 

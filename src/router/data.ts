@@ -274,11 +274,15 @@ export class DataHandler implements Data {
 			throw new Error('The content type is not a valid slack message');
 		}
 		const data = await this.data();
-		
+
 		// Get message type from metadata, default to 'slack-event'
-		const messageType = this._metadata?.['msg-type'] as 'slack-event' | 'slack-message' | undefined;
-		const slackMessageType: 'slack-event' | 'slack-message' = messageType === 'slack-message' ? 'slack-message' : 'slack-event';
-		
+		const messageType = this._metadata?.['msg-type'] as
+			| 'slack-event'
+			| 'slack-message'
+			| undefined;
+		const slackMessageType: 'slack-event' | 'slack-message' =
+			messageType === 'slack-message' ? 'slack-message' : 'slack-event';
+
 		return parseSlack(data, slackMessageType);
 	}
 
