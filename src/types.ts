@@ -5,6 +5,7 @@ import type { Email } from './io/email';
 import type { DiscordMessage } from './io/discord';
 import type { Sms } from './io/sms';
 import type { Telegram } from './io/telegram';
+import type { Slack, SlackReply } from './io/slack';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -20,6 +21,7 @@ export type TriggerType =
 	| 'email'
 	| 'discord'
 	| 'telegram'
+	| 'slack'
 	| 'agent';
 
 /**
@@ -93,6 +95,11 @@ export interface Data {
 	 * the telegram message data represented as a TelegramMessage. If the data is not a valid telegram message, this will throw an error.
 	 */
 	telegram(): Promise<Telegram>;
+
+	/**
+	 * the slack message data represented as a Slack. If the data is not a valid slack message, this will throw an error.
+	 */
+	slack(): Promise<Slack>;
 }
 
 /**
@@ -537,6 +544,17 @@ export interface TelegramService {
 	): Promise<void>;
 }
 
+export interface SlackService {
+	/**
+	 * send a reply to a incoming Slack message or event
+	 */
+	sendReply(
+		req: AgentRequest,
+		ctx: AgentContext,
+		reply: string | SlackReply
+	): Promise<void>;
+}
+
 export interface ObjectStorePutParams {
 	/**
 	 * the content type of the object
@@ -776,6 +794,11 @@ export interface AgentContext {
 	 * the object store
 	 */
 	objectstore: ObjectStore;
+
+	/**
+	 * the slack service
+	 */
+	slack: SlackService;
 }
 
 /**

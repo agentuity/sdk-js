@@ -31,7 +31,7 @@ export default class AgentRequestHandler implements AgentRequest {
 		metadata: JsonObject
 	) {
 		this._trigger = trigger;
-		this._datahandler = new DataHandler(stream, contentType);
+		this._datahandler = new DataHandler(stream, contentType, metadata);
 		this._metadata = metadata;
 	}
 

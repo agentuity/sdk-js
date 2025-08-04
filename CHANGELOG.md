@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.135
+
+### Patch Changes
+
+- 2ad6214: Added Slack IO
+
 ## [0.0.134] - 2025-07-28
 
 ### Added
