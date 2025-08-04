@@ -249,12 +249,15 @@ export default class AgentResponseHandler implements AgentResponse {
 	/**
 	 * helper method to check if a result is a generator
 	 */
-	private isGenerator<U>(result: any): result is Generator<U, void, unknown> {
+	private isGenerator<U>(
+		result: unknown
+	): result is Generator<U, void, unknown> {
 		return (
 			result &&
 			typeof result === 'object' &&
-			typeof result.next === 'function' &&
-			typeof result[Symbol.iterator] === 'function'
+			typeof (result as Generator<U, void, unknown>).next === 'function' &&
+			typeof (result as Generator<U, void, unknown>)[Symbol.iterator] ===
+				'function'
 		);
 	}
 
@@ -275,10 +278,9 @@ export default class AgentResponseHandler implements AgentResponse {
 				return null; // Generator yielded nothing, skip this item
 			}
 			return firstResult.value;
-		} else {
-			// It's a single value, return it as-is
-			return result as U;
 		}
+		// It's a single value, return it as-is
+		return result as U;
 	}
 
 	/**
@@ -328,14 +330,13 @@ export default class AgentResponseHandler implements AgentResponse {
 				contentType,
 				transformer
 			);
-		} else {
-			// For AsyncIterable, we can create a new async generator that checks on first item
-			return this.processAsyncIterableForAutoConversion(
-				stream,
-				contentType,
-				transformer
-			);
 		}
+		// For AsyncIterable, we can create a new async generator that checks on first item
+		return this.processAsyncIterableForAutoConversion(
+			stream,
+			contentType,
+			transformer
+		);
 	}
 
 	/**
@@ -406,7 +407,7 @@ export default class AgentResponseHandler implements AgentResponse {
 						firstTransformedItem !== undefined
 					) {
 						if (needsJsonConversion) {
-							const jsonString = JSON.stringify(firstTransformedItem) + '\n';
+							const jsonString = `${JSON.stringify(firstTransformedItem)}\n`;
 							controller.enqueue(new TextEncoder().encode(jsonString));
 						} else {
 							controller.enqueue(firstTransformedItem as ReadableDataType);
@@ -432,7 +433,7 @@ export default class AgentResponseHandler implements AgentResponse {
 						}
 
 						if (needsJsonConversion) {
-							const jsonString = JSON.stringify(processedValue) + '\n';
+							const jsonString = `${JSON.stringify(processedValue)}\n`;
 							controller.enqueue(new TextEncoder().encode(jsonString));
 						} else {
 							controller.enqueue(processedValue as ReadableDataType);
@@ -510,7 +511,7 @@ export default class AgentResponseHandler implements AgentResponse {
 				firstTransformedItem !== undefined
 			) {
 				if (needsJsonConversion) {
-					const jsonString = JSON.stringify(firstTransformedItem) + '\n';
+					const jsonString = `${JSON.stringify(firstTransformedItem)}\n`;
 					yield new TextEncoder().encode(jsonString);
 				} else {
 					yield firstTransformedItem as ReadableDataType;
@@ -536,7 +537,7 @@ export default class AgentResponseHandler implements AgentResponse {
 				}
 
 				if (needsJsonConversion) {
-					const jsonString = JSON.stringify(processedValue) + '\n';
+					const jsonString = `${JSON.stringify(processedValue)}\n`;
 					yield new TextEncoder().encode(jsonString);
 				} else {
 					yield processedValue as ReadableDataType;

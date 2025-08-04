@@ -213,12 +213,14 @@ describe('AgentResponseHandler Streaming', () => {
 		});
 
 		it('should handle empty object streams', async () => {
-			async function* generateEmptyObjects() {
-				// Generator that yields nothing
-				return;
-			}
+			// Create an empty async iterable
+			const emptyAsyncIterable = {
+				async *[Symbol.asyncIterator]() {
+					// Empty generator - yields nothing
+				},
+			};
 
-			const result = await responseHandler.stream(generateEmptyObjects());
+			const result = await responseHandler.stream(emptyAsyncIterable);
 
 			expect(result.data).toBeDefined();
 			expect(result.data.contentType).toBe('application/octet-stream'); // Should use default since no items to detect
@@ -242,7 +244,11 @@ describe('AgentResponseHandler Streaming', () => {
 			});
 
 			// Transform to only include active users and simplify structure
-			const transformer = (item: any) => {
+			const transformer = (item: {
+				id: number;
+				name: string;
+				active: boolean;
+			}) => {
 				if (!item.active) return null; // Filter out inactive users
 				return { name: item.name, id: item.id };
 			};
@@ -378,7 +384,7 @@ describe('AgentResponseHandler Streaming', () => {
 				},
 			});
 
-			const transformer = (item: any) => ({ transformed: item.id });
+			const transformer = (item: { id: number }) => ({ transformed: item.id });
 			const customContentType = 'application/x-custom-json';
 
 			const result = await responseHandler.stream(
@@ -639,7 +645,7 @@ describe('AgentResponseHandler Streaming', () => {
 			});
 
 			// Generator that transforms objects
-			function* transformer(item: any) {
+			function* transformer(item: { id: number }) {
 				yield { transformed: item.id, timestamp: Date.now() };
 			}
 
