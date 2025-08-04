@@ -253,11 +253,13 @@ export default class AgentResponseHandler implements AgentResponse {
 		result: unknown
 	): result is Generator<U, void, unknown> {
 		return (
-			result &&
+			result !== null &&
+			result !== undefined &&
 			typeof result === 'object' &&
-			typeof (result as Generator<U, void, unknown>).next === 'function' &&
-			typeof (result as Generator<U, void, unknown>)[Symbol.iterator] ===
-				'function'
+			'next' in result &&
+			typeof result.next === 'function' &&
+			Symbol.iterator in result &&
+			typeof result[Symbol.iterator] === 'function'
 		);
 	}
 
