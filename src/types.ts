@@ -794,6 +794,11 @@ export interface AgentContext {
 	 * the object store
 	 */
 	objectstore: ObjectStore;
+
+	/**
+	 * the slack service
+	 */
+	slack: SlackService;
 }
 
 /**

@@ -75,7 +75,7 @@ describe('Slack IO', () => {
 
             const buffer = Buffer.from(JSON.stringify(invalidPayload));
             
-            expect(() => parseSlack(buffer, 'slack-event')).toThrow('Invalid Slack event: missing required fields');
+            await expect(parseSlack(buffer, 'slack-event')).rejects.toThrow('Invalid Slack event: missing required fields');
         });
 
         test('should throw error for invalid slack-message payload', async () => {
@@ -86,7 +86,7 @@ describe('Slack IO', () => {
 
             const buffer = Buffer.from(JSON.stringify(invalidPayload));
             
-            expect(() => parseSlack(buffer, 'slack-message')).toThrow('Invalid Slack message: missing required fields');
+            await expect(parseSlack(buffer, 'slack-message')).rejects.toThrow('Invalid Slack message: missing required fields');
         });
     });
 
