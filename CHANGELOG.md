@@ -1,10 +1,10 @@
 # @agentuity/sdk Changelog
 
-## 0.0.135
+## [0.0.135] - 2025-08-04
 
-### Patch Changes
+### Added
 
-- 2ad6214: Added Slack IO
+- Slack IO integration with support for parsing and replying to Slack messages ([#153](https://github.com/agentuity/sdk-js/pull/153))
 
 ## [0.0.134] - 2025-07-28
 
