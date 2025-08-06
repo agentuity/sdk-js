@@ -25,7 +25,7 @@ describe('PromptAPI', () => {
 		mock.module('@opentelemetry/api', () => ({
 			context: {
 				active: () => ({}),
-				with: (ctx: unknown, fn: Function) => fn(),
+				with: (ctx: unknown, fn: () => unknown) => fn(),
 			},
 			trace: {
 				setSpan: (ctx: unknown, span: unknown) => ctx,
@@ -233,7 +233,7 @@ describe('PromptAPI', () => {
 
 			await expect(
 				promptAPI.compile({
-					name: 123 as any,
+					name: 123 as unknown as string,
 					variables: {},
 				})
 			).rejects.toThrow('Prompt name must be a non-empty string');
@@ -243,21 +243,21 @@ describe('PromptAPI', () => {
 			await expect(
 				promptAPI.compile({
 					name: 'test-prompt',
-					variables: null as any,
+					variables: null as unknown as Record<string, unknown>,
 				})
 			).rejects.toThrow(PromptCompileError);
 
 			await expect(
 				promptAPI.compile({
 					name: 'test-prompt',
-					variables: null as any,
+					variables: null as unknown as Record<string, unknown>,
 				})
 			).rejects.toThrow('Variables must be an object');
 
 			await expect(
 				promptAPI.compile({
 					name: 'test-prompt',
-					variables: 'not-an-object' as any,
+					variables: 'not-an-object' as unknown as Record<string, unknown>,
 				})
 			).rejects.toThrow('Variables must be an object');
 		});
