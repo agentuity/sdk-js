@@ -68,19 +68,19 @@ export default class PromptAPI implements PromptService {
 			return await context.with(spanContext, async () => {
 			const { name, variables, version } = request;
 			
-			span.setAttribute('prompt.name', name);
-			span.setAttribute('prompt.variables_count', Object.keys(variables).length);
-			if (version !== undefined) {
-			 span.setAttribute('prompt.version', version);
-			}
-
-			// Validate inputs
+			// Validate inputs first
 			if (!name || typeof name !== 'string') {
-			 throw new PromptCompileError('Prompt name must be a non-empty string');
+				throw new PromptCompileError('Prompt name must be a non-empty string');
 			}
 
 			if (!variables || typeof variables !== 'object') {
-			 throw new PromptCompileError('Variables must be an object');
+				throw new PromptCompileError('Variables must be an object');
+			}
+
+			span.setAttribute('prompt.name', name);
+			span.setAttribute('prompt.variables_count', Object.keys(variables).length);
+			if (version !== undefined) {
+				span.setAttribute('prompt.version', version);
 			}
 
 			if (version !== undefined && (!Number.isInteger(version) || version < 1)) {
