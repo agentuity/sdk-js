@@ -5,7 +5,8 @@ export * from './types';
 // Export APIs
 import EmailAPI from './apis/email';
 import DiscordAPI from './apis/discord';
-export { EmailAPI, DiscordAPI };
+import PromptAPI from './apis/prompt';
+export { EmailAPI, DiscordAPI, PromptAPI };
 
 import type { AgentConfig } from './types';
 import { run } from './autostart';
