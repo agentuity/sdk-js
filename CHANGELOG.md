@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.137
+
+### Patch Changes
+
+- Expose ts and ts_thread in the payload for Slack IO integration ([#157](https://github.com/agentuity/sdk-js/pull/157))
+
 ## 0.0.136
 
 ### Patch Changes
