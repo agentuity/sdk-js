@@ -1,9 +1,9 @@
 import { inspect } from 'node:util';
-import type { AgentRequest, AgentContext, SlackService } from '../types';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+import { SpanStatusCode, context, trace } from '@opentelemetry/api';
 import { POST } from '../apis/api';
+import { getTracer, recordException } from '../router/router';
 import { safeStringify } from '../server/util';
+import type { AgentContext, AgentRequest, SlackService } from '../types';
 
 // Event represents the inner event data for Slack events
 interface SlackEventData {
@@ -14,6 +14,7 @@ interface SlackEventData {
 	ts: string;
 	event_ts: string;
 	channel_type: string;
+	thread_ts?: string;
 }
 
 // SlackEvent represents a Slack event webhook payload
@@ -39,6 +40,9 @@ interface SlackMessagePayload {
 	text: string;
 	response_url: string;
 	trigger_id: string;
+	ts: string;
+	thread_ts?: string;
+	event_ts?: string;
 }
 
 /**
@@ -154,6 +158,22 @@ export class Slack implements SlackService {
 
 	get triggerId(): string | undefined {
 		return this.messagePayload?.trigger_id;
+	}
+
+	get threadTs(): string | undefined {
+		return this.eventPayload?.event?.thread_ts;
+	}
+
+	get eventTs(): string | undefined {
+		return this.eventPayload?.event?.event_ts;
+	}
+
+	get ts(): string | undefined {
+		return this.eventPayload?.event?.ts;
+	}
+
+	get body(): string | undefined {
+		return JSON.stringify(this.eventPayload);
 	}
 
 	// Common text getter that works for both types
