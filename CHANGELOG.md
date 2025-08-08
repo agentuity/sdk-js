@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.138
+
+### Patch Changes
+
+- Fix the sms error
+
 ## 0.0.137
 
 ### Patch Changes
