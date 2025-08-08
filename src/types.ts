@@ -551,6 +551,35 @@ export interface SlackService {
 	): Promise<void>;
 }
 
+/**
+ * Result container for prompt compilation
+ */
+export interface PromptCompileResult {
+	compiledContent: string;
+	promptId: string;
+	version: number;
+}
+
+/**
+ * PromptService provides a way to compile prompt templates with variables
+ */
+export interface PromptService {
+	/**
+	 * Compile a prompt template with the provided variables
+	 *
+	 * @param request - The prompt compilation request
+	 * @param request.name - The name of the prompt template
+	 * @param request.variables - Dictionary of variables to substitute in the template
+	 * @param request.version - Optional specific version to compile (defaults to active version)
+	 * @returns The compiled prompt with metadata
+	 */
+	compile(request: {
+		name: string;
+		variables: Record<string, unknown>;
+		version?: number;
+	}): Promise<PromptCompileResult>;
+}
+
 export interface ObjectStorePutParams {
 	/**
 	 * the content type of the object
@@ -790,6 +819,11 @@ export interface AgentContext {
 	 * the object store
 	 */
 	objectstore: ObjectStore;
+
+	/**
+	 * the prompt service
+	 */
+	prompt: PromptService;
 
 	/**
 	 * the slack service
