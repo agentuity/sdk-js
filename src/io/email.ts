@@ -225,7 +225,9 @@ export class Email {
 		if (!this._message.attachments || this._message.attachments.length === 0) {
 			return [];
 		}
-		return this._message.attachments.map((att) => {
+		const validAttachments: IncomingEmailAttachment[] = [];
+		
+		for (const att of this._message.attachments) {
 			const hv = att.headers.get('content-disposition') as {
 				value: string;
 				params: Record<string, string>;
@@ -235,15 +237,20 @@ export class Email {
 					'Invalid attachment headers: missing content-disposition'
 				);
 			}
-			if (!hv.params.filename || !hv.params.url) {
-				throw new Error('Invalid attachment headers: missing filename or url');
+			if (!hv.params.filename) {
+				throw new Error('Invalid attachment headers: missing filename');
 			}
-			return new RemoteEmailAttachment(
+			if (!hv.params.url) {
+				continue;
+			}
+			validAttachments.push(new RemoteEmailAttachment(
 				hv.params.filename,
 				hv.params.url,
 				hv.value as 'attachment' | 'inline' | undefined
-			);
-		});
+			));
+		}
+		
+		return validAttachments;
 	}
 
 	private makeReplySubject(subject: string | undefined): string {
