@@ -237,17 +237,45 @@ export class Email {
 					'Invalid attachment headers: missing content-disposition'
 				);
 			}
-			if (!hv.params.filename) {
+			
+			const filename =
+				hv.params.filename ??
+				hv.params['filename*'] ??
+				(att as { filename?: string }).filename ??
+				undefined;
+			if (!filename) {
 				throw new Error('Invalid attachment headers: missing filename');
 			}
-			if (!hv.params.url) {
+
+			const rawUrl = hv.params.url?.trim();
+			if (!rawUrl) {
 				continue;
 			}
-			validAttachments.push(new RemoteEmailAttachment(
-				hv.params.filename,
-				hv.params.url,
-				hv.value as 'attachment' | 'inline' | undefined
-			));
+			let parsed: URL;
+			try {
+				parsed = new URL(rawUrl);
+			} catch {
+				continue;
+			}
+			const protocol = parsed.protocol.toLowerCase();
+			if (protocol !== 'http:' && protocol !== 'https:') {
+				continue;
+			}
+			const hostname = parsed.hostname.toLowerCase();
+			if (
+				hostname === 'localhost' ||
+				hostname === '127.0.0.1' ||
+				hostname === '::1'
+			) {
+				continue;
+			}
+
+			const disposition: 'attachment' | 'inline' =
+				hv.value?.toLowerCase() === 'inline' ? 'inline' : 'attachment';
+
+			validAttachments.push(
+				new RemoteEmailAttachment(filename, parsed.toString(), disposition)
+			);
 		}
 		
 		return validAttachments;
