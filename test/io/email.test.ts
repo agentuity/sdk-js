@@ -358,4 +358,111 @@ Malformed URL attachment
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('valid.txt');
 	});
+
+	it('should block private IPv4 addresses', async () => {
+		const privateIPs = [
+			'10.0.0.1',
+			'172.16.0.1',
+			'192.168.1.1',
+			'100.64.0.1',
+			'169.254.1.1',
+			'127.0.0.1',
+			'0.0.0.0'
+		];
+
+		for (const ip of privateIPs) {
+			const emailContent = `From: test@example.com
+To: recipient@example.com
+Subject: Test Email with Private IP
+Content-Type: multipart/mixed; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain
+
+This is the email body.
+
+--boundary123
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="test.txt"; url="http://${ip}/file.txt"
+
+Test attachment content
+--boundary123--
+`;
+
+			const email = await parseEmail(Buffer.from(emailContent));
+			const attachments = email.attachments();
+			
+			expect(attachments).toHaveLength(0);
+		}
+	});
+
+	it('should block IPv6 reserved addresses', async () => {
+		const blockedIPv6 = [
+			'::1',
+			'::',
+			'fe80::1',
+			'fc00::1',
+			'fd00::1',
+			'::ffff:192.168.1.1'
+		];
+
+		for (const ip of blockedIPv6) {
+			const emailContent = `From: test@example.com
+To: recipient@example.com
+Subject: Test Email with IPv6 Address
+Content-Type: multipart/mixed; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain
+
+This is the email body.
+
+--boundary123
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="test.txt"; url="http://[${ip}]/file.txt"
+
+Test attachment content
+--boundary123--
+`;
+
+			const email = await parseEmail(Buffer.from(emailContent));
+			const attachments = email.attachments();
+			
+			expect(attachments).toHaveLength(0);
+		}
+	});
+
+	it('should allow public IPv4 addresses', async () => {
+		const publicIPs = [
+			'8.8.8.8',
+			'1.1.1.1',
+			'208.67.222.222'
+		];
+
+		for (const ip of publicIPs) {
+			const emailContent = `From: test@example.com
+To: recipient@example.com
+Subject: Test Email with Public IP
+Content-Type: multipart/mixed; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain
+
+This is the email body.
+
+--boundary123
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="test.txt"; url="https://${ip}/file.txt"
+
+Test attachment content
+--boundary123--
+`;
+
+			const email = await parseEmail(Buffer.from(emailContent));
+			const attachments = email.attachments();
+			
+			expect(attachments).toHaveLength(1);
+			expect(attachments[0].filename).toBe('test.txt');
+		}
+	});
 });

@@ -1,6 +1,8 @@
 import type { ReadableStream } from 'node:stream/web';
 import { type ParsedMail, type Headers, simpleParser } from 'mailparser';
 import { inspect } from 'node:util';
+import { promises as dns } from 'node:dns';
+import { isIP } from 'node:net';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import type { Address, Attachment } from 'nodemailer/lib/mailer';
 import type {
@@ -15,6 +17,105 @@ import { DataHandler } from '../router/data';
 import { send } from '../apis/api';
 import { getTracer, recordException } from '../router/router';
 import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+
+/**
+ * Check if IPv4 address is in private/reserved ranges
+ */
+function isPrivateIPv4(octets: number[]): boolean {
+	if (octets.length !== 4) return false;
+	
+	const [a, b] = octets;
+	
+	if (a === 10) return true;
+	
+	if (a === 172 && b >= 16 && b <= 31) return true;
+	
+	if (a === 192 && b === 168) return true;
+	
+	if (a === 100 && b >= 64 && b <= 127) return true;
+	
+	if (a === 169 && b === 254) return true;
+	
+	if (a === 127) return true;
+	
+	if (a === 0) return true;
+	
+	return false;
+}
+
+/**
+ * Check if IPv6 address is in blocked ranges
+ */
+function isBlockedIPv6(addr: string): boolean {
+	let normalized = addr.toLowerCase().trim();
+	
+	if (normalized.startsWith('[') && normalized.endsWith(']')) {
+		normalized = normalized.slice(1, -1);
+	}
+	
+	if (normalized === '::1') return true;
+	
+	if (normalized === '::') return true;
+	
+	if (normalized.startsWith('fe8') || normalized.startsWith('fe9') || 
+		normalized.startsWith('fea') || normalized.startsWith('feb')) return true;
+	
+	if (normalized.startsWith('fc') || normalized.startsWith('fd')) return true;
+	
+	if (normalized.startsWith('::ffff:')) {
+		const ipv4Part = normalized.substring(7);
+		const ipv4Match = ipv4Part.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+		if (ipv4Match) {
+			const octets = ipv4Match.slice(1).map(Number);
+			return isPrivateIPv4(octets);
+		}
+		const hexMatch = ipv4Part.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+		if (hexMatch) {
+			const high = Number.parseInt(hexMatch[1], 16);
+			const low = Number.parseInt(hexMatch[2], 16);
+			const octets = [
+				(high >> 8) & 0xff,
+				high & 0xff,
+				(low >> 8) & 0xff,
+				low & 0xff
+			];
+			return isPrivateIPv4(octets);
+		}
+	}
+	
+	return false;
+}
+
+/**
+ * Check if hostname resolves to private or local addresses
+ */
+async function isResolvableToPrivateOrLocal(hostname: string): Promise<boolean> {
+	const ipVersion = isIP(hostname);
+	if (ipVersion === 4) {
+		const octets = hostname.split('.').map(Number);
+		return isPrivateIPv4(octets);
+	}
+	if (ipVersion === 6) {
+		return isBlockedIPv6(hostname);
+	}
+	
+	try {
+		const result = await dns.lookup(hostname, { all: true, verbatim: true });
+		
+		for (const { address, family } of result) {
+			if (family === 4) {
+				const octets = address.split('.').map(Number);
+				if (isPrivateIPv4(octets)) return true;
+			} else if (family === 6) {
+				if (isBlockedIPv6(address)) return true;
+			}
+		}
+		
+		return false;
+	} catch {
+		return false;
+	}
+}
 
 /**
  * An attachment to an incoming email
@@ -82,6 +183,14 @@ class RemoteEmailAttachment implements IncomingEmailAttachment {
 		try {
 			const spanContext = trace.setSpan(currentContext, span);
 			return await context.with(spanContext, async () => {
+				const parsed = new URL(this._url);
+				const hostname = parsed.hostname.toLowerCase().trim();
+				
+				const isPrivateOrLocal = await isResolvableToPrivateOrLocal(hostname);
+				if (isPrivateOrLocal) {
+					throw new Error('Access to private or local network addresses is not allowed');
+				}
+				
 				const res = await send({ url: this._url, method: 'GET' }, true);
 				if (res.status === 200) {
 					span.setStatus({ code: SpanStatusCode.OK });
@@ -261,13 +370,27 @@ export class Email {
 			if (protocol !== 'http:' && protocol !== 'https:') {
 				continue;
 			}
-			const hostname = parsed.hostname.toLowerCase();
+			const hostname = parsed.hostname.toLowerCase().trim();
+			
 			if (
 				hostname === 'localhost' ||
 				hostname === '127.0.0.1' ||
 				hostname === '::1'
 			) {
 				continue;
+			}
+			
+			if (isBlockedIPv6(hostname)) {
+				continue;
+			}
+			
+			// Check for IPv4 addresses
+			const ipVersion = isIP(hostname);
+			if (ipVersion === 4) {
+				const octets = hostname.split('.').map(Number);
+				if (isPrivateIPv4(octets)) {
+					continue;
+				}
 			}
 
 			const disposition: 'attachment' | 'inline' =
