@@ -2,13 +2,21 @@ export * from './server';
 export * from './logger';
 export * from './types';
 
+import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
-import DiscordAPI from './apis/discord';
 export { EmailAPI, DiscordAPI };
-
-import type { AgentConfig } from './types';
+import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';
+import { AgentuityTeamsActivityHandler } from './io/teams/AgentuityTeamsActivityHandler';
+import { AgentuityTeamsAdapter } from './io/teams/AgentuityTeamsAdapter';
+import type { AgentConfig } from './types';
+
+export {
+	AgentuityTeamsAdapter,
+	AgentuityTeamsActivityHandler,
+	TeamsActivityHandler,
+};
 
 /**
  * Runs the Agentuity SDK with the specified configuration

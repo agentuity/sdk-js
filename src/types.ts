@@ -1,11 +1,13 @@
-import type { Meter, Tracer } from '@opentelemetry/api';
-import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
-import type { Email } from './io/email';
+import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
-import type { Sms } from './io/sms';
-import type { Telegram } from './io/telegram';
+import type { Email } from './io/email';
 import type { Slack, SlackReply } from './io/slack';
+import type { Sms } from './io/sms';
+import type { Teams } from './io/teams';
+import type { AgentuityTeamsAdapter } from './io/teams/AgentuityTeamsAdapter';
+import type { Telegram } from './io/telegram';
+import type { Logger } from './logger';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -22,6 +24,7 @@ export type TriggerType =
 	| 'discord'
 	| 'telegram'
 	| 'slack'
+	| 'teams'
 	| 'agent';
 
 /**
@@ -100,6 +103,11 @@ export interface Data {
 	 * the slack message data represented as a Slack. If the data is not a valid slack message, this will throw an error.
 	 */
 	slack(): Promise<Slack>;
+
+	/**
+	 * the teams message data represented as a Teams. If the data is not a valid teams message, this will throw an error.
+	 */
+	teams(adapter: AgentuityTeamsAdapter): Promise<Teams>;
 }
 
 /**

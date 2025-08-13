@@ -1,11 +1,13 @@
 import { ReadableStream } from 'node:stream/web';
-import type { Data, ReadableDataType, Json, JsonObject } from '../types';
-import { safeParse } from '../server/util';
-import { parseEmail, type Email } from '../io/email';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
-import { parseSms, type Sms } from '../io/sms';
-import { parseTelegram, type Telegram } from '../io/telegram';
-import { parseSlack, type Slack } from '../io/slack';
+import { type Email, parseEmail } from '../io/email';
+import { type Slack, parseSlack } from '../io/slack';
+import { type Sms, parseSms } from '../io/sms';
+import { type Teams, parseTeams } from '../io/teams';
+import type { AgentuityTeamsAdapter } from '../io/teams/AgentuityTeamsAdapter';
+import { type Telegram, parseTelegram } from '../io/telegram';
+import { safeParse } from '../server/util';
+import type { Data, Json, JsonObject, ReadableDataType } from '../types';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -284,6 +286,14 @@ export class DataHandler implements Data {
 			messageType === 'slack-message' ? 'slack-message' : 'slack-event';
 
 		return parseSlack(data, slackMessageType);
+	}
+
+	async teams(adapter: AgentuityTeamsAdapter): Promise<Teams> {
+		if (this.contentType !== 'application/json') {
+			throw new Error('The content type is not a valid teams message');
+		}
+		const data = await this.data();
+		return parseTeams(data, adapter);
 	}
 
 	private isTextChunkable() {
