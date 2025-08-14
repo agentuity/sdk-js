@@ -1,8 +1,8 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import yml from 'js-yaml';
-import { existsSync, readFileSync } from 'node:fs';
-import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
+import { createServer, createServerContext } from '../server';
 import type { AgentConfig } from '../types';
 
 /**
@@ -105,6 +105,7 @@ export async function run(config: AutostartConfig) {
 		url: config?.otlp?.url,
 		environment: config.devmode ? 'development' : config.environment,
 	});
+	console.log('after otel');
 	const server = await createServer({
 		context: createServerContext({
 			devmode: config.devmode,
@@ -125,11 +126,14 @@ export async function run(config: AutostartConfig) {
 				: (port ?? 3500),
 		logger: otel.logger,
 	});
+	console.log('server');
 	await server.start();
+	console.log('server started');
 	const shutdown = async () => {
 		await server.stop();
 		await otel.shutdown();
 	};
+
 	process.on('beforeExit', shutdown);
 	process.on('SIGINT', shutdown);
 	process.on('SIGTERM', shutdown);

@@ -8,9 +8,9 @@ export type AgentuityTeamsActivityHandlerConstructor = new (
 ) => AgentuityTeamsActivityHandler;
 
 export abstract class AgentuityTeamsActivityHandler extends TeamsActivityHandler {
-	ctx!: AgentContext;
-	req!: AgentRequest;
-	resp!: AgentResponse;
+	ctx: AgentContext;
+	req: AgentRequest;
+	resp: AgentResponse;
 
 	constructor(req: AgentRequest, resp: AgentResponse, ctx: AgentContext) {
 		super();

@@ -71,7 +71,7 @@
 	},
 	"peerDependencies": {
 		"typescript": "^5",
-		"botbuilder": "^4.23.2"
+		"botbuilder": "^4.20.0"
 	},
 	"overrides": {
 		"esbuild": ">=0.25.0"

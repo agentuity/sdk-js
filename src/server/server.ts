@@ -1,21 +1,21 @@
-import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import type { Tracer, Meter } from '@opentelemetry/api';
-import type { Server, UnifiedServerConfig } from './types';
+import { join } from 'node:path';
+import type { Meter, Tracer } from '@opentelemetry/api';
+import DiscordAPI from '../apis/discord';
+import EmailAPI from '../apis/email';
+import KeyValueAPI from '../apis/keyvalue';
+import ObjectStoreAPI from '../apis/objectstore';
+import VectorAPI from '../apis/vector';
+import type { Logger } from '../logger';
+import { createRouter } from '../router';
 import type {
 	AgentConfig,
 	AgentContext,
 	AgentHandler,
 	AgentWelcome,
 } from '../types';
-import type { Logger } from '../logger';
+import type { Server, UnifiedServerConfig } from './types';
 import type { ServerRoute } from './types';
-import { createRouter } from '../router';
-import KeyValueAPI from '../apis/keyvalue';
-import VectorAPI from '../apis/vector';
-import EmailAPI from '../apis/email';
-import DiscordAPI from '../apis/discord';
-import ObjectStoreAPI from '../apis/objectstore';
 
 /**
  * Creates a unified server based on the runtime environment
@@ -51,9 +51,22 @@ async function createRoute(
 	agent: AgentConfig,
 	port: number
 ): Promise<ServerRoute> {
-	const mod = await import(filename);
+	console.log('createRoute inside');
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	let mod: any;
+	try {
+		mod = await import(filename);
+	} catch (error) {
+		console.error('Error importing module', error);
+		throw new Error(`Error importing module ${filename}: ${error}`);
+	}
+
+	console.log('mod 0');
 	let thehandler: AgentHandler | undefined;
+	console.log('thehandler');
 	let thewelcome: AgentWelcome | undefined;
+	console.log('thewelcome');
+	console.log('mod 1');
 	if (mod.default) {
 		thehandler = mod.default;
 	} else {
@@ -64,20 +77,24 @@ async function createRoute(
 			}
 		}
 	}
+	console.log('mod 2');
 	for (const key in mod) {
 		if (key === 'welcome' && mod[key] instanceof Function) {
 			thewelcome = mod[key];
 			break;
 		}
 	}
+	console.log('key');
 	if (!thehandler) {
 		throw new Error(`No handler found in ${filename}`);
 	}
+	console.log('thehandler');
 	const handler = createRouter({
 		context: { ...context, agent } as AgentContext,
 		handler: thehandler,
 		port,
 	});
+	console.log('createRoute after handler');
 	return {
 		agent,
 		handler,
@@ -110,10 +127,13 @@ export async function createServer({
 	port,
 	logger,
 }: ServerConfig) {
+	console.log('createServer');
 	const routes: ServerRoute[] = [];
 	for (const agent of context.agents) {
 		const filepath = join(directory, agent.filename);
 		if (existsSync(filepath)) {
+			console.log('before createRoute');
+			console.log('filepath', filepath);
 			const route = await createRoute(
 				filepath,
 				`/${agent.id}`,
@@ -130,6 +150,7 @@ export async function createServer({
 	if (routes.length === 0) {
 		throw new Error(`No routes found in ${directory}`);
 	}
+	console.log('createUnifiedServer');
 	return createUnifiedServer({
 		logger,
 		port,
@@ -167,6 +188,7 @@ const objectstore = new ObjectStoreAPI();
  * @returns An agent context object
  */
 export function createServerContext(req: ServerContextRequest): AgentContext {
+	console.log('createServerContext');
 	return {
 		devmode: req.devmode,
 		runId: req.runId,
