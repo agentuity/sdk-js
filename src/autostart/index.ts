@@ -105,7 +105,6 @@ export async function run(config: AutostartConfig) {
 		url: config?.otlp?.url,
 		environment: config.devmode ? 'development' : config.environment,
 	});
-	console.log('after otel');
 	const server = await createServer({
 		context: createServerContext({
 			devmode: config.devmode,
@@ -126,9 +125,7 @@ export async function run(config: AutostartConfig) {
 				: (port ?? 3500),
 		logger: otel.logger,
 	});
-	console.log('server');
 	await server.start();
-	console.log('server started');
 	const shutdown = async () => {
 		await server.stop();
 		await otel.shutdown();

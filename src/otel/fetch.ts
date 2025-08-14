@@ -17,12 +17,10 @@ export const __originalFetch = fetch; // save the original fetch before we patch
  * for each HTTP request and propagates trace context in headers
  */
 export function instrumentFetch() {
-	console.log('instrumentFetch');
 	const patch = async (
 		input: string | Request | URL,
 		init: RequestInit | undefined
 	) => {
-		console.log('running patch');
 		const url =
 			typeof input === 'string'
 				? input
@@ -85,7 +83,6 @@ export function instrumentFetch() {
 			};
 
 			let response: Response;
-			console.log('before fetch');
 			try {
 				response = await __originalFetch(input, newInit);
 			} catch (error) {
