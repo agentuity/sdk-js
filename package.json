@@ -70,8 +70,8 @@
 		"tsup": "^8.4.0"
 	},
 	"peerDependencies": {
-		"typescript": "^5",
-		"botbuilder": "^4.20.0"
+		"botbuilder": "^4.23.2",
+		"typescript": "^5"
 	},
 	"overrides": {
 		"esbuild": ">=0.25.0"
