@@ -23,8 +23,7 @@ export class AgentuityTeamsAdapter {
 		botClass: AgentuityTeamsActivityHandlerConstructor
 	) {
 		const auth = new ConfigurationBotFrameworkAuthentication(
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			process.env as any
+			process.env as unknown as Record<string, string>
 		);
 
 		this.adapter = new CloudAdapter(auth);
@@ -34,13 +33,9 @@ export class AgentuityTeamsAdapter {
 		this.resp = resp;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	async process(): Promise<any> {
+	async process() {
 		try {
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			this.ctx.logger.debug('process');
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			const teamsPayload = (await this.req.data.json()) as any;
+			const teamsPayload = (await this.req.data.json()) as unknown;
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const mockRestifyReq: any = {
 				method: 'POST',
@@ -48,28 +43,16 @@ export class AgentuityTeamsAdapter {
 				headers: this.req.metadata.headers,
 			};
 
-			this.ctx.logger.info('Mock request created:', mockRestifyReq);
-
-			let responseStatus = 200;
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			let responseBody: any = null;
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const mockRestifyRes: any = {
 				status: (code: number) => {
-					responseStatus = code;
 					return {
-						// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-						send: (body: any) => {
-							responseBody = body;
-						},
+						send: (body: unknown) => {},
 					};
 				},
 				end: () => {},
 				header: () => {},
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-				send: (body?: any) => {
-					responseBody = body;
-				},
+				send: (body?: unknown) => {},
 			};
 
 			await this.adapter.process(
@@ -81,15 +64,10 @@ export class AgentuityTeamsAdapter {
 					return res;
 				}
 			);
-			this.ctx.logger.info(
-				'adapter.process completed with status',
-				responseStatus
-			);
-
 			return this.resp.json({
-				status: responseStatus,
-				body: responseBody,
-				message: 'Teams webhook processed successfully through CloudAdapter',
+				status: 200,
+				body: 'OK',
+				message: 'Teams webhook processed successfully',
 			});
 		} catch (error) {
 			console.error('Error processing Teams webhook:', error);

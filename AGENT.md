@@ -27,4 +27,4 @@
 
 ## More detailed docs
 - [Creating new IO](./docs/adding-new-io.md)
-- [Local SDK testing](./docs/adding-new-io.md)
+- [Local SDK testing](./docs/testing-local-sdk.md)
