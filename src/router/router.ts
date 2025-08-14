@@ -1,30 +1,31 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ReadableStream } from 'node:stream/web';
 import {
-	SpanStatusCode,
 	type Exception,
-	type Tracer,
+	type Meter,
 	type Span,
+	SpanStatusCode,
+	type Tracer,
+	ValueType,
 	context,
 	trace,
-	type Meter,
-	ValueType,
 } from '@opentelemetry/api';
-import type { ServerRoute, ServerRequest } from '../server/types';
+import type { Logger } from '../logger';
+import AgentResolver from '../server/agents';
+import { HandlerParameterProvider } from '../server/handlerParameterProvider';
+import type { ServerRequest, ServerRoute } from '../server/types';
 import type {
-	AgentHandler,
+	AgentConfig,
 	AgentContext,
+	AgentHandler,
+	AgentRedirectResponse,
 	AgentResponseData,
 	GetAgentRequestParams,
-	RemoteAgent,
-	AgentConfig,
-	AgentRedirectResponse,
 	ReadableDataType,
+	RemoteAgent,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
-import type { Logger } from '../logger';
-import AgentResolver from '../server/agents';
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -317,6 +318,10 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							resolver.getAgent(params),
 						scope: req.request.scope,
 					} as AgentContext;
+
+					// put the request, response, and context into the handler parameter provider so can grab it in the team thing
+					new HandlerParameterProvider(request, response, contextObj);
+
 					try {
 						let handlerResponse = await config.handler(
 							request,

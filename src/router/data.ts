@@ -4,7 +4,7 @@ import { type Email, parseEmail } from '../io/email';
 import { type Slack, parseSlack } from '../io/slack';
 import { type Sms, parseSms } from '../io/sms';
 import { type Teams, parseTeams } from '../io/teams';
-import type { AgentuityTeamsAdapter } from '../io/teams/AgentuityTeamsAdapter';
+import type { AgentuityTeamsActivityHandlerConstructor } from '../io/teams/AgentuityTeamsActivityHandler';
 import { type Telegram, parseTelegram } from '../io/telegram';
 import { safeParse } from '../server/util';
 import type { Data, Json, JsonObject, ReadableDataType } from '../types';
@@ -288,12 +288,11 @@ export class DataHandler implements Data {
 		return parseSlack(data, slackMessageType);
 	}
 
-	async teams(adapter: AgentuityTeamsAdapter): Promise<Teams> {
-		if (this.contentType !== 'application/json') {
-			throw new Error('The content type is not a valid teams message');
-		}
+	async teams(
+		botClass: AgentuityTeamsActivityHandlerConstructor
+	): Promise<Teams> {
 		const data = await this.data();
-		return parseTeams(data, adapter);
+		return parseTeams(data, botClass);
 	}
 
 	private isTextChunkable() {

@@ -5,7 +5,7 @@ import type { Email } from './io/email';
 import type { Slack, SlackReply } from './io/slack';
 import type { Sms } from './io/sms';
 import type { Teams } from './io/teams';
-import type { AgentuityTeamsAdapter } from './io/teams/AgentuityTeamsAdapter';
+import type { AgentuityTeamsActivityHandlerConstructor } from './io/teams/AgentuityTeamsActivityHandler';
 import type { Telegram } from './io/telegram';
 import type { Logger } from './logger';
 
@@ -107,7 +107,7 @@ export interface Data {
 	/**
 	 * the teams message data represented as a Teams. If the data is not a valid teams message, this will throw an error.
 	 */
-	teams(adapter: AgentuityTeamsAdapter): Promise<Teams>;
+	teams(botClass: AgentuityTeamsActivityHandlerConstructor): Promise<Teams>;
 }
 
 /**

@@ -2,6 +2,7 @@ import {
 	CloudAdapter,
 	ConfigurationBotFrameworkAuthentication,
 } from 'botbuilder';
+import { HandlerParameterProvider } from '../../server/handlerParameterProvider';
 // Standalone AgentuityAdapter - no imports that could cause TypeScript issues
 import type { AgentContext, AgentRequest, AgentResponse } from '../../types';
 import type {
@@ -16,21 +17,17 @@ export class AgentuityTeamsAdapter {
 	resp: AgentResponse;
 	ctx: AgentContext;
 
-	constructor(
-		req: AgentRequest,
-		resp: AgentResponse,
-		agentuityCtx: AgentContext,
-		botClass: AgentuityTeamsActivityHandlerConstructor
-	) {
+	constructor(botClass: AgentuityTeamsActivityHandlerConstructor) {
 		const auth = new ConfigurationBotFrameworkAuthentication(
 			process.env as unknown as Record<string, string>
 		);
+		const provider = HandlerParameterProvider.getInstance();
 
 		this.adapter = new CloudAdapter(auth);
-		this.bot = new botClass(req, resp, agentuityCtx);
-		this.ctx = agentuityCtx;
-		this.req = req;
-		this.resp = resp;
+		this.ctx = provider.context;
+		this.req = provider.request;
+		this.resp = provider.response;
+		this.bot = new botClass(this.req, this.resp, this.ctx);
 	}
 
 	async process() {
