@@ -3,7 +3,12 @@ import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
 import { type Email, parseEmail } from '../io/email';
 import { type Slack, parseSlack } from '../io/slack';
 import { type Sms, parseSms } from '../io/sms';
-import { type Teams, parseTeams } from '../io/teams';
+import {
+	type Teams,
+	type TeamsCustomBot,
+	parseTeams,
+	parseTeamsCustomBot,
+} from '../io/teams';
 import type { AgentuityTeamsActivityHandlerConstructor } from '../io/teams/AgentuityTeamsActivityHandler';
 import { type Telegram, parseTelegram } from '../io/telegram';
 import { safeParse } from '../server/util';
@@ -288,11 +293,18 @@ export class DataHandler implements Data {
 		return parseSlack(data, slackMessageType);
 	}
 
+	async teams(): Promise<Teams>;
 	async teams(
 		botClass: AgentuityTeamsActivityHandlerConstructor
-	): Promise<Teams> {
+	): Promise<TeamsCustomBot>;
+	async teams(
+		botClass?: AgentuityTeamsActivityHandlerConstructor
+	): Promise<Teams | TeamsCustomBot> {
 		const data = await this.data();
-		return parseTeams(data, botClass);
+		if (botClass) {
+			return parseTeamsCustomBot(data, botClass);
+		}
+		return parseTeams(data);
 	}
 
 	private isTextChunkable() {

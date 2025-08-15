@@ -1,21 +1,19 @@
 import { inspect } from 'node:util';
-import type { TeamsActivityHandler } from 'botbuilder';
+import type { Activity } from 'botbuilder';
 import { HandlerParameterProvider } from '../../server/handlerParameterProvider';
 import type { AgentResponseData } from '../../types';
 import type { AgentuityTeamsActivityHandlerConstructor } from './AgentuityTeamsActivityHandler';
 import { AgentuityTeamsAdapter } from './AgentuityTeamsAdapter';
+import { SimpleAgentuityTeamsBot } from './SimpleAgentuityTeamsBot';
 
-export class Teams {
-	bot: TeamsActivityHandler;
+export class TeamsCustomBot {
 	adapter: AgentuityTeamsAdapter;
 	constructor(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		private readonly payload: any,
+		private readonly payload: Activity,
 		botClass: AgentuityTeamsActivityHandlerConstructor
 	) {
-		this.adapter = new AgentuityTeamsAdapter(botClass);
-		this.bot = this.adapter.bot;
-		this.adapter.process();
+		this.payload = payload;
+		this.adapter = new AgentuityTeamsAdapter(undefined, botClass);
 	}
 
 	[inspect.custom]() {
@@ -28,21 +26,55 @@ export class Teams {
 
 	async res(): Promise<AgentResponseData> {
 		const provider = HandlerParameterProvider.getInstance();
-
 		return provider.response.json({
 			message: 'Message was processed by Teams bot',
 		});
 	}
 }
 
-export async function parseTeams(
-	data: Buffer,
-	botClass: AgentuityTeamsActivityHandlerConstructor
-): Promise<Teams> {
+export class Teams {
+	private payload: Activity;
+	constructor(payload: Activity) {
+		this.payload = payload;
+	}
+
+	[inspect.custom]() {
+		return this.toString();
+	}
+
+	toString() {
+		return JSON.stringify(this.payload);
+	}
+
+	get message(): string {
+		return this.payload.text;
+	}
+
+	async sendReply(message: string): Promise<void> {
+		new AgentuityTeamsAdapter(new SimpleAgentuityTeamsBot(message));
+	}
+}
+
+export async function parseTeams(data: Buffer): Promise<Teams> {
 	try {
 		const payload = JSON.parse(data.toString());
 
-		return new Teams(payload, botClass);
+		return new Teams(payload);
+	} catch (error) {
+		throw new Error(
+			`Failed to parse teams: ${error instanceof Error ? error.message : 'Unknown error'}`
+		);
+	}
+}
+
+export async function parseTeamsCustomBot(
+	data: Buffer,
+	botClass: AgentuityTeamsActivityHandlerConstructor
+): Promise<TeamsCustomBot> {
+	try {
+		const payload = JSON.parse(data.toString());
+
+		return new TeamsCustomBot(payload, botClass);
 	} catch (error) {
 		throw new Error(
 			`Failed to parse teams: ${error instanceof Error ? error.message : 'Unknown error'}`
