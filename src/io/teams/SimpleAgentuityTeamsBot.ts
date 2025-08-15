@@ -17,9 +17,7 @@ export class SimpleAgentuityTeamsBot extends TeamsActivityHandler {
 		super();
 		this.message = message;
 		this.onMessage(async (context, next) => {
-			if (this.message) {
-				await this.reply(context);
-			}
+			await this.reply(context);
 			await next();
 		});
 	}

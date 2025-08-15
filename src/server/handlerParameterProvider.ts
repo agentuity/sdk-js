@@ -1,16 +1,19 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type { AgentContext, AgentRequest, AgentResponse } from '../types';
 
 /**
  * Provides the trio of parameters (request, response, context) that are passed to an agent handler.
- * Implemented as a singleton to centralize construction logic.
+ * Uses AsyncLocalStorage for thread-safe per-request scoping.
  */
 export class HandlerParameterProvider {
-	private static instance: HandlerParameterProvider | undefined;
+	private static asyncLocalStorage =
+		new AsyncLocalStorage<HandlerParameterProvider>();
+
 	public request: AgentRequest;
 	public response: AgentResponse;
 	public context: AgentContext;
 
-	constructor(
+	private constructor(
 		request: AgentRequest,
 		response: AgentResponse,
 		context: AgentContext
@@ -18,16 +21,31 @@ export class HandlerParameterProvider {
 		this.request = request;
 		this.response = response;
 		this.context = context;
-		HandlerParameterProvider.instance = this;
 	}
 
 	/**
-	 * Get the single instance of the provider
+	 * Run a function with scoped handler parameters for the current request
+	 */
+	public static run<T>(
+		request: AgentRequest,
+		response: AgentResponse,
+		context: AgentContext,
+		fn: () => T
+	): T {
+		const provider = new HandlerParameterProvider(request, response, context);
+		return HandlerParameterProvider.asyncLocalStorage.run(provider, fn);
+	}
+
+	/**
+	 * Get the current request's provider from AsyncLocalStorage
 	 */
 	public static getInstance(): HandlerParameterProvider {
-		if (!HandlerParameterProvider.instance) {
-			throw new Error('HandlerParameterProvider not initialized');
+		const provider = HandlerParameterProvider.asyncLocalStorage.getStore();
+		if (!provider) {
+			throw new Error(
+				'HandlerParameterProvider not initialized for this request context'
+			);
 		}
-		return HandlerParameterProvider.instance;
+		return provider;
 	}
 }

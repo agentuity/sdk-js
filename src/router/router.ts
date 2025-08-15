@@ -319,66 +319,78 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 						scope: req.request.scope,
 					} as AgentContext;
 
-					// put the request, response, and context into the handler parameter provider so can grab it in the team thing
-					new HandlerParameterProvider(request, response, contextObj);
+					// Wrap handler execution in AsyncLocalStorage scope for thread-safe parameter access
+					return await HandlerParameterProvider.run(
+						request,
+						response,
+						contextObj,
+						async () => {
+							try {
+								let handlerResponse = await config.handler(
+									request,
+									response,
+									contextObj
+								);
 
-					try {
-						let handlerResponse = await config.handler(
-							request,
-							response,
-							contextObj
-						);
+								if (handlerResponse === undefined) {
+									throw new Error(
+										'handler returned undefined instead of a response'
+									);
+								}
 
-						if (handlerResponse === undefined) {
-							throw new Error(
-								'handler returned undefined instead of a response'
-							);
+								if (handlerResponse === null) {
+									throw new Error(
+										'handler returned null instead of a response'
+									);
+								}
+
+								if (handlerResponse instanceof Response) {
+									return await handlerResponse;
+								}
+
+								if (typeof handlerResponse === 'string') {
+									handlerResponse = await response.text(handlerResponse);
+								} else if (
+									'contentType' in handlerResponse &&
+									'payload' in handlerResponse
+								) {
+									const r = handlerResponse as AgentResponseData;
+									handlerResponse = {
+										data: r.data,
+										metadata: r.metadata,
+									};
+								} else if (
+									'redirect' in handlerResponse &&
+									handlerResponse.redirect &&
+									'agent' in handlerResponse
+								) {
+									const redirect = handlerResponse as AgentRedirectResponse;
+									const agent = await contextObj.getAgent(redirect.agent);
+									req.setTimeout(255); // increase the timeout for the redirect
+									const redirectResponse = await agentRedirectRun(
+										logger,
+										config,
+										config.context.agent,
+										agent,
+										[
+											redirect.invocation ?? {
+												...req.request,
+												data: request.data,
+											},
+										]
+									);
+									span.setStatus({ code: SpanStatusCode.OK });
+									return redirectResponse;
+								}
+
+								span.setStatus({ code: SpanStatusCode.OK });
+								return handlerResponse;
+							} catch (err) {
+								recordException(span, err);
+								throw err;
+							}
 						}
-
-						if (handlerResponse === null) {
-							throw new Error('handler returned null instead of a response');
-						}
-
-						if (handlerResponse instanceof Response) {
-							return await handlerResponse;
-						}
-
-						if (typeof handlerResponse === 'string') {
-							handlerResponse = await response.text(handlerResponse);
-						} else if (
-							'contentType' in handlerResponse &&
-							'payload' in handlerResponse
-						) {
-							const r = handlerResponse as AgentResponseData;
-							handlerResponse = {
-								data: r.data,
-								metadata: r.metadata,
-							};
-						} else if (
-							'redirect' in handlerResponse &&
-							handlerResponse.redirect &&
-							'agent' in handlerResponse
-						) {
-							const redirect = handlerResponse as AgentRedirectResponse;
-							const agent = await contextObj.getAgent(redirect.agent);
-							req.setTimeout(255); // increase the timeout for the redirect
-							const redirectResponse = await agentRedirectRun(
-								logger,
-								config,
-								config.context.agent,
-								agent,
-								[redirect.invocation ?? { ...req.request, data: request.data }]
-							);
-							span.setStatus({ code: SpanStatusCode.OK });
-							return redirectResponse;
-						}
-
-						span.setStatus({ code: SpanStatusCode.OK });
-						return handlerResponse;
-					} catch (err) {
-						recordException(span, err);
-						throw err;
-					}
+					);
 				});
 			});
 		} finally {

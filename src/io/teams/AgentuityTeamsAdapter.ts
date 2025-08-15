@@ -18,6 +18,7 @@ export class AgentuityTeamsAdapter {
 	req: AgentRequest;
 	res: AgentResponse;
 	ctx: AgentContext;
+	bot: SimpleAgentuityTeamsBot | AgentuityTeamsActivityHandler;
 
 	constructor(
 		bot?: SimpleAgentuityTeamsBot,
@@ -32,19 +33,19 @@ export class AgentuityTeamsAdapter {
 		this.req = provider.request;
 		this.res = provider.response;
 		if (botClass && isAgentuityTeamsActivityHandlerConstructor(botClass)) {
-			this.process(new botClass(this.req, this.res, this.ctx));
+			this.bot = new botClass(this.req, this.res, this.ctx);
 		} else if (botClass) {
 			throw new Error(
 				'Invalid custom bot class must extend AgentuityTeamsActivityHandler'
 			);
 		} else if (bot instanceof SimpleAgentuityTeamsBot) {
-			this.process(bot);
+			this.bot = bot;
 		} else {
-			throw new Error('Invalid bot class');
+			throw new Error('Invalid bot config');
 		}
 	}
 
-	async process(bot: AgentuityTeamsActivityHandler | ActivityHandler) {
+	async process() {
 		try {
 			const teamsPayload = (await this.req.data.json()) as unknown;
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -71,7 +72,7 @@ export class AgentuityTeamsAdapter {
 				mockRestifyRes,
 				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				async (context: any) => {
-					const res = await bot.run(context);
+					const res = await this.bot.run(context);
 					return res;
 				}
 			);

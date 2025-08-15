@@ -9,7 +9,7 @@ import { SimpleAgentuityTeamsBot } from './SimpleAgentuityTeamsBot';
 export class TeamsCustomBot {
 	adapter: AgentuityTeamsAdapter;
 	constructor(
-		private readonly payload: Activity,
+		private payload: Activity,
 		botClass: AgentuityTeamsActivityHandlerConstructor
 	) {
 		this.payload = payload;
@@ -55,7 +55,10 @@ export class Teams {
 	}
 
 	async sendReply(message: string): Promise<void> {
-		new AgentuityTeamsAdapter(new SimpleAgentuityTeamsBot(message));
+		const adapter = new AgentuityTeamsAdapter(
+			new SimpleAgentuityTeamsBot(message)
+		);
+		await adapter.process();
 	}
 }
 
@@ -77,8 +80,9 @@ export async function parseTeamsCustomBot(
 ): Promise<TeamsCustomBot> {
 	try {
 		const payload = JSON.parse(data.toString());
-
-		return new TeamsCustomBot(payload, botClass);
+		const teamsCustomBot = new TeamsCustomBot(payload, botClass);
+		await teamsCustomBot.adapter.process();
+		return teamsCustomBot;
 	} catch (error) {
 		throw new Error(
 			`Failed to parse teams: ${error instanceof Error ? error.message : 'Unknown error'}`

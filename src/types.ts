@@ -24,8 +24,7 @@ export type TriggerType =
 	| 'discord'
 	| 'telegram'
 	| 'slack'
-	| 'teams'
-	| 'agent';
+	| 'teams';
 
 /**
  * The scope of the agent invocation
