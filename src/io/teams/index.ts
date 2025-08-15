@@ -46,8 +46,12 @@ export class Teams {
 		return JSON.stringify(this.payload);
 	}
 
-	get message(): string {
-		return this.payload.text;
+	async message(): Promise<string> {
+		return Promise.resolve(this.payload.text);
+	}
+
+	async activity(): Promise<Activity> {
+		return Promise.resolve(this.payload);
 	}
 
 	async sendReply(message: string): Promise<void> {
