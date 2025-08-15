@@ -82,13 +82,7 @@ export function instrumentFetch() {
 				headers,
 			};
 
-			let response: Response;
-			try {
-				response = await __originalFetch(input, newInit);
-			} catch (error) {
-				console.error('bobby error', error);
-				throw error;
-			}
+			const response = await __originalFetch(input, newInit);
 
 			// Add response attributes to span
 			childSpan.setAttributes({

@@ -34,7 +34,7 @@ import {
 } from '@opentelemetry/semantic-conventions';
 import type { Logger } from '../logger';
 import { ConsoleLogRecordExporter } from './console';
-// import { instrumentFetch } from './fetch';
+import { instrumentFetch } from './fetch';
 import { createLogger, patchConsole } from './logger';
 
 /**
@@ -213,7 +213,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		});
 		propagation.setGlobalPropagator(propagator);
 
-		// instrumentFetch();
+		instrumentFetch();
 		instrumentationSDK = new NodeSDK({
 			logRecordProcessor,
 			traceExporter,
