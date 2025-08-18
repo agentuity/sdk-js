@@ -108,9 +108,6 @@ export async function parseTeams(data: Buffer): Promise<Teams> {
 	try {
 		const payload = JSON.parse(data.toString());
 		const { config, justPayload, mode } = parseConfig(payload);
-		console.log('mode', mode);
-		console.log('config', config);
-		console.log('justPayload', justPayload);
 		return new Teams(justPayload as Activity, config, mode);
 	} catch (error) {
 		throw new Error(
