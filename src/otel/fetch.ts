@@ -1,8 +1,8 @@
 import {
-	context,
-	trace,
-	propagation,
 	SpanStatusCode,
+	context,
+	propagation,
+	trace,
 } from '@opentelemetry/api';
 
 /**

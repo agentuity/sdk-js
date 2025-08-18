@@ -1,41 +1,41 @@
-import type { Logger } from '../logger';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { HostMetrics } from '@opentelemetry/host-metrics';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import {
-	PeriodicExportingMetricReader,
-	MeterProvider,
-} from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import {
-	ATTR_SERVICE_NAME,
-	ATTR_SERVICE_VERSION,
-} from '@opentelemetry/semantic-conventions';
 import opentelemetry, {
 	metrics,
 	propagation,
 	type Meter,
 	type Tracer,
 } from '@opentelemetry/api';
-import {
-	W3CTraceContextPropagator,
-	W3CBaggagePropagator,
-	CompositePropagator,
-} from '@opentelemetry/core';
 import * as LogsAPI from '@opentelemetry/api-logs';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import {
-	LoggerProvider,
-	type LogRecordProcessor,
+	CompositePropagator,
+	W3CBaggagePropagator,
+	W3CTraceContextPropagator,
+} from '@opentelemetry/core';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { HostMetrics } from '@opentelemetry/host-metrics';
+import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
+import { Resource } from '@opentelemetry/resources';
+import {
 	BatchLogRecordProcessor,
+	type LogRecordProcessor,
+	LoggerProvider,
 	SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
-import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
-import { createLogger, patchConsole } from './logger';
+import {
+	MeterProvider,
+	PeriodicExportingMetricReader,
+} from '@opentelemetry/sdk-metrics';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import {
+	ATTR_SERVICE_NAME,
+	ATTR_SERVICE_VERSION,
+} from '@opentelemetry/semantic-conventions';
+import type { Logger } from '../logger';
 import { ConsoleLogRecordExporter } from './console';
 import { instrumentFetch } from './fetch';
+import { createLogger, patchConsole } from './logger';
 
 /**
  * Configuration for OpenTelemetry initialization

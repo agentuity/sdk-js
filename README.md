@@ -94,12 +94,21 @@ The build output will be in the `dist` directory.
 
 ### Testing
 
-Run tests using Bun's built-in test runner:
+Run tests with Bun or npm:
 
-```
+```bash
+# Bun
 bun test
+
+# npm
+npm test
 ```
 
 ## License
 
 See the [LICENSE](LICENSE.md) file for details.
+
+
+## More detailed docs
+- [Creating new IO](./docs/adding-new-io.md)
+- [Local SDK testing](./docs/testing-local-sdk.md)

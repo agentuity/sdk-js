@@ -1,5 +1,10 @@
 # @agentuity/sdk Changelog
 
+## 0.0.139
+
+### Patch Changes
+
+- Added teams support ([#161](https://github.com/agentuity/sdk-js/pull/161))
 ## 0.0.138
 
 ### Patch Changes

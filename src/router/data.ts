@@ -1,11 +1,18 @@
 import { ReadableStream } from 'node:stream/web';
-import type { Data, ReadableDataType, Json, JsonObject } from '../types';
-import { safeParse } from '../server/util';
-import { parseEmail, type Email } from '../io/email';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
-import { parseSms, type Sms } from '../io/sms';
-import { parseTelegram, type Telegram } from '../io/telegram';
-import { parseSlack, type Slack } from '../io/slack';
+import { type Email, parseEmail } from '../io/email';
+import { type Slack, parseSlack } from '../io/slack';
+import { type Sms, parseSms } from '../io/sms';
+import {
+	type Teams,
+	type TeamsCustomBot,
+	parseTeams,
+	parseTeamsCustomBot,
+} from '../io/teams';
+import type { AgentuityTeamsActivityHandlerConstructor } from '../io/teams/AgentuityTeamsActivityHandler';
+import { type Telegram, parseTelegram } from '../io/telegram';
+import { safeParse } from '../server/util';
+import type { Data, Json, JsonObject, ReadableDataType } from '../types';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -284,6 +291,20 @@ export class DataHandler implements Data {
 			messageType === 'slack-message' ? 'slack-message' : 'slack-event';
 
 		return parseSlack(data, slackMessageType);
+	}
+
+	async teams(): Promise<Teams>;
+	async teams(
+		botClass: AgentuityTeamsActivityHandlerConstructor
+	): Promise<TeamsCustomBot>;
+	async teams(
+		botClass?: AgentuityTeamsActivityHandlerConstructor
+	): Promise<Teams | TeamsCustomBot> {
+		const data = await this.data();
+		if (botClass) {
+			return parseTeamsCustomBot(data, botClass);
+		}
+		return parseTeams(data);
 	}
 
 	private isTextChunkable() {
