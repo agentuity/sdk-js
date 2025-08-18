@@ -6,14 +6,49 @@ import type { AgentuityTeamsActivityHandlerConstructor } from './AgentuityTeamsA
 import { AgentuityTeamsAdapter } from './AgentuityTeamsAdapter';
 import { SimpleAgentuityTeamsBot } from './SimpleAgentuityTeamsBot';
 
+type Mode = 'dev' | 'cloud';
+type parseConfigResult = {
+	config: Record<string, string>;
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	justPayload: Record<string, any>;
+	mode: Mode;
+};
+
+const parseConfig = (
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	payload: any
+): parseConfigResult => {
+	const keys = Object.keys(payload);
+	let config: Record<string, string>;
+	let mode: Mode;
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	let justPayload: Record<string, any>;
+	if (keys.includes('config')) {
+		// this is how prod mode works
+		config = payload.config;
+		justPayload = payload.payload;
+		mode = 'cloud';
+	} else {
+		// makes dev mode work
+		config = process.env as Record<string, string>;
+		justPayload = payload;
+		mode = 'dev';
+	}
+	return { config, justPayload, mode };
+};
+
 export class TeamsCustomBot {
 	adapter: AgentuityTeamsAdapter;
+	config: Record<string, string>;
 	constructor(
 		private payload: Activity,
-		botClass: AgentuityTeamsActivityHandlerConstructor
+		botClass: AgentuityTeamsActivityHandlerConstructor,
+		config: Record<string, string>,
+		mode: Mode
 	) {
 		this.payload = payload;
-		this.adapter = new AgentuityTeamsAdapter(undefined, botClass);
+		this.config = config;
+		this.adapter = new AgentuityTeamsAdapter(config, mode, undefined, botClass);
 	}
 
 	[inspect.custom]() {
@@ -34,8 +69,12 @@ export class TeamsCustomBot {
 
 export class Teams {
 	private payload: Activity;
-	constructor(payload: Activity) {
+	private config: Record<string, string>;
+	private mode: Mode;
+	constructor(payload: Activity, config: Record<string, string>, mode: Mode) {
 		this.payload = payload;
+		this.config = config;
+		this.mode = mode;
 	}
 
 	[inspect.custom]() {
@@ -56,7 +95,10 @@ export class Teams {
 
 	async sendReply(message: string): Promise<void> {
 		const adapter = new AgentuityTeamsAdapter(
-			new SimpleAgentuityTeamsBot(message)
+			this.config,
+			this.mode,
+			new SimpleAgentuityTeamsBot(message),
+			undefined
 		);
 		await adapter.process();
 	}
@@ -65,8 +107,11 @@ export class Teams {
 export async function parseTeams(data: Buffer): Promise<Teams> {
 	try {
 		const payload = JSON.parse(data.toString());
-
-		return new Teams(payload);
+		const { config, justPayload, mode } = parseConfig(payload);
+		console.log('mode', mode);
+		console.log('config', config);
+		console.log('justPayload', justPayload);
+		return new Teams(justPayload as Activity, config, mode);
 	} catch (error) {
 		throw new Error(
 			`Failed to parse teams: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -80,7 +125,13 @@ export async function parseTeamsCustomBot(
 ): Promise<TeamsCustomBot> {
 	try {
 		const payload = JSON.parse(data.toString());
-		const teamsCustomBot = new TeamsCustomBot(payload, botClass);
+		const { config, justPayload, mode } = parseConfig(payload);
+		const teamsCustomBot = new TeamsCustomBot(
+			justPayload as Activity,
+			botClass,
+			config,
+			mode
+		);
 		await teamsCustomBot.adapter.process();
 		return teamsCustomBot;
 	} catch (error) {

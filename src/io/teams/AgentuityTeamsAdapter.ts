@@ -19,19 +19,27 @@ export class AgentuityTeamsAdapter {
 	res: AgentResponse;
 	ctx: AgentContext;
 	bot: SimpleAgentuityTeamsBot | AgentuityTeamsActivityHandler;
+	mode: 'dev' | 'cloud';
 
 	constructor(
+		config: Record<string, string>,
+		mode: 'dev' | 'cloud',
 		bot?: SimpleAgentuityTeamsBot,
 		botClass?: AgentuityTeamsActivityHandlerConstructor | ActivityHandler
 	) {
+		if (mode === 'cloud') {
+			Object.assign(process.env, config);
+		}
 		const auth = new ConfigurationBotFrameworkAuthentication(
-			process.env as unknown as Record<string, string>
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			process.env as any
 		);
 		const provider = HandlerParameterProvider.getInstance();
 		this.adapter = new CloudAdapter(auth);
 		this.ctx = provider.context;
 		this.req = provider.request;
 		this.res = provider.response;
+		this.mode = mode;
 		if (botClass && isAgentuityTeamsActivityHandlerConstructor(botClass)) {
 			this.bot = new botClass(this.req, this.res, this.ctx);
 		} else if (botClass) {
@@ -47,11 +55,13 @@ export class AgentuityTeamsAdapter {
 
 	async process() {
 		try {
-			const teamsPayload = (await this.req.data.json()) as unknown;
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			const teamsPayload = (await this.req.data.json()) as any;
+
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const mockRestifyReq: any = {
 				method: 'POST',
-				body: teamsPayload,
+				body: this.mode === 'cloud' ? teamsPayload.payload : teamsPayload,
 				headers: this.req.metadata.headers,
 			};
 
