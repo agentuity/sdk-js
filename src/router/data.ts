@@ -302,9 +302,9 @@ export class DataHandler implements Data {
 	): Promise<Teams | TeamsCustomBot> {
 		const data = await this.data();
 		if (botClass) {
-			return parseTeamsCustomBot(data, botClass);
+			return parseTeamsCustomBot(data, botClass, this._metadata ?? {});
 		}
-		return parseTeams(data);
+		return parseTeams(data, this._metadata ?? {});
 	}
 
 	private isTextChunkable() {
