@@ -84,12 +84,6 @@ export class AgentuityTeamsAdapter {
 		try {
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const teamsPayload = (await this.req.data.json()) as any;
-
-			console.log(
-				'metadata.metadata:\n',
-				JSON.stringify(this.req.metadata.metadata, null, 2)
-			);
-
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const mockRestifyReq: any = {
 				method: 'POST',
