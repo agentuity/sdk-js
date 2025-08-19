@@ -2,9 +2,9 @@
 
 ## 0.0.140
 
-### Patch Changes
+### Fixed
 
-- Small fix for teams agents
+- Fix cloud runs for teams agents with improved credential validation and metadata-driven configuration ([#162](https://github.com/agentuity/sdk-js/pull/162))
 
 ## 0.0.139
 
