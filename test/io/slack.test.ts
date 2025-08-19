@@ -6,68 +6,35 @@ describe('Slack IO', () => {
 		test('should parse slack-event payload correctly', async () => {
 			const eventPayload = {
 				token: 'test-token',
-				challenge: 'test-challenge',
-				type: 'event_callback',
 				team_id: 'T123456',
 				api_app_id: 'A123456',
 				event: {
 					type: 'message',
-					channel: 'C123456',
-					user: 'U123456',
-					text: 'Hello, world!',
-					ts: '1234567890.123456',
 					event_ts: '1234567890.123456',
-					channel_type: 'channel',
 				},
+				type: 'event_callback',
+				event_id: 'Ev12345678',
+				event_time: 1234567890,
+				authed_users: ['U123456'],
+				challenge: 'test-challenge',
 			};
 
 			const buffer = Buffer.from(JSON.stringify(eventPayload));
-			const slack = await parseSlack(buffer, 'slack-event');
+			const slack = await parseSlack(buffer);
 
-			expect(slack.messageType).toBe('slack-event');
 			expect(slack.token).toBe('test-token');
 			expect(slack.teamId).toBe('T123456');
+			expect(slack.apiAppId).toBe('A123456');
+			expect(slack.eventId).toBe('Ev12345678');
+			expect(slack.eventTime).toBe(1234567890);
+			expect(slack.authedUsers).toEqual(['U123456']);
 			expect(slack.challenge).toBe('test-challenge');
 			expect(slack.eventType).toBe('event_callback');
-			expect(slack.text).toBe('Hello, world!');
-			expect(slack.user).toBe('U123456');
-			expect(slack.channel).toBe('C123456');
+			expect(slack.event.type).toBe('message');
+			expect(slack.eventTs).toBe('1234567890.123456');
 		});
 
-		test('should parse slack-message payload correctly', async () => {
-			const messagePayload = {
-				token: 'test-token',
-				team_id: 'T123456',
-				team_domain: 'test-team',
-				channel_id: 'C123456',
-				channel_name: 'general',
-				user_id: 'U123456',
-				user_name: 'testuser',
-				command: '/test',
-				text: 'command argument',
-				response_url: 'https://hooks.slack.com/commands/1234/5678',
-				trigger_id: '123456.789.abcdef',
-			};
 
-			const buffer = Buffer.from(JSON.stringify(messagePayload));
-			const slack = await parseSlack(buffer, 'slack-message');
-
-			expect(slack.messageType).toBe('slack-message');
-			expect(slack.token).toBe('test-token');
-			expect(slack.teamId).toBe('T123456');
-			expect(slack.channelId).toBe('C123456');
-			expect(slack.channelName).toBe('general');
-			expect(slack.userId).toBe('U123456');
-			expect(slack.userName).toBe('testuser');
-			expect(slack.command).toBe('/test');
-			expect(slack.text).toBe('command argument');
-			expect(slack.responseUrl).toBe(
-				'https://hooks.slack.com/commands/1234/5678'
-			);
-			expect(slack.triggerId).toBe('123456.789.abcdef');
-			expect(slack.user).toBe('U123456');
-			expect(slack.channel).toBe('C123456');
-		});
 
 		test('should throw error for invalid slack-event payload', async () => {
 			const invalidPayload = {
@@ -77,77 +44,53 @@ describe('Slack IO', () => {
 
 			const buffer = Buffer.from(JSON.stringify(invalidPayload));
 
-			await expect(parseSlack(buffer, 'slack-event')).rejects.toThrow(
+			await expect(parseSlack(buffer)).rejects.toThrow(
 				'Invalid Slack event: missing required fields'
-			);
-		});
-
-		test('should throw error for invalid slack-message payload', async () => {
-			const invalidPayload = {
-				// Missing required fields
-				command: '/test',
-			};
-
-			const buffer = Buffer.from(JSON.stringify(invalidPayload));
-
-			await expect(parseSlack(buffer, 'slack-message')).rejects.toThrow(
-				'Invalid Slack message: missing required fields'
 			);
 		});
 	});
 
 	describe('Slack class', () => {
-		test('should handle slack-event without event data', async () => {
+		test('should handle url_verification event type', async () => {
 			const eventPayload = {
 				token: 'test-token',
-				challenge: 'test-challenge',
-				type: 'url_verification',
 				team_id: 'T123456',
 				api_app_id: 'A123456',
-				// No event property
+				event: {
+					type: 'url_verification',
+					event_ts: '1234567890.123456',
+				},
+				type: 'url_verification',
+				event_id: 'Ev12345678',
+				event_time: 1234567890,
+				authed_users: ['U123456'],
+				challenge: 'test-challenge',
 			};
 
 			const buffer = Buffer.from(JSON.stringify(eventPayload));
-			const slack = await parseSlack(buffer, 'slack-event');
+			const slack = await parseSlack(buffer);
 
-			expect(slack.text).toBe('');
-			expect(slack.user).toBe('');
-			expect(slack.channel).toBe('');
-			expect(slack.event).toBeUndefined();
-		});
-
-		test('should handle slack-message with empty text', async () => {
-			const messagePayload = {
-				token: 'test-token',
-				team_id: 'T123456',
-				team_domain: 'test-team',
-				channel_id: 'C123456',
-				channel_name: 'general',
-				user_id: 'U123456',
-				user_name: 'testuser',
-				command: '/test',
-				text: '',
-				response_url: 'https://hooks.slack.com/commands/1234/5678',
-				trigger_id: '123456.789.abcdef',
-			};
-
-			const buffer = Buffer.from(JSON.stringify(messagePayload));
-			const slack = await parseSlack(buffer, 'slack-message');
-
-			expect(slack.text).toBe('');
+			expect(slack.event.type).toBe('url_verification');
 		});
 
 		test('should return correct string representation', async () => {
 			const eventPayload = {
 				token: 'test-token',
-				challenge: 'test-challenge',
-				type: 'event_callback',
 				team_id: 'T123456',
 				api_app_id: 'A123456',
+				event: {
+					type: 'url_verification',
+					event_ts: '1234567890.123456',
+				},
+				type: 'event_callback',
+				event_id: 'Ev12345678',
+				event_time: 1234567890,
+				authed_users: ['U123456'],
+				challenge: 'test-challenge',
 			};
 
 			const buffer = Buffer.from(JSON.stringify(eventPayload));
-			const slack = await parseSlack(buffer, 'slack-event');
+			const slack = await parseSlack(buffer);
 
 			expect(slack.toString()).toBe(JSON.stringify(eventPayload));
 		});

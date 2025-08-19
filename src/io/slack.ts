@@ -5,45 +5,28 @@ import { getTracer, recordException } from '../router/router';
 import { safeStringify } from '../server/util';
 import type { AgentContext, AgentRequest, SlackService } from '../types';
 
-// Event represents the inner event data for Slack events
+// Standard event wrapper for the Events API based on Slack schema
 interface SlackEventData {
 	type: string;
-	channel: string;
-	user: string;
-	text: string;
-	ts: string;
 	event_ts: string;
-	channel_type: string;
-	thread_ts?: string;
+	[key: string]: unknown;
 }
 
-// SlackEvent represents a Slack event webhook payload
+// Standard event wrapper payload for Slack Events API
 interface SlackEventPayload {
 	token: string;
-	challenge: string;
-	type: string;
 	team_id: string;
 	api_app_id: string;
-	event?: SlackEventData;
+	event: SlackEventData;
+	type: string;
+	event_id: string;
+	event_time: number;
+	authed_users: string[];
+	challenge?: string;
+	[key: string]: unknown;
 }
 
-// SlackMessage represents a Slack slash command payload
-interface SlackMessagePayload {
-	token: string;
-	team_id: string;
-	team_domain: string;
-	channel_id: string;
-	channel_name: string;
-	user_id: string;
-	user_name: string;
-	command: string;
-	text: string;
-	response_url: string;
-	trigger_id: string;
-	ts: string;
-	thread_ts?: string;
-	event_ts?: string;
-}
+
 
 /**
  * A reply to a Slack message
@@ -64,38 +47,25 @@ export interface SlackReply {
 }
 
 /**
- * A class representing a Slack message with the common information so processing can be done on it.
+ * A class representing a Slack event with the common information so processing can be done on it.
  */
 export class Slack implements SlackService {
-	private readonly _payload: SlackEventPayload | SlackMessagePayload;
-	private readonly _messageType: 'slack-event' | 'slack-message';
-	private readonly eventPayload?: SlackEventPayload;
-	private readonly messagePayload?: SlackMessagePayload;
+	private readonly eventPayload: SlackEventPayload;
 
-	constructor(
-		data: SlackEventPayload | SlackMessagePayload,
-		messageType: 'slack-event' | 'slack-message'
-	) {
-		if (messageType === 'slack-event') {
-			const eventData = data as SlackEventPayload;
-			if (!eventData.token || !eventData.type || !eventData.team_id) {
-				throw new Error('Invalid Slack event: missing required fields');
-			}
-			this.eventPayload = eventData;
-		} else {
-			const messageData = data as SlackMessagePayload;
-			if (
-				!messageData.token ||
-				!messageData.team_id ||
-				!messageData.channel_id ||
-				!messageData.user_id
-			) {
-				throw new Error('Invalid Slack message: missing required fields');
-			}
-			this.messagePayload = messageData;
+	constructor(data: SlackEventPayload) {
+		if (
+			!data.token ||
+			!data.team_id ||
+			!data.api_app_id ||
+			!data.event ||
+			!data.type ||
+			!data.event_id ||
+			typeof data.event_time !== 'number' ||
+			!Array.isArray(data.authed_users)
+		) {
+			throw new Error('Invalid Slack event: missing required fields');
 		}
-		this._payload = data;
-		this._messageType = messageType;
+		this.eventPayload = data;
 	}
 
 	[inspect.custom]() {
@@ -103,101 +73,51 @@ export class Slack implements SlackService {
 	}
 
 	toString() {
-		return JSON.stringify(this._payload);
-	}
-
-	get messageType(): 'slack-event' | 'slack-message' {
-		return this._messageType;
-	}
-
-	get token(): string {
-		return this._payload.token;
-	}
-
-	get teamId(): string {
-		return this._payload.team_id;
-	}
-
-	// Properties specific to Slack events
-	get challenge(): string | undefined {
-		return this.eventPayload?.challenge;
-	}
-
-	get eventType(): string | undefined {
-		return this.eventPayload?.type;
-	}
-
-	get event(): SlackEventData | undefined {
-		return this.eventPayload?.event;
-	}
-
-	// Properties specific to Slack messages (slash commands)
-	get channelId(): string | undefined {
-		return this.messagePayload?.channel_id;
-	}
-
-	get channelName(): string | undefined {
-		return this.messagePayload?.channel_name;
-	}
-
-	get userId(): string | undefined {
-		return this.messagePayload?.user_id;
-	}
-
-	get userName(): string | undefined {
-		return this.messagePayload?.user_name;
-	}
-
-	get command(): string | undefined {
-		return this.messagePayload?.command;
-	}
-
-	get responseUrl(): string | undefined {
-		return this.messagePayload?.response_url;
-	}
-
-	get triggerId(): string | undefined {
-		return this.messagePayload?.trigger_id;
-	}
-
-	get threadTs(): string | undefined {
-		return this.eventPayload?.event?.thread_ts;
-	}
-
-	get eventTs(): string | undefined {
-		return this.eventPayload?.event?.event_ts;
-	}
-
-	get ts(): string | undefined {
-		return this.eventPayload?.event?.ts;
-	}
-
-	get body(): string | undefined {
 		return JSON.stringify(this.eventPayload);
 	}
 
-	// Common text getter that works for both types
-	get text(): string {
-		if (this.eventPayload) {
-			return this.event?.text || '';
-		}
-		return this.messagePayload?.text || '';
+	get token(): string {
+		return this.eventPayload.token;
 	}
 
-	// Common user identifier
-	get user(): string {
-		if (this.eventPayload) {
-			return this.event?.user || '';
-		}
-		return this.userId || '';
+	get teamId(): string {
+		return this.eventPayload.team_id;
 	}
 
-	// Common channel identifier
-	get channel(): string {
-		if (this.eventPayload) {
-			return this.event?.channel || '';
-		}
-		return this.channelId || '';
+	get challenge(): string | undefined {
+		return this.eventPayload.challenge;
+	}
+
+	get eventType(): string {
+		return this.eventPayload.type;
+	}
+
+	get event(): SlackEventData {
+		return this.eventPayload.event;
+	}
+
+	get eventId(): string {
+		return this.eventPayload.event_id;
+	}
+
+	get eventTime(): number {
+		return this.eventPayload.event_time;
+	}
+
+	get authedUsers(): string[] {
+		return this.eventPayload.authed_users;
+	}
+
+	get apiAppId(): string {
+		return this.eventPayload.api_app_id;
+	}
+
+	get eventTs(): string {
+		return this.event.event_ts;
+	}
+
+	get body(): string {
+		return JSON.stringify(this.eventPayload);
 	}
 
 	async sendReply(
@@ -219,7 +139,7 @@ export class Slack implements SlackService {
 			return await context.with(spanContext, async () => {
 				span.setAttribute('@agentuity/agentId', ctx.agent.id);
 				span.setAttribute('@agentuity/slackTeamId', this.teamId);
-				span.setAttribute('@agentuity/slackMessageType', this.messageType);
+				span.setAttribute('@agentuity/slackEventType', this.eventType);
 
 				// Normalize reply to SlackReply object
 				const replyObj: SlackReply =
@@ -234,15 +154,10 @@ export class Slack implements SlackService {
 				// Create payload matching backend structure
 				const payload = {
 					agentId: ctx.agent.id,
-					channel: this.channel,
 					text: replyObj.text,
 					blocks: replyObj.blocks,
 					thread_ts: inThread ? threadTS : undefined,
 				};
-
-				if (this.channel) {
-					span.setAttribute('@agentuity/slackChannel', this.channel);
-				}
 
 				const resp = await POST('/slack/reply', safeStringify(payload), {
 					'Content-Type': 'application/json',
@@ -267,21 +182,15 @@ export class Slack implements SlackService {
 }
 
 /**
- * Parse a Slack payload from a buffer and return a Slack object.
- * The messageType should be extracted from the metadata before calling this function.
+ * Parse a Slack event payload from a buffer and return a Slack object.
  */
-export async function parseSlack(
-	data: Buffer,
-	messageType: 'slack-event' | 'slack-message'
-): Promise<Slack> {
+export async function parseSlack(data: Buffer): Promise<Slack> {
 	try {
-		const payload = JSON.parse(data.toString()) as
-			| SlackEventPayload
-			| SlackMessagePayload;
-		return new Slack(payload, messageType);
+		const payload = JSON.parse(data.toString()) as SlackEventPayload;
+		return new Slack(payload);
 	} catch (error) {
 		throw new Error(
-			`Failed to parse slack ${messageType}: ${error instanceof Error ? error.message : 'Unknown error'}`
+			`Failed to parse slack event: ${error instanceof Error ? error.message : 'Unknown error'}`
 		);
 	}
 }
