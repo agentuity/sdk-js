@@ -27,13 +27,40 @@ export class AgentuityTeamsAdapter {
 		bot?: SimpleAgentuityTeamsBot,
 		botClass?: AgentuityTeamsActivityHandlerConstructor | ActivityHandler
 	) {
+		// Configure credentials based on mode
+		let appId: string;
+		let appPassword: string;
+		let tenantId: string;
+		let appType: string;
+
 		if (mode === 'cloud') {
-			Object.assign(process.env, config);
+			appId = config.MicrosoftAppId || process.env.MicrosoftAppId || '';
+			appPassword =
+				config.MicrosoftAppPassword || process.env.MicrosoftAppPassword || '';
+			tenantId =
+				config.MicrosoftAppTenantId || process.env.MicrosoftAppTenantId || '';
+			appType = config.MicrosoftAppType || process.env.MicrosoftAppType || '';
+		} else {
+			// Dev mode fallback to hardcoded values
+			appId = process.env.MicrosoftAppId || '';
+			appPassword = process.env.MicrosoftAppPassword || '';
+			tenantId = process.env.MicrosoftAppTenantId || '';
+			appType = process.env.MicrosoftAppType || '';
 		}
-		const auth = new ConfigurationBotFrameworkAuthentication(
+
+		if (!appId || !appPassword || !tenantId || !appType) {
+			throw new Error(
+				`Missing required Teams auth credentials. AppId: ${!!appId}, AppPassword: ${!!appPassword}, TenantId: ${!!tenantId}, AppType: ${!!appType}`
+			);
+		}
+
+		const auth = new ConfigurationBotFrameworkAuthentication({
+			MicrosoftAppId: appId,
+			MicrosoftAppTenantId: tenantId,
+			MicrosoftAppPassword: appPassword,
+			MicrosoftAppType: appType,
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			process.env as any
-		);
+		} as any);
 		const provider = HandlerParameterProvider.getInstance();
 		this.adapter = new CloudAdapter(auth);
 		this.ctx = provider.context;
@@ -58,11 +85,19 @@ export class AgentuityTeamsAdapter {
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const teamsPayload = (await this.req.data.json()) as any;
 
+			console.log(
+				'metadata.metadata:\n',
+				JSON.stringify(this.req.metadata.metadata, null, 2)
+			);
+
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const mockRestifyReq: any = {
 				method: 'POST',
-				body: this.mode === 'cloud' ? teamsPayload.payload : teamsPayload,
-				headers: this.req.metadata.headers,
+				body: teamsPayload,
+				headers:
+					this.mode === 'cloud'
+						? this.req.metadata.metadata
+						: this.req.metadata.headers,
 			};
 
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>

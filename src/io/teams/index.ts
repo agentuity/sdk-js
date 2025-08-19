@@ -1,7 +1,7 @@
 import { inspect } from 'node:util';
 import type { Activity } from 'botbuilder';
 import { HandlerParameterProvider } from '../../server/handlerParameterProvider';
-import type { AgentResponseData } from '../../types';
+import type { AgentResponseData, JsonObject } from '../../types';
 import type { AgentuityTeamsActivityHandlerConstructor } from './AgentuityTeamsActivityHandler';
 import { AgentuityTeamsAdapter } from './AgentuityTeamsAdapter';
 import { SimpleAgentuityTeamsBot } from './SimpleAgentuityTeamsBot';
@@ -16,21 +16,44 @@ type parseConfigResult = {
 
 const parseConfig = (
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	payload: any
+	payload: any,
+	metadata: JsonObject
 ): parseConfigResult => {
-	const keys = Object.keys(payload);
+	const keys = Object.keys(metadata);
 	let config: Record<string, string>;
 	let mode: Mode;
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	let justPayload: Record<string, any>;
-	if (keys.includes('config')) {
+
+	if (
+		keys.includes('MicrosoftAppId') &&
+		keys.includes('MicrosoftAppPassword') &&
+		keys.includes('MicrosoftAppTenantId') &&
+		keys.includes('MicrosoftAppType')
+	) {
 		// this is how prod mode works
-		config = payload.config;
-		justPayload = payload.payload;
+		config = {
+			MicrosoftAppId: metadata.MicrosoftAppId as string,
+			MicrosoftAppPassword: metadata.MicrosoftAppPassword as string,
+			MicrosoftAppTenantId: metadata.MicrosoftAppTenantId as string,
+			MicrosoftAppType: metadata.MicrosoftAppType as string,
+		};
+		if (!payload) {
+			throw new Error('Cloud mode requires payload to be defined');
+		}
+		justPayload = payload;
 		mode = 'cloud';
 	} else {
 		// makes dev mode work
-		config = process.env as Record<string, string>;
+		config = {
+			MicrosoftAppId: process.env.MicrosoftAppId as string,
+			MicrosoftAppPassword: process.env.MicrosoftAppPassword as string,
+			MicrosoftAppTenantId: process.env.MicrosoftAppTenantId as string,
+			MicrosoftAppType: process.env.MicrosoftAppType as string,
+		};
+		if (!payload) {
+			throw new Error('Dev mode requires payload to be defined');
+		}
 		justPayload = payload;
 		mode = 'dev';
 	}
@@ -86,7 +109,10 @@ export class Teams {
 	}
 
 	async message(): Promise<string> {
-		return Promise.resolve(this.payload.text);
+		if (!this.payload) {
+			throw new Error('Teams payload is undefined');
+		}
+		return Promise.resolve(this.payload.text || '');
 	}
 
 	async activity(): Promise<Activity> {
@@ -104,10 +130,13 @@ export class Teams {
 	}
 }
 
-export async function parseTeams(data: Buffer): Promise<Teams> {
+export async function parseTeams(
+	data: Buffer,
+	metadata: JsonObject
+): Promise<Teams> {
 	try {
 		const payload = JSON.parse(data.toString());
-		const { config, justPayload, mode } = parseConfig(payload);
+		const { config, justPayload, mode } = parseConfig(payload, metadata);
 		return new Teams(justPayload as Activity, config, mode);
 	} catch (error) {
 		throw new Error(
@@ -118,11 +147,12 @@ export async function parseTeams(data: Buffer): Promise<Teams> {
 
 export async function parseTeamsCustomBot(
 	data: Buffer,
-	botClass: AgentuityTeamsActivityHandlerConstructor
+	botClass: AgentuityTeamsActivityHandlerConstructor,
+	metadata: JsonObject
 ): Promise<TeamsCustomBot> {
 	try {
 		const payload = JSON.parse(data.toString());
-		const { config, justPayload, mode } = parseConfig(payload);
+		const { config, justPayload, mode } = parseConfig(payload, metadata);
 		const teamsCustomBot = new TeamsCustomBot(
 			justPayload as Activity,
 			botClass,
