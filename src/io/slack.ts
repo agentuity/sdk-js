@@ -12,6 +12,29 @@ interface SlackEventData {
 	[key: string]: unknown;
 }
 
+interface SlackMessageEvent extends SlackEventData {
+	type: 'message';
+	subtype?: string;
+	channel: string;
+	channel_type?: 'im' | 'channel' | 'group' | 'mpim';
+	user: string;
+	text: string;
+	ts: string;
+	edited?: {
+		user: string;
+		ts: string;
+	};
+}
+
+function isSlackMessageEvent(data: SlackEventData): data is SlackMessageEvent {
+	return (
+		typeof data === 'object' &&
+		data !== null &&
+		'type' in data &&
+		data.type === 'message'
+	);
+}
+
 // Standard event wrapper payload for Slack Events API
 interface SlackEventPayload {
 	token: string;
@@ -21,29 +44,34 @@ interface SlackEventPayload {
 	type: string;
 	event_id: string;
 	event_time: number;
-	authed_users: string[];
 	challenge?: string;
 	[key: string]: unknown;
 }
-
-
 
 /**
  * A reply to a Slack message
  */
 export interface SlackReply {
-	/**
-	 * the text body of the reply
-	 */
-	text?: string;
-	/**
-	 * Slack blocks for rich formatting
-	 */
-	blocks?: string;
-	/**
-	 * whether to reply in thread (defaults to true if thread-ts is available in metadata)
-	 */
-	inThread?: boolean;
+	// The agent ID
+	agentId: string;
+	// The text to reply with
+	text: string;
+	// The channel to reply to
+	channel: string;
+}
+
+export function isSlackEventPayload(data: unknown): data is SlackEventPayload {
+	return (
+		typeof data === 'object' &&
+		data !== null &&
+		'token' in data &&
+		'team_id' in data &&
+		'api_app_id' in data &&
+		'event' in data &&
+		'type' in data &&
+		'event_id' in data &&
+		'event_time' in data
+	);
 }
 
 /**
@@ -52,20 +80,13 @@ export interface SlackReply {
 export class Slack implements SlackService {
 	private readonly eventPayload: SlackEventPayload;
 
-	constructor(data: SlackEventPayload) {
-		if (
-			!data.token ||
-			!data.team_id ||
-			!data.api_app_id ||
-			!data.event ||
-			!data.type ||
-			!data.event_id ||
-			typeof data.event_time !== 'number' ||
-			!Array.isArray(data.authed_users)
-		) {
-			throw new Error('Invalid Slack event: missing required fields');
+	constructor(data: unknown) {
+		console.log(data);
+		if (isSlackEventPayload(data)) {
+			this.eventPayload = data;
+			return;
 		}
-		this.eventPayload = data;
+		throw new Error('Invalid Slack event: missing required fields');
 	}
 
 	[inspect.custom]() {
@@ -76,55 +97,23 @@ export class Slack implements SlackService {
 		return JSON.stringify(this.eventPayload);
 	}
 
-	get token(): string {
-		return this.eventPayload.token;
+	get _raw(): unknown {
+		return this.eventPayload;
 	}
 
-	get teamId(): string {
-		return this.eventPayload.team_id;
-	}
+	get message(): SlackMessageEvent {
+		if (!isSlackMessageEvent(this.eventPayload.event)) {
+			throw new Error('Payload is not Slack message');
+		}
 
-	get challenge(): string | undefined {
-		return this.eventPayload.challenge;
-	}
-
-	get eventType(): string {
-		return this.eventPayload.type;
-	}
-
-	get event(): SlackEventData {
 		return this.eventPayload.event;
-	}
-
-	get eventId(): string {
-		return this.eventPayload.event_id;
-	}
-
-	get eventTime(): number {
-		return this.eventPayload.event_time;
-	}
-
-	get authedUsers(): string[] {
-		return this.eventPayload.authed_users;
-	}
-
-	get apiAppId(): string {
-		return this.eventPayload.api_app_id;
-	}
-
-	get eventTs(): string {
-		return this.event.event_ts;
 	}
 
 	get body(): string {
 		return JSON.stringify(this.eventPayload);
 	}
 
-	async sendReply(
-		req: AgentRequest,
-		ctx: AgentContext,
-		reply: string | SlackReply
-	) {
+	async sendReply(req: AgentRequest, ctx: AgentContext, reply: string) {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -138,30 +127,23 @@ export class Slack implements SlackService {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				span.setAttribute('@agentuity/agentId', ctx.agent.id);
-				span.setAttribute('@agentuity/slackTeamId', this.teamId);
-				span.setAttribute('@agentuity/slackEventType', this.eventType);
+				span.setAttribute('@agentuity/slackTeamId', this.eventPayload.team_id);
+				span.setAttribute('@agentuity/slackEventType', this.eventPayload.type);
 
-				// Normalize reply to SlackReply object
-				const replyObj: SlackReply =
-					typeof reply === 'string' ? { text: reply } : reply;
-
-				// Get thread timestamp from metadata
-				const threadTS = req.metadata?.['thread-ts'] as string | undefined;
-
-				// Default inThread to true if thread-ts is available in metadata
-				const inThread = replyObj.inThread ?? threadTS !== undefined;
+				if (!isSlackMessageEvent(this.eventPayload.event)) {
+					throw new Error('Unsupported reply payload');
+				}
 
 				// Create payload matching backend structure
-				const payload = {
+				const payload: SlackReply = {
 					agentId: ctx.agent.id,
-					text: replyObj.text,
-					blocks: replyObj.blocks,
-					thread_ts: inThread ? threadTS : undefined,
+					text: reply,
+					channel: this.eventPayload.event.channel,
 				};
 
 				const resp = await POST('/slack/reply', safeStringify(payload), {
 					'Content-Type': 'application/json',
-					'X-Agentuity-Slack-Team-Id': this.teamId,
+					'X-Agentuity-Slack-Team-Id': this.eventPayload.team_id,
 				});
 
 				if (resp.status === 200) {
