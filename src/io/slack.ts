@@ -98,8 +98,11 @@ function isSlackMessageEvent(data: SlackEventData): data is SlackMessageEvent {
 	return (
 		typeof data === 'object' &&
 		data !== null &&
-		'type' in data &&
-		data.type === 'message'
+		data.type === 'message' &&
+		'channel' in data &&
+		typeof (data as { channel?: unknown }).channel === 'string' &&
+		'ts' in data &&
+		typeof (data as { ts?: unknown }).ts === 'string'
 	);
 }
 
@@ -429,6 +432,7 @@ export function isSlackEventPayload(data: unknown): data is SlackEventPayload {
 		'api_app_id' in data &&
 		'event' in data &&
 		'type' in data &&
+		(data as any).type === 'event_callback' &&
 		'event_id' in data &&
 		'event_time' in data
 	);
@@ -445,7 +449,7 @@ export class Slack implements SlackService {
 			this.eventPayload = data;
 			return;
 		}
-		throw new Error('Invalid Slack event: missing required fields');
+		throw new Error('Invalid Slack event: this slack payload is unsupported');
 	}
 
 	[inspect.custom]() {
@@ -465,10 +469,12 @@ export class Slack implements SlackService {
 	}
 
 	get message(): SlackMessageEvent {
-		if (!isSlackMessageEvent(this.eventPayload.event)) {
+		if (
+			(this.eventPayload as any).type !== 'event_callback' ||
+			!isSlackMessageEvent(this.eventPayload.event)
+		) {
 			throw new UnsupportedSlackPayload('Payload is not Slack message');
 		}
-
 		return this.eventPayload.event;
 	}
 
@@ -491,12 +497,20 @@ export class Slack implements SlackService {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				span.setAttribute('@agentuity/agentId', ctx.agent.id);
-				span.setAttribute('@agentuity/slackTeamId', this.eventPayload.team_id);
-				span.setAttribute('@agentuity/slackEventType', this.eventPayload.type);
-
-				if (!isSlackMessageEvent(this.eventPayload.event)) {
-					throw new Error('Unsupported reply payload');
+				span.setAttribute(
+					'@agentuity/slackEventType',
+					(this.eventPayload as any).type
+				);
+				if (
+					(this.eventPayload as any).type !== 'event_callback' ||
+					!isSlackMessageEvent(this.eventPayload.event)
+				) {
+					throw new UnsupportedSlackPayload('Payload is not Slack message');
 				}
+				span.setAttribute(
+					'@agentuity/slackTeamId',
+					(this.eventPayload as any).team_id as string
+				);
 
 				// Create payload matching backend structure
 				let payload: SlackReply;
@@ -556,7 +570,7 @@ export class Slack implements SlackService {
  */
 export async function parseSlack(data: Buffer): Promise<Slack> {
 	try {
-		const payload = JSON.parse(data.toString()) as SlackEventPayload;
+		const payload = JSON.parse(data.toString());
 		return new Slack(payload);
 	} catch (error) {
 		throw new Error(

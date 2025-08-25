@@ -27,7 +27,6 @@ describe('Slack IO', () => {
 			expect(slack.payload.event_id).toBe('Ev12345678');
 			expect(slack.payload.event_time).toBe(1234567890);
 			expect(slack.payload.authed_users).toEqual(['U123456']);
-			expect(slack.payload.challenge).toBe('test-challenge');
 			expect(slack.payload.type).toBe('event_callback');
 			expect(slack.payload.event.type).toBe('message');
 			expect(slack.payload.event.event_ts).toBe('1234567890.123456');
@@ -42,7 +41,7 @@ describe('Slack IO', () => {
 			const buffer = Buffer.from(JSON.stringify(invalidPayload));
 
 			expect(parseSlack(buffer)).rejects.toThrow(
-				'Invalid Slack event: missing required fields'
+				'Invalid Slack event: this slack payload is unsupported'
 			);
 		});
 	});
