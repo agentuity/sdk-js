@@ -1,16 +1,16 @@
 import { ReadableStream } from 'node:stream/web';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
 import { type Email, parseEmail } from '../io/email';
-import { type Slack, parseSlack } from '../io/slack';
-import { type Sms, parseSms } from '../io/sms';
+import { parseSlack, type Slack } from '../io/slack';
+import { parseSms, type Sms } from '../io/sms';
 import {
-	type Teams,
-	type TeamsCustomBot,
 	parseTeams,
 	parseTeamsCustomBot,
+	type Teams,
+	type TeamsCustomBot,
 } from '../io/teams';
 import type { AgentuityTeamsActivityHandlerConstructor } from '../io/teams/AgentuityTeamsActivityHandler';
-import { type Telegram, parseTelegram } from '../io/telegram';
+import { parseTelegram, type Telegram } from '../io/telegram';
 import { safeParse } from '../server/util';
 import type { Data, Json, JsonObject, ReadableDataType } from '../types';
 

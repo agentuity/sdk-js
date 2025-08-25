@@ -1,8 +1,8 @@
 import { formatWithOptions, inspect } from 'node:util';
-import type { Logger } from './logger';
-import type { Json } from '../types';
 import { __originalConsole } from '../otel/logger';
 import { safeStringify } from '../server/util';
+import type { Json } from '../types';
+import type { Logger } from './logger';
 
 const yellow = '\x1b[33m';
 const green = '\x1b[32m';

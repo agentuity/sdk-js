@@ -1,22 +1,22 @@
-import type { Server, UnifiedServerConfig, ServerRoute } from './types';
 import type { ReadableStream } from 'node:stream/web';
-import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
-import {
-	extractTraceContextFromBunRequest,
-	injectTraceContextToHeaders,
-} from './otel';
-import {
-	getRoutesHelpText,
-	createStreamingResponse,
-	toWelcomePrompt,
-	getRequestFromHeaders,
-	shouldIgnoreStaticFile,
-} from './util';
+import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
 import type {
 	AgentResponseData,
 	AgentWelcomeResult,
 	ReadableDataType,
 } from '../types';
+import {
+	extractTraceContextFromBunRequest,
+	injectTraceContextToHeaders,
+} from './otel';
+import type { Server, ServerRoute, UnifiedServerConfig } from './types';
+import {
+	createStreamingResponse,
+	getRequestFromHeaders,
+	getRoutesHelpText,
+	shouldIgnoreStaticFile,
+	toWelcomePrompt,
+} from './util';
 
 const idleTimeout = 255; // expressed in seconds
 

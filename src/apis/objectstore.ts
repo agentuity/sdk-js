@@ -1,17 +1,17 @@
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import { DataHandler } from '../router/data';
+import { getTracer, recordException } from '../router/router';
+import { fromDataType } from '../server/util';
 import type {
 	DataResult,
 	DataResultFound,
 	DataResultNotFound,
+	DataType,
 	ObjectStore,
 	ObjectStorePutParams,
-	DataType,
 } from '../types';
 import { isDataType } from '../types';
-import { DELETE, GET, PUT, POST } from './api';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
-import { fromDataType } from '../server/util';
-import { DataHandler } from '../router/data';
+import { DELETE, GET, POST, PUT } from './api';
 
 /**
  * Response for a successful object store create public URL operation

@@ -1,10 +1,10 @@
 import { format } from 'node:util';
 import * as LogsAPI from '@opentelemetry/api-logs';
 import type { Logger } from '../logger';
-import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
-import { safeStringify } from '../server/util';
 import { getAgentDetail } from '../router/router';
+import { safeStringify } from '../server/util';
+import type { Json } from '../types';
 
 /**
  * Reference to the original console object before patching

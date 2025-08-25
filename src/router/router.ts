@@ -1,14 +1,14 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ReadableStream } from 'node:stream/web';
 import {
+	context,
 	type Exception,
 	type Meter,
 	type Span,
 	SpanStatusCode,
 	type Tracer,
-	ValueType,
-	context,
 	trace,
+	ValueType,
 } from '@opentelemetry/api';
 import type { Logger } from '../logger';
 import AgentResolver from '../server/agents';

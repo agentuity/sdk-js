@@ -1,5 +1,5 @@
 import { inspect } from 'node:util';
-import { SpanStatusCode, context, trace } from '@opentelemetry/api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { POST } from '../apis/api';
 import { getTracer, recordException } from '../router/router';
 import { safeStringify } from '../server/util';
