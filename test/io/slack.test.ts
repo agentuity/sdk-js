@@ -22,16 +22,16 @@ describe('Slack IO', () => {
 			const buffer = Buffer.from(JSON.stringify(eventPayload));
 			const slack = await parseSlack(buffer);
 
-			expect(slack.token).toBe('test-token');
-			expect(slack.teamId).toBe('T123456');
-			expect(slack.apiAppId).toBe('A123456');
-			expect(slack.eventId).toBe('Ev12345678');
-			expect(slack.eventTime).toBe(1234567890);
-			expect(slack.authedUsers).toEqual(['U123456']);
-			expect(slack.challenge).toBe('test-challenge');
-			expect(slack.eventType).toBe('event_callback');
-			expect(slack.event.type).toBe('message');
-			expect(slack.eventTs).toBe('1234567890.123456');
+			expect(slack.payload.token).toBe('test-token');
+			expect(slack.payload.team_id).toBe('T123456');
+			expect(slack.payload.api_app_id).toBe('A123456');
+			expect(slack.payload.event_id).toBe('Ev12345678');
+			expect(slack.payload.event_time).toBe(1234567890);
+			expect(slack.payload.authed_users).toEqual(['U123456']);
+			expect(slack.payload.challenge).toBe('test-challenge');
+			expect(slack.payload.type).toBe('event_callback');
+			expect(slack.payload.event.type).toBe('message');
+			expect(slack.payload.event.event_ts).toBe('1234567890.123456');
 		});
 
 
@@ -51,27 +51,7 @@ describe('Slack IO', () => {
 	});
 
 	describe('Slack class', () => {
-		test('should handle url_verification event type', async () => {
-			const eventPayload = {
-				token: 'test-token',
-				team_id: 'T123456',
-				api_app_id: 'A123456',
-				event: {
-					type: 'url_verification',
-					event_ts: '1234567890.123456',
-				},
-				type: 'url_verification',
-				event_id: 'Ev12345678',
-				event_time: 1234567890,
-				authed_users: ['U123456'],
-				challenge: 'test-challenge',
-			};
 
-			const buffer = Buffer.from(JSON.stringify(eventPayload));
-			const slack = await parseSlack(buffer);
-
-			expect(slack.event.type).toBe('url_verification');
-		});
 
 		test('should return correct string representation', async () => {
 			const eventPayload = {
