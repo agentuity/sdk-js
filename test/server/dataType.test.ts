@@ -4,7 +4,7 @@ import type { TriggerType, JsonObject } from '../../src/types';
 import '../setup'; // Import global test setup
 
 describe('Data Type Conversion Functions', () => {
-	const trigger: TriggerType = 'webhook';
+	const _trigger: TriggerType = 'webhook';
 
 	describe('fromDataType', () => {
 		it('should handle null or undefined data', async () => {

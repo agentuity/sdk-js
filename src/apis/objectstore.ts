@@ -194,7 +194,7 @@ export default class ObjectStoreAPI implements ObjectStore {
 				let errorMessage = '';
 				try {
 					errorMessage = await resp.response.text();
-				} catch (textError) {
+				} catch (_textError) {
 					// If we can't read the response text, use the status text
 					errorMessage = resp.response.statusText;
 				}

@@ -223,7 +223,7 @@ export class BunServer implements Server {
 										method,
 										headers: req.headers.toJSON(),
 										request: getRequestFromHeaders(req.headers.toJSON(), runId),
-										setTimeout: (val: number) => void 0,
+										setTimeout: (_val: number) => void 0,
 									});
 
 									return createStreamingResponse(

@@ -219,10 +219,10 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		if (req.headers['x-agentuity-runid']) {
 			runId = req.headers['x-agentuity-runid'];
 			if (runId) {
-				// biome-ignore lint/performance/noDelete:
+				// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 				delete req.headers['x-agentuity-runid'];
 				if (req.request?.metadata?.['runid'] === runId) {
-					// biome-ignore lint/performance/noDelete:
+					// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 					delete req.request.metadata['runid'];
 				}
 			}

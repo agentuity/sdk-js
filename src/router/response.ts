@@ -21,7 +21,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	/**
 	 * redirect the current request another agent within the same project
 	 */
-	async handoff<M = unknown>(
+	async handoff<_M = unknown>(
 		agent: GetAgentRequestParams,
 		args?: InvocationArguments
 	): Promise<AgentRedirectResponse> {

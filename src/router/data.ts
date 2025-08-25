@@ -101,8 +101,8 @@ export class DataHandler implements Data {
 					// propagate cancellation to the underlying source
 					if (reader && typeof reader.cancel === 'function') {
 						try {
-							await reader.cancel(err);
-						} catch (ex) {
+						await reader.cancel(err);
+						} catch (_ex) {
 							// ignore
 						}
 					}
@@ -111,7 +111,7 @@ export class DataHandler implements Data {
 					if (reader && typeof reader.releaseLock === 'function') {
 						try {
 							reader.releaseLock();
-						} catch (ex) {
+						} catch (_ex) {
 							// ignore
 						}
 					}

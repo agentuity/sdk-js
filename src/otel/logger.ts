@@ -31,8 +31,8 @@ class OtelLogger implements Logger {
 			return message;
 		}
 		try {
-			return safeStringify(message);
-		} catch (err) {
+		return safeStringify(message);
+		} catch (_err) {
 			// Handle circular references or other JSON stringification errors
 			return String(message);
 		}
@@ -59,7 +59,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
@@ -75,7 +75,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
@@ -91,7 +91,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
@@ -107,7 +107,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
