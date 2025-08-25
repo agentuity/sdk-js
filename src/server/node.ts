@@ -32,7 +32,7 @@ export class NodeServer implements Server {
 	private readonly port: number;
 	private readonly routes: ServerRoute[];
 	private server: ReturnType<typeof createHttpServer> | null = null;
-
+	private readonly sdkVersion: string;
 
 	/**
 	 * Creates a new Node.js server
