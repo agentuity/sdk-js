@@ -2,7 +2,12 @@ import type { ReadableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
-import type { Slack, SlackReply } from './io/slack';
+import type {
+	Slack,
+	SlackAttachmentsMessage,
+	SlackBlocksMessage,
+	SlackReplyOptions,
+} from './io/slack';
 import type { Sms } from './io/sms';
 import type { Teams, TeamsCustomBot } from './io/teams';
 import type { AgentuityTeamsActivityHandlerConstructor } from './io/teams/AgentuityTeamsActivityHandler';
@@ -560,7 +565,8 @@ export interface SlackService {
 	sendReply(
 		req: AgentRequest,
 		ctx: AgentContext,
-		reply: string | SlackReply
+		reply: string | SlackBlocksMessage | SlackAttachmentsMessage,
+		options?: SlackReplyOptions
 	): Promise<void>;
 }
 

@@ -11,11 +11,13 @@ import { run } from './autostart';
 import { AgentuityTeamsActivityHandler } from './io/teams/AgentuityTeamsActivityHandler';
 import { AgentuityTeamsAdapter } from './io/teams/AgentuityTeamsAdapter';
 import type { AgentConfig } from './types';
+import { UnsupportedSlackPayload } from './io/slack';
 
 export {
 	AgentuityTeamsAdapter,
 	AgentuityTeamsActivityHandler,
 	TeamsActivityHandler,
+	UnsupportedSlackPayload,
 };
 
 /**
