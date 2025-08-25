@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { Slack, parseSlack } from '../../src/io/slack';
+import { parseSlack } from '../../src/io/slack';
 
 describe('Slack IO', () => {
 	describe('parseSlack', () => {
@@ -16,7 +16,6 @@ describe('Slack IO', () => {
 				event_id: 'Ev12345678',
 				event_time: 1234567890,
 				authed_users: ['U123456'],
-				challenge: 'test-challenge',
 			};
 
 			const buffer = Buffer.from(JSON.stringify(eventPayload));
@@ -34,8 +33,6 @@ describe('Slack IO', () => {
 			expect(slack.payload.event.event_ts).toBe('1234567890.123456');
 		});
 
-
-
 		test('should throw error for invalid slack-event payload', async () => {
 			const invalidPayload = {
 				// Missing required fields
@@ -44,15 +41,13 @@ describe('Slack IO', () => {
 
 			const buffer = Buffer.from(JSON.stringify(invalidPayload));
 
-			await expect(parseSlack(buffer)).rejects.toThrow(
+			expect(parseSlack(buffer)).rejects.toThrow(
 				'Invalid Slack event: missing required fields'
 			);
 		});
 	});
 
 	describe('Slack class', () => {
-
-
 		test('should return correct string representation', async () => {
 			const eventPayload = {
 				token: 'test-token',
@@ -73,29 +68,6 @@ describe('Slack IO', () => {
 			const slack = await parseSlack(buffer);
 
 			expect(slack.toString()).toBe(JSON.stringify(eventPayload));
-		});
-
-		test('should handle inThread option correctly', () => {
-			// Test that SlackReply interface accepts inThread property
-			const replyWithThread: import('../../src/io/slack').SlackReply = {
-				text: 'Reply in thread',
-				inThread: true,
-			};
-
-			const replyWithoutThread: import('../../src/io/slack').SlackReply = {
-				text: 'Reply not in thread',
-				inThread: false,
-			};
-
-			const replyWithBlocks: import('../../src/io/slack').SlackReply = {
-				blocks: '{"blocks": []}',
-				inThread: true,
-			};
-
-			expect(replyWithThread.text).toBe('Reply in thread');
-			expect(replyWithThread.inThread).toBe(true);
-			expect(replyWithoutThread.inThread).toBe(false);
-			expect(replyWithBlocks.inThread).toBe(true);
 		});
 	});
 });

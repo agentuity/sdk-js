@@ -6,6 +6,7 @@ import type {
 	Slack,
 	SlackAttachmentsMessage,
 	SlackBlocksMessage,
+	SlackReplyOptions,
 } from './io/slack';
 import type { Sms } from './io/sms';
 import type { Teams, TeamsCustomBot } from './io/teams';
@@ -564,7 +565,8 @@ export interface SlackService {
 	sendReply(
 		req: AgentRequest,
 		ctx: AgentContext,
-		reply: string | SlackBlocksMessage | SlackAttachmentsMessage
+		reply: string | SlackBlocksMessage | SlackAttachmentsMessage,
+		options?: SlackReplyOptions
 	): Promise<void>;
 }
 

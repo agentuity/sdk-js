@@ -405,7 +405,7 @@ export interface SlackReplyOptions {
 /**
  * Internal structure for Slack reply sent through the Agentuity backend
  */
-interface SlackReply {
+export interface SlackReply {
 	/** The agent ID */
 	agentId: string;
 	/** The channel to reply to */
