@@ -1,8 +1,8 @@
 import { formatWithOptions, inspect } from 'node:util';
-import type { Logger } from './logger';
-import type { Json } from '../types';
 import { __originalConsole } from '../otel/logger';
 import { safeStringify } from '../server/util';
+import type { Json } from '../types';
+import type { Logger } from './logger';
 
 const yellow = '\x1b[33m';
 const green = '\x1b[32m';
@@ -40,8 +40,8 @@ export default class ConsoleLogger implements Logger {
 				? Object.entries(this.context)
 						.map(([key, value]) => {
 							try {
-								return `${key}=${typeof value === 'object' ? safeStringify(value) : value}`;
-							} catch (err) {
+							return `${key}=${typeof value === 'object' ? safeStringify(value) : value}`;
+							} catch (_err) {
 								return `${key}=[object Object]`;
 							}
 						})
@@ -76,13 +76,13 @@ export default class ConsoleLogger implements Logger {
 			} else {
 				formattedMessage = _message;
 			}
-		} catch (err) {
+		} catch (_err) {
 			// If formatting fails, use a simple concatenation
 			formattedMessage = `${_message} ${args
 				.map((arg) => {
 					try {
 						return typeof arg === 'object' ? safeStringify(arg) : String(arg);
-					} catch (err) {
+					} catch (_err) {
 						return '[object Object]';
 					}
 				})

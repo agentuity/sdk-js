@@ -1,3 +1,8 @@
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import { DataHandler } from '../router/data';
+import { getTracer, recordException } from '../router/router';
+import { gunzipBuffer, gzipBuffer } from '../server/gzip';
+import { fromDataType } from '../server/util';
 import type {
 	DataResult,
 	DataResultFound,
@@ -7,11 +12,6 @@ import type {
 } from '../types';
 import { isDataType } from '../types';
 import { DELETE, GET, PUT } from './api';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
-import { fromDataType } from '../server/util';
-import { DataHandler } from '../router/data';
-import { gunzipBuffer, gzipBuffer } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API

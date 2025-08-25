@@ -96,14 +96,14 @@ export class AgentuityTeamsAdapter {
 
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			const mockRestifyRes: any = {
-				status: (code: number) => {
+				status: (_code: number) => {
 					return {
-						send: (body: unknown) => {},
+						send: (_body: unknown) => {},
 					};
 				},
 				end: () => {},
 				header: () => {},
-				send: (body?: unknown) => {},
+				send: (_body?: unknown) => {},
 			};
 
 			await this.adapter.process(

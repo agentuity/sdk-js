@@ -1,7 +1,7 @@
-import { POST } from './api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 import type { EmailService } from '../types';
+import { POST } from './api';
 
 export default class EmailApi implements EmailService {
 	/**

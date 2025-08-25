@@ -1,10 +1,15 @@
-import type { ReadableStream } from 'node:stream/web';
-import { type ParsedMail, type Headers, simpleParser } from 'mailparser';
-import { inspect } from 'node:util';
 import { promises as dns } from 'node:dns';
 import { isIP } from 'node:net';
+import type { ReadableStream } from 'node:stream/web';
+import { inspect } from 'node:util';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import { type Headers, type ParsedMail, simpleParser } from 'mailparser';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import type { Address, Attachment } from 'nodemailer/lib/mailer';
+import { send } from '../apis/api';
+import { DataHandler } from '../router/data';
+import { getTracer, recordException } from '../router/router';
+import { fromDataType } from '../server/util';
 import type {
 	AgentContext,
 	AgentRequest,
@@ -12,11 +17,6 @@ import type {
 	DataType,
 	ReadableDataType,
 } from '../types';
-import { fromDataType } from '../server/util';
-import { DataHandler } from '../router/data';
-import { send } from '../apis/api';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
 
 /**
  * Check if IPv4 address is in private/reserved ranges

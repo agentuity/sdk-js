@@ -1,26 +1,26 @@
-import type { Server, ServerRoute, UnifiedServerConfig } from './types';
-import type { ReadableStream } from 'node:stream/web';
-import type { Logger } from '../logger';
 import {
 	createServer as createHttpServer,
 	type IncomingMessage,
 } from 'node:http';
-import { context, trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
+import { Readable } from 'node:stream';
+import type { ReadableStream } from 'node:stream/web';
+import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import type { Logger } from '../logger';
+import type { AgentResponseData, AgentWelcomeResult } from '../types';
 import {
 	extractTraceContextFromNodeRequest,
 	injectTraceContextToHeaders,
 	injectTraceContextToNodeResponse,
 } from './otel';
+import type { Server, ServerRoute, UnifiedServerConfig } from './types';
 import {
-	safeStringify,
-	getRoutesHelpText,
 	createStreamingResponse,
-	toWelcomePrompt,
 	getRequestFromHeaders,
+	getRoutesHelpText,
+	safeStringify,
 	shouldIgnoreStaticFile,
+	toWelcomePrompt,
 } from './util';
-import type { AgentResponseData, AgentWelcomeResult } from '../types';
-import { Readable } from 'node:stream';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 

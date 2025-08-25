@@ -47,6 +47,7 @@
 		"node:start": "npm run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
 		"lint": "npx @biomejs/biome lint --write",
+		"organize-imports": "npx @biomejs/biome check --formatter-enabled=false --linter-enabled=false --write src",
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
 		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
@@ -62,7 +63,7 @@
 		}
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
+		"@biomejs/biome": "2.1.2",
 		"@types/bun": "latest",
 		"@types/js-yaml": "^4.0.9",
 		"@types/mailparser": "^3.4.6",

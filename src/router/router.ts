@@ -1,14 +1,14 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ReadableStream } from 'node:stream/web';
 import {
+	context,
 	type Exception,
 	type Meter,
 	type Span,
 	SpanStatusCode,
 	type Tracer,
-	ValueType,
-	context,
 	trace,
+	ValueType,
 } from '@opentelemetry/api';
 import type { Logger } from '../logger';
 import AgentResolver from '../server/agents';
@@ -219,10 +219,10 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		if (req.headers['x-agentuity-runid']) {
 			runId = req.headers['x-agentuity-runid'];
 			if (runId) {
-				// biome-ignore lint/performance/noDelete:
+				// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 				delete req.headers['x-agentuity-runid'];
 				if (req.request?.metadata?.['runid'] === runId) {
-					// biome-ignore lint/performance/noDelete:
+					// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 					delete req.request.metadata['runid'];
 				}
 			}

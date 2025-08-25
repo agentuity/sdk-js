@@ -1,10 +1,10 @@
-import { ExportResultCode, type ExportResult } from '@opentelemetry/core';
+import { SeverityNumber } from '@opentelemetry/api-logs';
+import { type ExportResult, ExportResultCode } from '@opentelemetry/core';
 import type {
 	LogRecordExporter,
 	ReadableLogRecord,
 } from '@opentelemetry/sdk-logs';
 import ConsoleLogger from '../logger/console';
-import { SeverityNumber } from '@opentelemetry/api-logs';
 
 /**
  * Console implementation of the LogRecordExporter interface

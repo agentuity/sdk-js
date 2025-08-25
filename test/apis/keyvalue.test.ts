@@ -12,7 +12,7 @@ describe('KeyValueAPI', () => {
 	let keyValueAPI: KeyValueAPI;
 
 	const mockTracer = {
-		startSpan: mock((name: string, options: unknown, ctx: unknown) => {
+		startSpan: mock((_name: string, _options: unknown, _ctx: unknown) => {
 			return {
 				setAttribute: mock(() => {}),
 				addEvent: mock(() => {}),
@@ -32,7 +32,7 @@ describe('KeyValueAPI', () => {
 				active: () => ({}),
 			},
 			trace: {
-				setSpan: (ctx: unknown, span: unknown) => ctx,
+				setSpan: (ctx: unknown, _span: unknown) => ctx,
 				getTracer: () => mockTracer,
 			},
 			SpanStatusCode: {
@@ -57,7 +57,7 @@ describe('KeyValueAPI', () => {
 			const mockResponse = {
 				status: 200,
 				headers: {
-					get: (name: string) => 'application/json',
+					get: (_name: string) => 'application/json',
 				},
 				response: {
 					arrayBuffer: () => new ArrayBuffer(8),
@@ -70,8 +70,8 @@ describe('KeyValueAPI', () => {
 			}));
 
 			keyValueAPI.get = async (
-				name: string,
-				key: string
+			_name: string,
+			_key: string
 			): Promise<DataResult> => {
 				const result: DataResultFound = {
 					exists: true,
@@ -103,10 +103,10 @@ describe('KeyValueAPI', () => {
 			}));
 
 			keyValueAPI.get = async (
-				name: string,
-				key: string
+			_name: string,
+			_key: string
 			): Promise<DataResult> => {
-				const result: DataResultNotFound = {
+			const result: DataResultNotFound = {
 					exists: false,
 					data: undefined as never,
 				};
@@ -132,10 +132,10 @@ describe('KeyValueAPI', () => {
 			}));
 
 			keyValueAPI.get = async (
-				name: string,
-				key: string
+			_name: string,
+			_key: string
 			): Promise<DataResult> => {
-				throw new Error('Internal Server Error');
+			throw new Error('Internal Server Error');
 			};
 
 			await expect(keyValueAPI.get('test-store', 'test-key')).rejects.toThrow();

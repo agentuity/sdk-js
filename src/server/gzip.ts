@@ -1,5 +1,5 @@
-import { gzip, gunzip } from 'node:zlib';
 import { promisify } from 'node:util';
+import { gunzip, gzip } from 'node:zlib';
 
 // Promisify the zlib functions
 const gzipPromise = promisify(gzip);

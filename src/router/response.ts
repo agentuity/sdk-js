@@ -1,17 +1,17 @@
+import { ReadableStream } from 'node:stream/web';
+import { fromDataType, safeStringify } from '../server/util';
 import type {
-	AgentResponse,
-	InvocationArguments,
-	GetAgentRequestParams,
-	AgentResponseData,
-	JsonObject,
-	DataType,
 	AgentRedirectResponse,
+	AgentResponse,
+	AgentResponseData,
+	DataType,
+	GetAgentRequestParams,
+	InvocationArguments,
+	JsonObject,
 	ReadableDataType,
 } from '../types';
 import { isJsonObject } from '../types';
-import { ReadableStream } from 'node:stream/web';
 import { DataHandler } from './data';
-import { safeStringify, fromDataType } from '../server/util';
 
 /**
  * The AgentResponse class implements the AgentResponseHandler interface.
@@ -21,7 +21,7 @@ export default class AgentResponseHandler implements AgentResponse {
 	/**
 	 * redirect the current request another agent within the same project
 	 */
-	async handoff<M = unknown>(
+	async handoff<_M = unknown>(
 		agent: GetAgentRequestParams,
 		args?: InvocationArguments
 	): Promise<AgentRedirectResponse> {

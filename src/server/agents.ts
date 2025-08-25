@@ -1,26 +1,25 @@
-import type {
-	GetAgentRequestParams,
-	RemoteAgent,
-	InvocationArguments,
-	RemoteAgentResponse,
-	ReadableDataType,
-} from '../types';
-import { isJsonObject } from '../types';
 import type { ReadableStream } from 'node:stream/web';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
-import type { AgentConfig } from '../types';
-import {
-	safeStringify,
-	metadataFromHeaders,
-	setMetadataInHeaders,
-	dataTypeToBuffer,
-	headersToRecord,
-} from './util';
-import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
 import { getSDKVersion, getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+import type {AgentConfig, 
+	GetAgentRequestParams,
+	InvocationArguments,
+	ReadableDataType,
+	RemoteAgent,
+	RemoteAgentResponse
+} from '../types';
+import { isJsonObject } from '../types';
+import { injectTraceContextToHeaders } from './otel';
+import {
+	dataTypeToBuffer,
+	headersToRecord,
+	metadataFromHeaders,
+	safeStringify,
+	setMetadataInHeaders,
+} from './util';
 
 /**
  * Invokes local agents within the same server

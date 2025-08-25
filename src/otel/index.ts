@@ -1,7 +1,7 @@
 import opentelemetry, {
+	type Meter,
 	metrics,
 	propagation,
-	type Meter,
 	type Tracer,
 } from '@opentelemetry/api';
 import * as LogsAPI from '@opentelemetry/api-logs';
@@ -19,8 +19,8 @@ import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
 import { Resource } from '@opentelemetry/resources';
 import {
 	BatchLogRecordProcessor,
-	type LogRecordProcessor,
 	LoggerProvider,
+	type LogRecordProcessor,
 	SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
 import {
