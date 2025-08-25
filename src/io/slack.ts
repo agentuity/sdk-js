@@ -424,15 +424,18 @@ export interface SlackReply {
 }
 
 export function isSlackEventPayload(data: unknown): data is SlackEventPayload {
+	if (typeof data !== 'object' || data === null) return false;
+	
+	const obj = data as Record<string, unknown>;
+	
 	return (
-		typeof data === 'object' &&
-		data !== null &&
 		'token' in data &&
 		'team_id' in data &&
 		'api_app_id' in data &&
 		'event' in data &&
 		'type' in data &&
-		(data as any).type === 'event_callback' &&
+		typeof obj.type === 'string' &&
+		obj.type === 'event_callback' &&
 		'event_id' in data &&
 		'event_time' in data
 	);
@@ -470,7 +473,7 @@ export class Slack implements SlackService {
 
 	get message(): SlackMessageEvent {
 		if (
-			(this.eventPayload as any).type !== 'event_callback' ||
+			this.eventPayload.type !== 'event_callback' ||
 			!isSlackMessageEvent(this.eventPayload.event)
 		) {
 			throw new UnsupportedSlackPayload('Payload is not Slack message');
@@ -499,17 +502,17 @@ export class Slack implements SlackService {
 				span.setAttribute('@agentuity/agentId', ctx.agent.id);
 				span.setAttribute(
 					'@agentuity/slackEventType',
-					(this.eventPayload as any).type
+					this.eventPayload.type
 				);
 				if (
-					(this.eventPayload as any).type !== 'event_callback' ||
+					this.eventPayload.type !== 'event_callback' ||
 					!isSlackMessageEvent(this.eventPayload.event)
 				) {
 					throw new UnsupportedSlackPayload('Payload is not Slack message');
 				}
 				span.setAttribute(
 					'@agentuity/slackTeamId',
-					(this.eventPayload as any).team_id as string
+					this.eventPayload.team_id
 				);
 
 				// Create payload matching backend structure
