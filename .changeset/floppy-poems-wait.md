@@ -2,4 +2,4 @@
 "@agentuity/sdk": patch
 ---
 
-Use session_id instead of run_id for AgentContext to better align with how we reference it
+Use sessionId instead of runId for AgentContext to better align with how we reference it.
