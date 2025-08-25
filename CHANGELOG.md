@@ -1,5 +1,13 @@
 # @agentuity/sdk Changelog
 
+## 0.0.141
+
+### Patch Changes
+
+- 7013333: Restructured slack IO and payloads.
+- 4654067: Fix email attachment parsing for Slack-formatted filenames
+- 654cfc1: Use sessionId instead of runId for AgentContext to better align with how we reference it.
+
 ## 0.0.140
 
 ### Fixed
