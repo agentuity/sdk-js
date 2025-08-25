@@ -725,7 +725,13 @@ export interface AgentContext {
 	devmode: boolean;
 
 	/**
+	 * the session id
+	 */
+	sessionId: string;
+
+	/**
 	 * the run id
+	 * @deprecated Use sessionId instead
 	 */
 	runId: string;
 

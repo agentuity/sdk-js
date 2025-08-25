@@ -159,9 +159,17 @@ interface ServerContextRequest {
 	projectId?: string;
 	deploymentId?: string;
 	runId?: string;
+	sessionId?: string;
 	devmode?: boolean;
 	sdkVersion: string;
 	agents: AgentConfig[];
+}
+
+/**
+ * Ensures sessionId has the sess_ prefix
+ */
+function ensureSessionIdPrefix(sessionId: string): string {
+	return sessionId.startsWith('sess_') ? sessionId : `sess_${sessionId}`;
 }
 
 const kv = new KeyValueAPI();
@@ -177,9 +185,13 @@ const objectstore = new ObjectStoreAPI();
  * @returns An agent context object
  */
 export function createServerContext(req: ServerContextRequest): AgentContext {
+	// Use sessionId if provided, otherwise fallback to runId, and ensure sess_ prefix
+	const sessionId = ensureSessionIdPrefix(req.sessionId || req.runId || '');
+
 	return {
 		devmode: req.devmode,
-		runId: req.runId,
+		sessionId,
+		runId: sessionId, // For backward compatibility, runId = sessionId
 		deploymentId: req.deploymentId,
 		projectId: req.projectId,
 		orgId: req.orgId,
