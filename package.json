@@ -8,7 +8,10 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"type": "module",
-	"files": ["dist/**/*", "LICENSE.md"],
+	"files": [
+		"dist/**/*",
+		"LICENSE.md"
+	],
 	"engines": {
 		"node": ">=22"
 	},
@@ -21,9 +24,17 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": ["ai", "agents", "agentuity", "ai agent", "agent"],
+	"keywords": [
+		"ai",
+		"agents",
+		"agentuity",
+		"ai agent",
+		"agent"
+	],
 	"tsup": {
-		"entry": ["src/index.ts"],
+		"entry": [
+			"src/index.ts"
+		],
 		"format": "esm",
 		"splitting": false,
 		"sourcemap": true,
@@ -51,7 +62,7 @@
 		}
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
+		"@biomejs/biome": "2.1.2",
 		"@types/bun": "latest",
 		"@types/js-yaml": "^4.0.9",
 		"@types/mailparser": "^3.4.6",
