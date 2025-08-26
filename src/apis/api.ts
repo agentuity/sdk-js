@@ -116,7 +116,7 @@ export async function send<K>(
 		body: request.body,
 		headers,
 		keepalive: true,
-		signal: AbortSignal.timeout(request.timeout || 20_000),
+		signal: request.timeout ? AbortSignal.timeout(request.timeout) : undefined,
 	});
 	let json: K | null = null;
 	switch (resp.status) {
