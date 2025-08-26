@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.142
+
+### Patch Changes
+
+- Some APIs like object store were timing out after 20s with a large document upload. Remove the premature timeout
+
 ## 0.0.141
 
 ### Patch Changes
