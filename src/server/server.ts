@@ -14,8 +14,7 @@ import type {
 	AgentHandler,
 	AgentWelcome,
 } from '../types';
-import type { Server, UnifiedServerConfig } from './types';
-import type { ServerRoute } from './types';
+import type { Server, ServerRoute, UnifiedServerConfig } from './types';
 
 /**
  * Creates a unified server based on the runtime environment

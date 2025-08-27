@@ -16,7 +16,7 @@ describe('KeyValue API Compression', () => {
 		});
 
 		mockPUT = mock(
-			(url: string, data: unknown, headers: Record<string, string>) => {
+			(_url: string, _data: unknown, _headers: Record<string, string>) => {
 				return Promise.resolve({
 					status: 201,
 					response: {

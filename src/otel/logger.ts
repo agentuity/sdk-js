@@ -1,10 +1,10 @@
 import { format } from 'node:util';
 import * as LogsAPI from '@opentelemetry/api-logs';
 import type { Logger } from '../logger';
-import type { Json } from '../types';
 import ConsoleLogger from '../logger/console';
-import { safeStringify } from '../server/util';
 import { getAgentDetail } from '../router/router';
+import { safeStringify } from '../server/util';
+import type { Json } from '../types';
 
 /**
  * Reference to the original console object before patching
@@ -31,8 +31,8 @@ class OtelLogger implements Logger {
 			return message;
 		}
 		try {
-			return safeStringify(message);
-		} catch (err) {
+		return safeStringify(message);
+		} catch (_err) {
 			// Handle circular references or other JSON stringification errors
 			return String(message);
 		}
@@ -59,7 +59,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
@@ -75,7 +75,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
@@ -91,7 +91,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
@@ -107,7 +107,7 @@ class OtelLogger implements Logger {
 		let body: string;
 		try {
 			body = format(this.formatMessage(message), ...args);
-		} catch (err) {
+		} catch (_err) {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}

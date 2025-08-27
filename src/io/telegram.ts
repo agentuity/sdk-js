@@ -1,9 +1,9 @@
 import { inspect } from 'node:util';
-import type { AgentRequest, AgentContext, TelegramService } from '../types';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { POST } from '../apis/api';
+import { getTracer, recordException } from '../router/router';
 import { safeStringify } from '../server/util';
+import type { AgentContext, AgentRequest, TelegramService } from '../types';
 
 type TelegramResponse = {
 	message_id: number;

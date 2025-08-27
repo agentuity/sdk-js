@@ -1,11 +1,12 @@
-export * from './server';
 export * from './logger';
+export * from './server';
 export * from './types';
 
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
 export { EmailAPI, DiscordAPI };
+
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';
 import { AgentuityTeamsActivityHandler } from './io/teams/AgentuityTeamsActivityHandler';

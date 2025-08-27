@@ -1,12 +1,12 @@
-import type { Logger } from '../logger';
 import type { ReadableStream } from 'node:stream/web';
+import type { Logger } from '../logger';
 import type {
 	AgentConfig,
-	DataPayload,
+	AgentInvocationScope,
 	AgentResponseData,
 	AgentWelcome,
+	DataPayload,
 	ReadableDataType,
-	AgentInvocationScope,
 } from '../types';
 
 /**

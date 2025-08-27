@@ -1,5 +1,5 @@
-import { context, propagation } from '@opentelemetry/api';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { context, propagation } from '@opentelemetry/api';
 
 /**
  * Injects trace context into response headers using the OpenTelemetry propagation API
