@@ -51,9 +51,9 @@ export default class KeyValueAPI implements KeyValueStorage {
 				}
 				if (resp.status === 200) {
 					span.addEvent('hit');
-					let body = Buffer.from(await resp.response.arrayBuffer());
+					let body = Buffer.from(await resp.response.arrayBuffer() as ArrayBuffer);
 					if (resp.headers.get('content-encoding') === 'gzip') {
-						body = await gunzipBuffer(body);
+						body = Buffer.from(await gunzipBuffer(body));
 					}
 					const result: DataResultFound = {
 						exists: true,
@@ -146,7 +146,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 
 				const resp = await PUT(
 					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					new Blob([buffer], {
+					new Blob([buffer] as BlobPart[], {
 						type: datavalue.data.contentType,
 					}),
 					headers
