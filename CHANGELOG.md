@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.144
+
+### Patch Changes
+
+- Issues between streaming for node and bun and keep alive differences
+
 ## 0.0.143
 
 ### Patch Changes

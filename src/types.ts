@@ -153,7 +153,7 @@ export type DataType =
 /**
  * check if a value is a ReadableStream
  */
-function isReadableStream(value: unknown): value is ReadableStream {
+export function isReadableStream(value: unknown): value is ReadableStream {
 	if (typeof value === 'object' && value !== null) {
 		return 'getReader' in value;
 	}
