@@ -6,6 +6,7 @@ import type {
 	Slack,
 	SlackAttachmentsMessage,
 	SlackBlocksMessage,
+	SlackPostMessageResponse,
 	SlackReplyOptions,
 } from './io/slack';
 import type { Sms } from './io/sms';
@@ -560,14 +561,14 @@ export interface TelegramService {
 
 export interface SlackService {
 	/**
-	 * send a reply to a incoming Slack message or event
+	 * Post a message to Slack using chat.postMessage API
 	 */
-	sendReply(
+	postMessage(
 		req: AgentRequest,
 		ctx: AgentContext,
 		reply: string | SlackBlocksMessage | SlackAttachmentsMessage,
 		options?: SlackReplyOptions
-	): Promise<void>;
+	): Promise<SlackPostMessageResponse>;
 }
 
 export interface ObjectStorePutParams {

@@ -352,6 +352,11 @@ export interface SlackAttachmentsMessage {
  */
 export interface SlackReplyOptions {
 	/**
+	 * Channel, private group, or IM channel to send message to. Can be an encoded ID, or a name.
+	 * If not provided, defaults to the channel from the incoming event.
+	 */
+	channel?: string;
+	/**
 	 * (Legacy) Pass true to post the message as the authed user instead of as a bot. Defaults to false. Can only be used by classic apps.
 	 * @see https://api.slack.com/methods/chat.postMessage#legacy-as_user
 	 */
@@ -403,6 +408,80 @@ export interface SlackReplyOptions {
 	 * Set your bot's user name.
 	 */
 	username?: string;
+}
+
+/**
+ * Backend wrapper response for Slack operations
+ */
+export interface SlackBackendResponse {
+	/** Success indicator from backend */
+	success: boolean;
+	/** The actual Slack API response data */
+	data: SlackPostMessageResponse;
+}
+
+/**
+ * Response from Slack chat.postMessage API
+ * @see https://api.slack.com/methods/chat.postMessage
+ */
+export interface SlackPostMessageResponse {
+	/** Standard response indicator */
+	ok: true;
+	/** Channel where the message was posted */
+	channel: string;
+	/** Unique timestamp of the posted message */
+	ts: string;
+	/** Complete message object that was posted */
+	message: {
+		/** The type of message (always 'message' for posted messages) */
+		type: 'message';
+		/** The actual text content of the message */
+		text?: string;
+		/** The user ID of who posted the message (bot user ID) */
+		user?: string;
+		/** Bot ID if posted by a bot */
+		bot_id?: string;
+		/** The username displayed for this message */
+		username?: string;
+		/** Timestamp of the message */
+		ts: string;
+		/** Team/workspace ID */
+		team?: string;
+		/** Block Kit blocks if used */
+		blocks?: SlackBlock[];
+		/** Legacy attachments if used */
+		attachments?: SlackAttachment[];
+		/** Thread timestamp if this is a threaded reply */
+		thread_ts?: string;
+		/** Client message ID if provided */
+		client_msg_id?: string;
+		/** Icon information for the message sender */
+		icons?: {
+			image_36?: string;
+			image_48?: string;
+			image_72?: string;
+		};
+		/** Bot profile information if posted by a bot */
+		bot_profile?: {
+			id: string;
+			deleted: boolean;
+			name: string;
+			updated: number;
+			app_id: string;
+			icons?: {
+				image_36?: string;
+				image_48?: string;
+				image_72?: string;
+			};
+			name_normalized?: string;
+		};
+		/** Edit information if the message was edited */
+		edited?: {
+			user: string;
+			ts: string;
+		};
+		[key: string]: unknown;
+	};
 }
 
 /**
@@ -481,12 +560,12 @@ export class Slack implements SlackService {
 		return this.eventPayload.event;
 	}
 
-	async sendReply(
+	async postMessage(
 		_req: AgentRequest,
 		ctx: AgentContext,
 		reply: string | SlackBlocksMessage | SlackAttachmentsMessage,
 		options?: SlackReplyOptions
-	) {
+	): Promise<SlackPostMessageResponse> {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -515,6 +594,9 @@ export class Slack implements SlackService {
 					this.eventPayload.team_id
 				);
 
+				// Determine the target channel - use options.channel if provided, otherwise use event channel
+				const targetChannel = options?.channel ?? this.eventPayload.event.channel;
+
 				// Create payload matching backend structure
 				let payload: SlackReply;
 
@@ -523,7 +605,7 @@ export class Slack implements SlackService {
 					payload = {
 						agentId: ctx.agent.id,
 						text: reply,
-						channel: this.eventPayload.event.channel,
+						channel: targetChannel,
 						options: options,
 					};
 				} else if ('blocks' in reply) {
@@ -532,7 +614,7 @@ export class Slack implements SlackService {
 						agentId: ctx.agent.id,
 						text: reply.text,
 						blocks: reply.blocks,
-						channel: this.eventPayload.event.channel,
+						channel: targetChannel,
 						options: options,
 					};
 				} else {
@@ -541,7 +623,7 @@ export class Slack implements SlackService {
 						agentId: ctx.agent.id,
 						text: reply.text,
 						attachments: reply.attachments,
-						channel: this.eventPayload.event.channel,
+						channel: targetChannel,
 						options: options,
 					};
 				}
@@ -553,7 +635,8 @@ export class Slack implements SlackService {
 
 				if (resp.status === 200) {
 					span.setStatus({ code: SpanStatusCode.OK });
-					return;
+					const backendResponse = resp.json as SlackBackendResponse;
+					return backendResponse.data;
 				}
 				throw new Error(
 					`error sending slack reply: ${resp.response.statusText} (${resp.response.status})`
