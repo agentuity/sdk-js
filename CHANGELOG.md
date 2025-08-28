@@ -1,5 +1,18 @@
 # @agentuity/sdk Changelog
 
+## 0.0.143
+
+### Patch Changes
+
+- Rename Slack sendReply to postMessage with proper response typing and optional channel override
+
+  - Renamed `SlackService.sendReply()` to `postMessage()` to align with Slack API naming
+  - Added `SlackPostMessageResponse` interface with complete typing based on official Slack API documentation
+  - Function now returns the properly typed Slack API response instead of void
+  - Added optional `channel` parameter to `SlackReplyOptions` for overriding target channel
+  - Handles backend response wrapper structure correctly (success + data fields)
+  - Maintains backward compatibility by defaulting to event channel when no override provided
+
 ## 0.0.142
 
 ### Patch Changes
