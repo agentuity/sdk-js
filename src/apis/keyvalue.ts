@@ -53,7 +53,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					span.addEvent('hit');
 					let body = Buffer.from(await resp.response.arrayBuffer() as ArrayBuffer);
 					if (resp.headers.get('content-encoding') === 'gzip') {
-					body = await gunzipBuffer(body);
+					body = (await gunzipBuffer(body)) as Buffer;
 					}
 					const result: DataResultFound = {
 						exists: true,
