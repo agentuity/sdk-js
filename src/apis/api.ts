@@ -115,9 +115,9 @@ export async function send<K>(
 		method: request.method,
 		body: request.body,
 		headers,
-		keepalive: true,
 		signal: request.timeout ? AbortSignal.timeout(request.timeout) : undefined,
-	});
+		duplex: request.body ? 'half' : undefined,
+	} as RequestInit);
 	let json: K | null = null;
 	switch (resp.status) {
 		case 429: {
