@@ -81,7 +81,7 @@ class LocalAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
+				const body = args?.data ? (await dataTypeToBuffer(args.data)) as BodyInit : undefined;
 				const headers: Record<string, string> = {
 					'Content-Type': args?.contentType ?? 'application/octet-stream',
 					'x-agentuity-trigger': 'agent',
@@ -208,7 +208,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					setMetadataInHeaders(headers, args.metadata);
 				}
 				injectTraceContextToHeaders(headers);
-				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
+				const body = args?.data ? (await dataTypeToBuffer(args.data)) as BodyInit : undefined;
 				this.logger.info('invoking remote agent');
 				const resp = await fetch(this.url, {
 					headers,

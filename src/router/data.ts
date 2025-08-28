@@ -182,7 +182,7 @@ export class DataHandler implements Data {
 
 	async blob(): Promise<Blob> {
 		const data = await this.data();
-		return new Blob([data], { type: this.contentType });
+		return new Blob([data] as BlobPart[], { type: this.contentType });
 	}
 
 	async arrayBuffer(): Promise<ArrayBuffer> {

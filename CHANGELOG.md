@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.143
+
+### Patch Changes
+
+- c9e094b: Use traceloop for otel for consistency across Python and TS SDK's
+
 ## 0.0.142
 
 ### Patch Changes
