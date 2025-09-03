@@ -307,6 +307,38 @@ export class Email {
 	}
 
 	/**
+	 * The email address of the first recipient or null if there is no recipient.
+	 */
+	toEmail(): string | null {
+		if (!this._message.to) {
+			return null;
+		}
+		if (Array.isArray(this._message.to)) {
+			return this._message.to[0]?.value[0]?.address ?? null;
+		}
+		if (typeof this._message.to === 'object' && 'value' in this._message.to) {
+			return this._message.to.value[0]?.address ?? null;
+		}
+		return null;
+	}
+
+	/**
+	 * The name of the first recipient or null if there is no name.
+	 */
+	toName(): string | null {
+		if (!this._message.to) {
+			return null;
+		}
+		if (Array.isArray(this._message.to)) {
+			return this._message.to[0]?.value[0]?.name ?? null;
+		}
+		if (typeof this._message.to === 'object' && 'value' in this._message.to) {
+			return this._message.to.value[0]?.name ?? null;
+		}
+		return null;
+	}
+
+	/**
 	 * The subject of the email or null if there is no subject.
 	 */
 	subject(): string | null {
@@ -460,7 +492,7 @@ export class Email {
 					date: new Date(),
 					from: {
 						name: from?.name ?? context.agent.name,
-						address: from?.email ?? (this.to() as string),
+						address: from?.email ?? this.toEmail(),
 					},
 					to: {
 						name: this.fromName() ?? undefined,
