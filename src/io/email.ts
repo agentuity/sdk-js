@@ -492,7 +492,7 @@ export class Email {
 					date: new Date(),
 					from: {
 						name: from?.name ?? context.agent.name,
-						address: from?.email ?? this.toEmail(),
+						address: from?.email ?? this.toEmail() ?? '',
 					},
 					to: {
 						name: this.fromName() ?? undefined,
