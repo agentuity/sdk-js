@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.145
+
+### Patch Changes
+
+- 25bb67d: Fix malformed From headers in email replies that caused parsing errors in backend
+
 ## 0.0.144
 
 ### Patch Changes
