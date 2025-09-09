@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 25bb67d: Fix malformed From headers in email replies that caused parsing errors in backend
+- 25bb67d: Fix malformed From headers in email replies that caused parsing errors in backend ([#174](https://github.com/agentuity/sdk-js/pull/174))
 
 ## 0.0.144
 
