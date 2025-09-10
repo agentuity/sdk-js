@@ -1,3 +1,8 @@
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import { DataHandler } from '../router/data';
+import { getTracer, recordException } from '../router/router';
+import { gunzipBuffer, gzipBuffer } from '../server/gzip';
+import { fromDataType } from '../server/util';
 import type {
 	DataResult,
 	DataResultFound,
@@ -7,11 +12,6 @@ import type {
 } from '../types';
 import { isDataType } from '../types';
 import { DELETE, GET, PUT } from './api';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
-import { fromDataType } from '../server/util';
-import { DataHandler } from '../router/data';
-import { gunzipBuffer, gzipBuffer } from '../server/gzip';
 
 /**
  * Implementation of the KeyValueStorage interface for interacting with the key-value storage API
@@ -51,7 +51,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 				}
 				if (resp.status === 200) {
 					span.addEvent('hit');
-					let body = Buffer.from(await resp.response.arrayBuffer());
+					let body: Buffer = Buffer.from(await resp.response.arrayBuffer() as ArrayBuffer);
 					if (resp.headers.get('content-encoding') === 'gzip') {
 						body = await gunzipBuffer(body);
 					}
@@ -146,7 +146,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 
 				const resp = await PUT(
 					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}${ttlstr}`,
-					new Blob([buffer], {
+					new Blob([buffer] as BlobPart[], {
 						type: datavalue.data.contentType,
 					}),
 					headers

@@ -1,26 +1,25 @@
-import type {
-	GetAgentRequestParams,
-	RemoteAgent,
-	InvocationArguments,
-	RemoteAgentResponse,
-	ReadableDataType,
-} from '../types';
-import { isJsonObject } from '../types';
 import type { ReadableStream } from 'node:stream/web';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { POST } from '../apis/api';
 import type { Logger } from '../logger';
-import type { AgentConfig } from '../types';
-import {
-	safeStringify,
-	metadataFromHeaders,
-	setMetadataInHeaders,
-	dataTypeToBuffer,
-	headersToRecord,
-} from './util';
-import { injectTraceContextToHeaders } from './otel';
 import { DataHandler } from '../router/data';
 import { getSDKVersion, getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+import type {AgentConfig, 
+	GetAgentRequestParams,
+	InvocationArguments,
+	ReadableDataType,
+	RemoteAgent,
+	RemoteAgentResponse
+} from '../types';
+import { isJsonObject } from '../types';
+import { injectTraceContextToHeaders } from './otel';
+import {
+	dataTypeToBuffer,
+	headersToRecord,
+	metadataFromHeaders,
+	safeStringify,
+	setMetadataInHeaders,
+} from './util';
 
 /**
  * Invokes local agents within the same server
@@ -82,7 +81,7 @@ class LocalAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
+				const body = args?.data ? (await dataTypeToBuffer(args.data)) as BodyInit : undefined;
 				const headers: Record<string, string> = {
 					'Content-Type': args?.contentType ?? 'application/octet-stream',
 					'x-agentuity-trigger': 'agent',
@@ -209,7 +208,7 @@ class RemoteAgentInvoker implements RemoteAgent {
 					setMetadataInHeaders(headers, args.metadata);
 				}
 				injectTraceContextToHeaders(headers);
-				const body = args?.data ? await dataTypeToBuffer(args.data) : undefined;
+				const body = args?.data ? (await dataTypeToBuffer(args.data)) as BodyInit : undefined;
 				this.logger.info('invoking remote agent');
 				const resp = await fetch(this.url, {
 					headers,

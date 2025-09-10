@@ -1,41 +1,42 @@
-import type { Logger } from '../logger';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { HostMetrics } from '@opentelemetry/host-metrics';
+import opentelemetry, {
+	type Meter,
+	metrics,
+	propagation,
+	type Tracer,
+} from '@opentelemetry/api';
+import * as LogsAPI from '@opentelemetry/api-logs';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import {
-	PeriodicExportingMetricReader,
-	MeterProvider,
-} from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+	CompositePropagator,
+	W3CBaggagePropagator,
+	W3CTraceContextPropagator,
+} from '@opentelemetry/core';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { HostMetrics } from '@opentelemetry/host-metrics';
+import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
+import { Resource } from '@opentelemetry/resources';
+import {
+	BatchLogRecordProcessor,
+	LoggerProvider,
+	type LogRecordProcessor,
+	SimpleLogRecordProcessor,
+} from '@opentelemetry/sdk-logs';
+import {
+	MeterProvider,
+	PeriodicExportingMetricReader,
+} from '@opentelemetry/sdk-metrics';
+import { NodeSDK } from '@opentelemetry/sdk-node';
 import {
 	ATTR_SERVICE_NAME,
 	ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions';
-import opentelemetry, {
-	metrics,
-	propagation,
-	type Meter,
-	type Tracer,
-} from '@opentelemetry/api';
-import {
-	W3CTraceContextPropagator,
-	W3CBaggagePropagator,
-	CompositePropagator,
-} from '@opentelemetry/core';
-import * as LogsAPI from '@opentelemetry/api-logs';
-import {
-	LoggerProvider,
-	type LogRecordProcessor,
-	BatchLogRecordProcessor,
-	SimpleLogRecordProcessor,
-} from '@opentelemetry/sdk-logs';
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
-import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base';
-import { createLogger, patchConsole } from './logger';
+import type { Logger } from '../logger';
 import { ConsoleLogRecordExporter } from './console';
 import { instrumentFetch } from './fetch';
+import { createLogger, patchConsole } from './logger';
+import { initialize } from '@traceloop/node-server-sdk';
 
 /**
  * Configuration for OpenTelemetry initialization
@@ -224,6 +225,30 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		});
 		instrumentationSDK.start();
 		hostMetrics?.start();
+		
+		try {
+			const projectName = config.projectId || '';
+			const orgName = config.orgId || '';
+			const appName = `${orgName}:${projectName}`;
+
+			const traceloopHeaders: Record<string, string> = {};
+			if (bearerToken) {
+				traceloopHeaders.Authorization = `Bearer ${bearerToken}`;
+			}
+
+			initialize({
+				appName,
+				baseUrl: url, 
+				headers: traceloopHeaders,
+				disableBatch: devmode,
+				tracingEnabled: false, // Disable traceloop's own tracing (equivalent to Python's telemetryEnabled: false)
+				// Note: JavaScript SDK doesn't support resourceAttributes like Python
+			});
+			logger.debug(`Traceloop initialized with app_name: ${appName}`);
+			logger.info('Traceloop configured successfully');
+		} catch (error) {
+			logger.warn('Traceloop not available, skipping automatic instrumentation', { error: error instanceof Error ? error.message : String(error) });
+		}
 		running = true;
 	}
 

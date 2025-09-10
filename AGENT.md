@@ -23,3 +23,8 @@
 - **Conventions**: camelCase variables, PascalCase classes/interfaces
 - **Error Handling**: Use proper Error types, avoid throwing strings
 - **Linting**: Biome with recommended rules, template literals over concatenation
+
+
+## More detailed docs
+- [Creating new IO](./docs/adding-new-io.md)
+- [Local SDK testing](./docs/testing-local-sdk.md)

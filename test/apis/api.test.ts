@@ -1,6 +1,7 @@
 import { describe, expect, it, mock, beforeEach, afterEach } from 'bun:test';
 import { send, GET, POST, PUT, DELETE, setFetch } from '../../src/apis/api';
 import { createMockFetch } from '../setup';
+import { ReadableStream } from 'node:stream/web';
 
 describe('API Client', () => {
 	let originalEnv: NodeJS.ProcessEnv;
@@ -175,6 +176,66 @@ describe('API Client', () => {
 			);
 
 			expect(result.json).toBeNull();
+		});
+
+		it('should set duplex to "half" when body is ReadableStream', async () => {
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue('test data');
+					controller.close();
+				}
+			});
+
+			await send({
+				method: 'POST',
+				path: '/test',
+				body: stream,
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			expect(options?.duplex).toBe('half');
+		});
+
+		it('should not set duplex when body is not ReadableStream', async () => {
+			await send({
+				method: 'POST',
+				path: '/test',
+				body: 'string body',
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			expect(options?.duplex).toBeUndefined();
+		});
+
+		it('should not set duplex when body is Blob', async () => {
+			const blob = new Blob(['test data'], { type: 'text/plain' });
+
+			await send({
+				method: 'POST',
+				path: '/test',
+				body: blob,
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			expect(options?.duplex).toBeUndefined();
+		});
+
+		it('should not set duplex when body is FormData', async () => {
+			const formData = new FormData();
+			formData.append('key', 'value');
+
+			await send({
+				method: 'POST',
+				path: '/test',
+				body: formData,
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			expect(options?.duplex).toBeUndefined();
 		});
 	});
 

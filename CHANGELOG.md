@@ -1,5 +1,61 @@
 # @agentuity/sdk Changelog
 
+## 0.0.145
+
+### Patch Changes
+
+- 25bb67d: Fix malformed From headers in email replies that caused parsing errors in backend ([#174](https://github.com/agentuity/sdk-js/pull/174))
+
+## 0.0.144
+
+### Patch Changes
+
+- Issues between streaming for node and bun and keep alive differences
+
+## 0.0.143
+
+### Patch Changes
+
+- c9e094b: Use traceloop for otel for consistency across Python and TS SDK's
+
+## 0.0.142
+
+### Patch Changes
+
+- Some APIs like object store were timing out after 20s with a large document upload. Remove the premature timeout
+
+## 0.0.141
+
+### Patch Changes
+
+- 7013333: Restructured slack IO and payloads.
+- 4654067: Fix email attachment parsing for Slack-formatted filenames
+- 654cfc1: Use sessionId instead of runId for AgentContext to better align with how we reference it.
+
+## 0.0.140
+
+### Fixed
+
+- Fix cloud runs for teams agents with improved credential validation and metadata-driven configuration ([#162](https://github.com/agentuity/sdk-js/pull/162))
+
+## 0.0.139
+
+### Patch Changes
+
+- Added teams support ([#161](https://github.com/agentuity/sdk-js/pull/161))
+
+## 0.0.138
+
+### Patch Changes
+
+- Fix the sms error ([#158](https://github.com/agentuity/sdk-js/pull/158))
+
+## 0.0.137
+
+### Patch Changes
+
+- Expose ts and ts_thread in the payload for Slack IO integration ([#157](https://github.com/agentuity/sdk-js/pull/157))
+
 ## 0.0.136
 
 ### Patch Changes

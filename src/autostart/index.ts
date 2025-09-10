@@ -1,8 +1,8 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import yml from 'js-yaml';
-import { existsSync, readFileSync } from 'node:fs';
-import { createServer, createServerContext } from '../server';
 import { registerOtel } from '../otel';
+import { createServer, createServerContext } from '../server';
 import type { AgentConfig } from '../types';
 
 /**
@@ -130,6 +130,7 @@ export async function run(config: AutostartConfig) {
 		await server.stop();
 		await otel.shutdown();
 	};
+
 	process.on('beforeExit', shutdown);
 	process.on('SIGINT', shutdown);
 	process.on('SIGTERM', shutdown);

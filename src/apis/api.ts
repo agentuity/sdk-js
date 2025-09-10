@@ -1,4 +1,5 @@
 import { getSDKVersion } from '../router/router';
+import { isReadableStream } from '../types';
 
 // allow the fetch function to be overridden
 let apiFetch = globalThis.fetch;
@@ -111,13 +112,15 @@ export async function send<K>(
 	}
 	// this shouldn't be overridden
 	headers.Authorization = `Bearer ${apiKey}`;
-	const resp = await apiFetch(url, {
+	const init: RequestInit & { duplex?: 'half' } = {
 		method: request.method,
 		body: request.body,
 		headers,
 		keepalive: true,
-		signal: AbortSignal.timeout(request.timeout || 20_000),
-	});
+		signal: request.timeout ? AbortSignal.timeout(request.timeout) : undefined,
+		duplex: isReadableStream(request.body) ? 'half' : undefined,
+	};
+	const resp = await apiFetch(url, init);
 	let json: K | null = null;
 	switch (resp.status) {
 		case 429: {

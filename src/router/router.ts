@@ -1,30 +1,31 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ReadableStream } from 'node:stream/web';
 import {
-	SpanStatusCode,
-	type Exception,
-	type Tracer,
-	type Span,
 	context,
-	trace,
+	type Exception,
 	type Meter,
+	type Span,
+	SpanStatusCode,
+	type Tracer,
+	trace,
 	ValueType,
 } from '@opentelemetry/api';
-import type { ServerRoute, ServerRequest } from '../server/types';
+import type { Logger } from '../logger';
+import AgentResolver from '../server/agents';
+import { HandlerParameterProvider } from '../server/handlerParameterProvider';
+import type { ServerRequest, ServerRoute } from '../server/types';
 import type {
-	AgentHandler,
+	AgentConfig,
 	AgentContext,
+	AgentHandler,
+	AgentRedirectResponse,
 	AgentResponseData,
 	GetAgentRequestParams,
-	RemoteAgent,
-	AgentConfig,
-	AgentRedirectResponse,
 	ReadableDataType,
+	RemoteAgent,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
-import type { Logger } from '../logger';
-import AgentResolver from '../server/agents';
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -218,10 +219,10 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		if (req.headers['x-agentuity-runid']) {
 			runId = req.headers['x-agentuity-runid'];
 			if (runId) {
-				// biome-ignore lint/performance/noDelete:
+				// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 				delete req.headers['x-agentuity-runid'];
 				if (req.request?.metadata?.['runid'] === runId) {
-					// biome-ignore lint/performance/noDelete:
+					// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 					delete req.request.metadata['runid'];
 				}
 			}
@@ -317,63 +318,79 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							resolver.getAgent(params),
 						scope: req.request.scope,
 					} as AgentContext;
-					try {
-						let handlerResponse = await config.handler(
-							request,
-							response,
-							contextObj
-						);
 
-						if (handlerResponse === undefined) {
-							throw new Error(
-								'handler returned undefined instead of a response'
-							);
+					// Wrap handler execution in AsyncLocalStorage scope for thread-safe parameter access
+					return await HandlerParameterProvider.run(
+						request,
+						response,
+						contextObj,
+						async () => {
+							try {
+								let handlerResponse = await config.handler(
+									request,
+									response,
+									contextObj
+								);
+
+								if (handlerResponse === undefined) {
+									throw new Error(
+										'handler returned undefined instead of a response'
+									);
+								}
+
+								if (handlerResponse === null) {
+									throw new Error(
+										'handler returned null instead of a response'
+									);
+								}
+
+								if (handlerResponse instanceof Response) {
+									return await handlerResponse;
+								}
+
+								if (typeof handlerResponse === 'string') {
+									handlerResponse = await response.text(handlerResponse);
+								} else if (
+									'contentType' in handlerResponse &&
+									'payload' in handlerResponse
+								) {
+									const r = handlerResponse as AgentResponseData;
+									handlerResponse = {
+										data: r.data,
+										metadata: r.metadata,
+									};
+								} else if (
+									'redirect' in handlerResponse &&
+									handlerResponse.redirect &&
+									'agent' in handlerResponse
+								) {
+									const redirect = handlerResponse as AgentRedirectResponse;
+									const agent = await contextObj.getAgent(redirect.agent);
+									req.setTimeout(255); // increase the timeout for the redirect
+									const redirectResponse = await agentRedirectRun(
+										logger,
+										config,
+										config.context.agent,
+										agent,
+										[
+											redirect.invocation ?? {
+												...req.request,
+												data: request.data,
+											},
+										]
+									);
+									span.setStatus({ code: SpanStatusCode.OK });
+									return redirectResponse;
+								}
+
+								span.setStatus({ code: SpanStatusCode.OK });
+								return handlerResponse;
+							} catch (err) {
+								recordException(span, err);
+								throw err;
+							}
 						}
-
-						if (handlerResponse === null) {
-							throw new Error('handler returned null instead of a response');
-						}
-
-						if (handlerResponse instanceof Response) {
-							return await handlerResponse;
-						}
-
-						if (typeof handlerResponse === 'string') {
-							handlerResponse = await response.text(handlerResponse);
-						} else if (
-							'contentType' in handlerResponse &&
-							'payload' in handlerResponse
-						) {
-							const r = handlerResponse as AgentResponseData;
-							handlerResponse = {
-								data: r.data,
-								metadata: r.metadata,
-							};
-						} else if (
-							'redirect' in handlerResponse &&
-							handlerResponse.redirect &&
-							'agent' in handlerResponse
-						) {
-							const redirect = handlerResponse as AgentRedirectResponse;
-							const agent = await contextObj.getAgent(redirect.agent);
-							req.setTimeout(255); // increase the timeout for the redirect
-							const redirectResponse = await agentRedirectRun(
-								logger,
-								config,
-								config.context.agent,
-								agent,
-								[redirect.invocation ?? { ...req.request, data: request.data }]
-							);
-							span.setStatus({ code: SpanStatusCode.OK });
-							return redirectResponse;
-						}
-
-						span.setStatus({ code: SpanStatusCode.OK });
-						return handlerResponse;
-					} catch (err) {
-						recordException(span, err);
-						throw err;
-					}
+					);
 				});
 			});
 		} finally {

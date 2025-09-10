@@ -1,11 +1,18 @@
 import { ReadableStream } from 'node:stream/web';
-import type { Data, ReadableDataType, Json, JsonObject } from '../types';
-import { safeParse } from '../server/util';
-import { parseEmail, type Email } from '../io/email';
 import { type DiscordMessage, parseDiscordMessage } from '../io/discord';
-import { parseSms, type Sms } from '../io/sms';
-import { parseTelegram, type Telegram } from '../io/telegram';
+import { type Email, parseEmail } from '../io/email';
 import { parseSlack, type Slack } from '../io/slack';
+import { parseSms, type Sms } from '../io/sms';
+import {
+	parseTeams,
+	parseTeamsCustomBot,
+	type Teams,
+	type TeamsCustomBot,
+} from '../io/teams';
+import type { AgentuityTeamsActivityHandlerConstructor } from '../io/teams/AgentuityTeamsActivityHandler';
+import { parseTelegram, type Telegram } from '../io/telegram';
+import { safeParse } from '../server/util';
+import type { Data, Json, JsonObject, ReadableDataType } from '../types';
 
 const invalidJsonSymbol = Symbol('invalid json');
 
@@ -94,8 +101,8 @@ export class DataHandler implements Data {
 					// propagate cancellation to the underlying source
 					if (reader && typeof reader.cancel === 'function') {
 						try {
-							await reader.cancel(err);
-						} catch (ex) {
+						await reader.cancel(err);
+						} catch (_ex) {
 							// ignore
 						}
 					}
@@ -104,7 +111,7 @@ export class DataHandler implements Data {
 					if (reader && typeof reader.releaseLock === 'function') {
 						try {
 							reader.releaseLock();
-						} catch (ex) {
+						} catch (_ex) {
 							// ignore
 						}
 					}
@@ -175,7 +182,7 @@ export class DataHandler implements Data {
 
 	async blob(): Promise<Blob> {
 		const data = await this.data();
-		return new Blob([data], { type: this.contentType });
+		return new Blob([data] as BlobPart[], { type: this.contentType });
 	}
 
 	async arrayBuffer(): Promise<ArrayBuffer> {
@@ -275,15 +282,21 @@ export class DataHandler implements Data {
 		}
 		const data = await this.data();
 
-		// Get message type from metadata, default to 'slack-event'
-		const messageType = this._metadata?.['msg-type'] as
-			| 'slack-event'
-			| 'slack-message'
-			| undefined;
-		const slackMessageType: 'slack-event' | 'slack-message' =
-			messageType === 'slack-message' ? 'slack-message' : 'slack-event';
+		return parseSlack(data);
+	}
 
-		return parseSlack(data, slackMessageType);
+	async teams(): Promise<Teams>;
+	async teams(
+		botClass: AgentuityTeamsActivityHandlerConstructor
+	): Promise<TeamsCustomBot>;
+	async teams(
+		botClass?: AgentuityTeamsActivityHandlerConstructor
+	): Promise<Teams | TeamsCustomBot> {
+		const data = await this.data();
+		if (botClass) {
+			return parseTeamsCustomBot(data, botClass, this._metadata ?? {});
+		}
+		return parseTeams(data, this._metadata ?? {});
 	}
 
 	private isTextChunkable() {

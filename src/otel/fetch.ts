@@ -1,8 +1,8 @@
 import {
 	context,
-	trace,
 	propagation,
 	SpanStatusCode,
+	trace,
 } from '@opentelemetry/api';
 
 /**
@@ -20,7 +20,7 @@ export function instrumentFetch() {
 	const patch = async (
 		input: string | Request | URL,
 		init: RequestInit | undefined
-	) => {
+	): Promise<Response> => {
 		const url =
 			typeof input === 'string'
 				? input
@@ -105,5 +105,5 @@ export function instrumentFetch() {
 			childSpan.end();
 		}
 	};
-	globalThis.fetch = patch;
+	globalThis.fetch = patch as typeof fetch;
 }

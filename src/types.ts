@@ -1,11 +1,18 @@
-import type { Meter, Tracer } from '@opentelemetry/api';
-import type { Logger } from './logger';
 import type { ReadableStream } from 'node:stream/web';
-import type { Email } from './io/email';
+import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
+import type { Email } from './io/email';
+import type {
+	Slack,
+	SlackAttachmentsMessage,
+	SlackBlocksMessage,
+	SlackReplyOptions,
+} from './io/slack';
 import type { Sms } from './io/sms';
+import type { Teams, TeamsCustomBot } from './io/teams';
+import type { AgentuityTeamsActivityHandlerConstructor } from './io/teams/AgentuityTeamsActivityHandler';
 import type { Telegram } from './io/telegram';
-import type { Slack, SlackReply } from './io/slack';
+import type { Logger } from './logger';
 
 /**
  * Types of triggers that can initiate an agent request
@@ -22,7 +29,7 @@ export type TriggerType =
 	| 'discord'
 	| 'telegram'
 	| 'slack'
-	| 'agent';
+	| 'teams';
 
 /**
  * The scope of the agent invocation
@@ -100,6 +107,17 @@ export interface Data {
 	 * the slack message data represented as a Slack. If the data is not a valid slack message, this will throw an error.
 	 */
 	slack(): Promise<Slack>;
+
+	/**
+	 * the teams message data represented as a Teams. If the data is not a valid teams message, this will throw an error.
+	 */
+	teams(): Promise<Teams>;
+	teams(
+		botClass: AgentuityTeamsActivityHandlerConstructor
+	): Promise<TeamsCustomBot>;
+	teams(
+		botClass?: AgentuityTeamsActivityHandlerConstructor
+	): Promise<Teams | TeamsCustomBot>;
 }
 
 /**
@@ -135,7 +153,7 @@ export type DataType =
 /**
  * check if a value is a ReadableStream
  */
-function isReadableStream(value: unknown): value is ReadableStream {
+export function isReadableStream(value: unknown): value is ReadableStream {
 	if (typeof value === 'object' && value !== null) {
 		return 'getReader' in value;
 	}
@@ -547,7 +565,8 @@ export interface SlackService {
 	sendReply(
 		req: AgentRequest,
 		ctx: AgentContext,
-		reply: string | SlackReply
+		reply: string | SlackBlocksMessage | SlackAttachmentsMessage,
+		options?: SlackReplyOptions
 	): Promise<void>;
 }
 
@@ -741,7 +760,13 @@ export interface AgentContext {
 	devmode: boolean;
 
 	/**
+	 * the session id
+	 */
+	sessionId: string;
+
+	/**
 	 * the run id
+	 * @deprecated Use sessionId instead
 	 */
 	runId: string;
 

@@ -1,21 +1,20 @@
-import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import type { Tracer, Meter } from '@opentelemetry/api';
-import type { Server, UnifiedServerConfig } from './types';
+import { join } from 'node:path';
+import type { Meter, Tracer } from '@opentelemetry/api';
+import DiscordAPI from '../apis/discord';
+import EmailAPI from '../apis/email';
+import KeyValueAPI from '../apis/keyvalue';
+import ObjectStoreAPI from '../apis/objectstore';
+import VectorAPI from '../apis/vector';
+import type { Logger } from '../logger';
+import { createRouter } from '../router';
 import type {
 	AgentConfig,
 	AgentContext,
 	AgentHandler,
 	AgentWelcome,
 } from '../types';
-import type { Logger } from '../logger';
-import type { ServerRoute } from './types';
-import { createRouter } from '../router';
-import KeyValueAPI from '../apis/keyvalue';
-import VectorAPI from '../apis/vector';
-import EmailAPI from '../apis/email';
-import DiscordAPI from '../apis/discord';
-import ObjectStoreAPI from '../apis/objectstore';
+import type { Server, ServerRoute, UnifiedServerConfig } from './types';
 import PromptAPI from '../apis/prompt';
 
 /**
@@ -52,9 +51,19 @@ async function createRoute(
 	agent: AgentConfig,
 	port: number
 ): Promise<ServerRoute> {
-	const mod = await import(filename);
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	let mod: any;
+	try {
+		mod = await import(filename);
+	} catch (error) {
+		console.error('Error importing module', error);
+		throw new Error(`Error importing module ${filename}: ${error}`);
+	}
+
 	let thehandler: AgentHandler | undefined;
+
 	let thewelcome: AgentWelcome | undefined;
+
 	if (mod.default) {
 		thehandler = mod.default;
 	} else {
@@ -150,9 +159,17 @@ interface ServerContextRequest {
 	projectId?: string;
 	deploymentId?: string;
 	runId?: string;
+	sessionId?: string;
 	devmode?: boolean;
 	sdkVersion: string;
 	agents: AgentConfig[];
+}
+
+/**
+ * Ensures sessionId has the sess_ prefix
+ */
+function ensureSessionIdPrefix(sessionId: string): string {
+	return sessionId.startsWith('sess_') ? sessionId : `sess_${sessionId}`;
 }
 
 const kv = new KeyValueAPI();
@@ -169,9 +186,13 @@ const prompt = new PromptAPI();
  * @returns An agent context object
  */
 export function createServerContext(req: ServerContextRequest): AgentContext {
+	// Use sessionId if provided, otherwise fallback to runId, and ensure sess_ prefix
+	const sessionId = ensureSessionIdPrefix(req.sessionId || req.runId || '');
+
 	return {
 		devmode: req.devmode,
-		runId: req.runId,
+		sessionId,
+		runId: sessionId, // For backward compatibility, runId = sessionId
 		deploymentId: req.deploymentId,
 		projectId: req.projectId,
 		orgId: req.orgId,

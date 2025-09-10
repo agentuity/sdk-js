@@ -1,9 +1,9 @@
 import { inspect } from 'node:util';
-import type { AgentRequest, AgentContext } from '../types';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { POST } from '../apis/api';
+import { getTracer, recordException } from '../router/router';
 import { safeStringify } from '../server/util';
+import type { AgentContext, AgentRequest } from '../types';
 
 type TwilioResponse = {
 	Body: string;
@@ -95,7 +95,7 @@ export class Sms {
 					return;
 				}
 				throw new Error(
-					`error sending email reply: ${resp.response.statusText} (${resp.response.status})`
+					`error sending sms reply: ${resp.response.statusText} (${resp.response.status})`
 				);
 			});
 		} catch (ex) {

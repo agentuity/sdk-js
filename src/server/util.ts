@@ -1,18 +1,18 @@
-import { SpanStatusCode } from '@opentelemetry/api';
+import { ReadableStream } from 'node:stream/web';
 import type { Span } from '@opentelemetry/api';
+import { SpanStatusCode } from '@opentelemetry/api';
 import { DataHandler } from '../router/data';
 import type {
+	AgentInvocationScope,
 	AgentResponseData,
+	AgentWelcomePrompt,
 	DataType,
 	JsonObject,
 	ReadableDataType,
 	TriggerType,
-	AgentWelcomePrompt,
-	AgentInvocationScope,
 } from '../types';
 import { injectTraceContextToHeaders } from './otel';
 import type { IncomingRequest, ServerRoute } from './types';
-import { ReadableStream } from 'node:stream/web';
 
 export function safeStringify(obj: unknown) {
 	const seen = new WeakSet();

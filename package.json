@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.136",
+	"version": "0.0.145",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
@@ -8,7 +8,10 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"type": "module",
-	"files": ["dist/**/*", "LICENSE.md"],
+	"files": [
+		"dist/**/*",
+		"LICENSE.md"
+	],
 	"engines": {
 		"node": ">=22"
 	},
@@ -21,9 +24,17 @@
 	"bugs": {
 		"url": "https://github.com/agenuity/sdk-js/issues"
 	},
-	"keywords": ["ai", "agents", "agentuity", "ai agent", "agent"],
+	"keywords": [
+		"ai",
+		"agents",
+		"agentuity",
+		"ai agent",
+		"agent"
+	],
 	"tsup": {
-		"entry": ["src/index.ts"],
+		"entry": [
+			"src/index.ts"
+		],
 		"format": "esm",
 		"splitting": false,
 		"sourcemap": true,
@@ -36,6 +47,7 @@
 		"node:start": "npm run build && node ./dist/index.js",
 		"format": "npx @biomejs/biome format --write",
 		"lint": "npx @biomejs/biome lint --write",
+		"organize-imports": "npx @biomejs/biome check --formatter-enabled=false --linter-enabled=false --write src",
 		"changeset": "npx @changesets/cli",
 		"version": "npx @changesets/cli version",
 		"release": "npm run build && npx @changesets/cli publish && git push --follow-tags",
@@ -51,7 +63,7 @@
 		}
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
+		"@biomejs/biome": "2.1.2",
 		"@types/bun": "latest",
 		"@types/js-yaml": "^4.0.9",
 		"@types/mailparser": "^3.4.6",
@@ -59,6 +71,7 @@
 		"tsup": "^8.4.0"
 	},
 	"peerDependencies": {
+		"botbuilder": "^4.23.2",
 		"typescript": "^5"
 	},
 	"overrides": {
@@ -78,6 +91,7 @@
 		"@opentelemetry/sdk-metrics": "^1.30.1",
 		"@opentelemetry/sdk-node": "^0.57.2",
 		"@opentelemetry/semantic-conventions": "^1.30.0",
+		"@traceloop/node-server-sdk": "^0.18.1",
 		"js-yaml": "^4.1.0",
 		"mailparser": "^3.7.4",
 		"nodemailer": "^7.0.3"

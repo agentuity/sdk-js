@@ -205,4 +205,12 @@ export const mockOpenTelemetry = () => {
 			WARN: 13,
 		},
 	}));
+
+	mock.module('@traceloop/node-server-sdk', () => ({
+		Traceloop: {
+			init: () => {
+				return;
+			},
+		},
+	}));
 };

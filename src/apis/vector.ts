@@ -1,14 +1,14 @@
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import { getTracer, recordException } from '../router/router';
+import { safeStringify } from '../server/util';
 import type {
-	VectorStorage,
-	VectorUpsertParams,
 	VectorSearchParams,
 	VectorSearchResult,
+	VectorStorage,
+	VectorUpsertParams,
 } from '../types';
 import { isJsonObject } from '../types';
 import { DELETE, GET, POST, PUT } from './api';
-import { getTracer, recordException } from '../router/router';
-import { context, trace, SpanStatusCode } from '@opentelemetry/api';
-import { safeStringify } from '../server/util';
 
 /**
  * Response for a successful vector upsert operation
