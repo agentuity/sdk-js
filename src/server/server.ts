@@ -15,6 +15,7 @@ import type {
 	AgentWelcome,
 } from '../types';
 import type { Server, ServerRoute, UnifiedServerConfig } from './types';
+import PromptAPI from '../apis/prompt';
 
 /**
  * Creates a unified server based on the runtime environment
@@ -176,6 +177,7 @@ const vector = new VectorAPI();
 const email = new EmailAPI();
 const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
+const prompt = new PromptAPI();
 
 /**
  * Creates an agent context for server operations
@@ -202,6 +204,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		email,
 		discord,
 		objectstore,
+		prompt,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
 		scope: 'local',

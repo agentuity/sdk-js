@@ -5,7 +5,9 @@ export * from './types';
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
-export { EmailAPI, DiscordAPI };
+import PromptAPI from './apis/prompt';
+export { EmailAPI, DiscordAPI, PromptAPI };
+
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';
