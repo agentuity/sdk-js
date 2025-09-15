@@ -68,6 +68,95 @@ interface OtelResponse {
 const devmodeExportInterval = 1_000; // 1 second
 const productionExportInterval = 10_000; // 10 seconds
 
+
+export const createResource = (config: OtelConfig): Resource => {
+	const {
+		name,
+		version,
+		orgId,
+		projectId,
+		deploymentId,
+		environment,
+		devmode,
+		sdkVersion,
+		cliVersion,
+	} = config;
+
+	return new Resource({
+		[ATTR_SERVICE_NAME]: name,
+		[ATTR_SERVICE_VERSION]: version,
+		'@agentuity/orgId': orgId ?? 'unknown',
+		'@agentuity/projectId': projectId ?? 'unknown',
+		'@agentuity/deploymentId': deploymentId ?? 'unknown',
+		'@agentuity/env': environment,
+		'@agentuity/devmode': devmode,
+		'@agentuity/sdkVersion': sdkVersion ?? 'unknown',
+		'@agentuity/cliVersion': cliVersion ?? 'unknown',
+	});
+};
+
+export const createAgentuityLoggerProvider = ({
+	url,
+	headers,
+	resource,
+}: {
+	url?: string,
+	headers?: Record<string, string>,
+	resource: Resource;
+}) => {
+
+	let processor: LogRecordProcessor | undefined;
+	let exporter: OTLPLogExporter | undefined;
+
+	if (url) {
+		exporter = new OTLPLogExporter({
+			url: `${url}/v1/logs`,
+			headers,
+			compression: CompressionAlgorithm.GZIP,
+			timeoutMillis: 10_000,
+		});
+		processor = new BatchLogRecordProcessor(exporter);
+	} else {
+		processor = new SimpleLogRecordProcessor(
+			new ConsoleLogRecordExporter()
+		);
+	}
+	const provider = new LoggerProvider({
+		resource,
+	});
+	provider.addLogRecordProcessor(processor);
+	LogsAPI.logs.setGlobalLoggerProvider(provider);
+
+	return {
+		processor,
+		provider,
+		exporter,
+	};
+};
+
+export const createUserLoggerProvider = ({
+	url,
+	headers,
+	resource,
+}: {
+	url?: string,
+	headers?: Record<string, string>,
+	resource: Resource;
+}) => {
+	let exporter = new OTLPLogExporter({
+		url: `${url}/v1/logs`,
+		headers,
+		compression: CompressionAlgorithm.GZIP,
+		timeoutMillis: 10_000,
+	});
+	const processor = new BatchLogRecordProcessor(exporter);
+	const provider = new LoggerProvider({
+		resource,
+	});
+	provider.addLogRecordProcessor(processor);
+	return provider.getLogger('default');
+};
+
 /**
  * Registers and initializes OpenTelemetry with the specified configuration
  *
@@ -81,8 +170,6 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		version,
 		bearerToken,
 		environment = 'development',
-		sdkVersion,
-		cliVersion,
 		orgId,
 		projectId,
 		deploymentId,
@@ -96,41 +183,12 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		headers.Authorization = `Bearer ${bearerToken}`;
 	}
 
-	const resource = new Resource({
-		[ATTR_SERVICE_NAME]: name,
-		[ATTR_SERVICE_VERSION]: version,
-		'@agentuity/orgId': orgId ?? 'unknown',
-		'@agentuity/projectId': projectId ?? 'unknown',
-		'@agentuity/deploymentId': deploymentId ?? 'unknown',
-		'@agentuity/env': environment,
-		'@agentuity/devmode': devmode,
-		'@agentuity/sdkVersion': sdkVersion ?? 'unknown',
-		'@agentuity/cliVersion': cliVersion ?? 'unknown',
-	});
-
-	let otlpLogExporter: OTLPLogExporter | undefined;
-	let logRecordProcessor: LogRecordProcessor | undefined;
-
-	if (url) {
-		otlpLogExporter = new OTLPLogExporter({
-			url: `${url}/v1/logs`,
-			headers,
-			compression: CompressionAlgorithm.GZIP,
-			timeoutMillis: 10_000,
-		});
-		logRecordProcessor = new BatchLogRecordProcessor(otlpLogExporter);
-	} else {
-		logRecordProcessor = new SimpleLogRecordProcessor(
-			new ConsoleLogRecordExporter()
-		);
-	}
-
-	const loggerProvider = new LoggerProvider({
+	const resource = createResource(config);
+	const loggerProvider = createAgentuityLoggerProvider({
+		url,
+		headers,
 		resource,
 	});
-	loggerProvider.addLogRecordProcessor(logRecordProcessor);
-	LogsAPI.logs.setGlobalLoggerProvider(loggerProvider);
-
 	const logger = createLogger(!!url);
 
 	// must do this after we have created the logger
@@ -145,53 +203,54 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 
 	const traceExporter = url
 		? new OTLPTraceExporter({
-				url: `${url}/v1/traces`,
-				headers,
-				keepAlive: true,
-			})
+			url: `${url}/v1/traces`,
+			headers,
+			keepAlive: true,
+		})
 		: undefined;
 
 	const metricExporter = url
 		? new OTLPMetricExporter({
-				url: `${url}/v1/metrics`,
-				headers,
-				keepAlive: true,
-			})
+			url: `${url}/v1/metrics`,
+			headers,
+			keepAlive: true,
+		})
 		: undefined;
+
 
 	// Create a separate metric reader for the NodeSDK
 	const sdkMetricReader =
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
-					exporter: metricExporter,
-					exportTimeoutMillis: devmode
-						? devmodeExportInterval
-						: productionExportInterval,
-					exportIntervalMillis: devmode
-						? devmodeExportInterval
-						: productionExportInterval,
-				})
+				exporter: metricExporter,
+				exportTimeoutMillis: devmode
+					? devmodeExportInterval
+					: productionExportInterval,
+				exportIntervalMillis: devmode
+					? devmodeExportInterval
+					: productionExportInterval,
+			})
 			: undefined;
 
 	// Create a separate metric reader for the MeterProvider
 	const hostMetricReader =
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
-					exporter: metricExporter,
-					exportTimeoutMillis: devmode
-						? devmodeExportInterval
-						: productionExportInterval,
-					exportIntervalMillis: devmode
-						? devmodeExportInterval
-						: productionExportInterval,
-				})
+				exporter: metricExporter,
+				exportTimeoutMillis: devmode
+					? devmodeExportInterval
+					: productionExportInterval,
+				exportIntervalMillis: devmode
+					? devmodeExportInterval
+					: productionExportInterval,
+			})
 			: undefined;
 
 	const meterProvider = hostMetricReader
 		? new MeterProvider({
-				resource,
-				readers: [hostMetricReader],
-			})
+			resource,
+			readers: [hostMetricReader],
+		})
 		: undefined;
 
 	if (meterProvider) {
@@ -216,7 +275,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 
 		instrumentFetch();
 		instrumentationSDK = new NodeSDK({
-			logRecordProcessor,
+			logRecordProcessor: loggerProvider.processor,
 			traceExporter,
 			metricReader: sdkMetricReader,
 			instrumentations: [getNodeAutoInstrumentations()],
@@ -225,7 +284,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		});
 		instrumentationSDK.start();
 		hostMetrics?.start();
-		
+
 		try {
 			const projectName = config.projectId || '';
 			const orgName = config.orgId || '';
@@ -238,7 +297,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 
 			initialize({
 				appName,
-				baseUrl: url, 
+				baseUrl: url,
 				headers: traceloopHeaders,
 				disableBatch: devmode,
 				tracingEnabled: false, // Disable traceloop's own tracing (equivalent to Python's telemetryEnabled: false)
@@ -259,12 +318,12 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		if (running) {
 			running = false;
 			logger.debug('shutting down OpenTelemetry');
-			await otlpLogExporter
+			await loggerProvider.exporter
 				?.forceFlush()
 				.catch((e) =>
 					logger.warn('error in forceFlush of otel exporter. %s', e)
 				);
-			await otlpLogExporter
+			await loggerProvider.exporter
 				?.shutdown()
 				.catch(
 					(e) =>

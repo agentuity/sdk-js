@@ -1,9 +1,24 @@
+import yml from 'js-yaml';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import yml from 'js-yaml';
-import { registerOtel } from '../otel';
+import { createResource, createUserLoggerProvider, registerOtel } from '../otel';
+import { OtelLogger } from '../otel/logger';
 import { createServer, createServerContext } from '../server';
 import type { AgentConfig } from '../types';
+import { Resource } from '@opentelemetry/resources';
+
+/**
+ * Configuration for user provided OpenTelemetry
+ */
+interface UserOpenTelemetryConfig {
+	endpoint: string;
+	protocol: 'grpc' | 'http/protobuf' | 'http/json';
+	serviceName: string;
+	environment: string;
+	samplingRate: number;
+	resourceAttributes: Record<string, string>;
+	headers: Record<string, string>;
+}
 
 /**
  * Configuration for auto-starting the Agentuity SDK
@@ -22,6 +37,7 @@ interface AutostartConfig {
 		url?: string;
 		bearerToken?: string;
 	};
+	userOtelConf?: UserOpenTelemetryConfig;
 	agents: AgentConfig[];
 }
 
@@ -70,7 +86,7 @@ export async function run(config: AutostartConfig) {
 				const agentdir = data?.bundler?.agents?.dir;
 				if (agentdir && existsSync(agentdir)) {
 					config.agents = data.agents
-						.map((agent: { id: string; name: string }) => {
+						.map((agent: { id: string; name: string; }) => {
 							const filename = join(agentdir, agent.name, 'index.ts');
 							if (existsSync(filename)) {
 								return {
@@ -92,7 +108,7 @@ export async function run(config: AutostartConfig) {
 	const name = process.env.AGENTUITY_SDK_APP_NAME ?? 'unknown';
 	const version = process.env.AGENTUITY_SDK_APP_VERSION ?? 'unknown';
 	const sdkVersion = process.env.AGENTUITY_SDK_VERSION ?? 'unknown';
-	const otel = registerOtel({
+	const otelConfig = {
 		name,
 		version,
 		sdkVersion,
@@ -104,7 +120,22 @@ export async function run(config: AutostartConfig) {
 		bearerToken: config?.otlp?.bearerToken,
 		url: config?.otlp?.url,
 		environment: config.devmode ? 'development' : config.environment,
-	});
+	};
+	const otel = registerOtel(otelConfig);
+	if (config.userOtelConf) {
+
+		const resource = new Resource({
+			...createResource(otelConfig).attributes,
+			...config.userOtelConf.resourceAttributes,
+		});
+		const logger = createUserLoggerProvider({
+			url: config.userOtelConf.endpoint,
+			headers: config.userOtelConf.headers,
+			resource,
+		});
+		(otel.logger as OtelLogger).addDelegate(logger);
+	}
+
 	const server = await createServer({
 		context: createServerContext({
 			devmode: config.devmode,
