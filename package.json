@@ -16,13 +16,13 @@
 		"node": ">=22"
 	},
 	"author": "Agentuity",
-	"homepage": "https://agenuity.com",
+	"homepage": "https://agentuity.com",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/agenuity/sdk-js.git"
+		"url": "git+https://github.com/agentuity/sdk-js.git"
 	},
 	"bugs": {
-		"url": "https://github.com/agenuity/sdk-js/issues"
+		"url": "https://github.com/agentuity/sdk-js/issues"
 	},
 	"keywords": [
 		"ai",
