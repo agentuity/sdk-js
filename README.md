@@ -47,7 +47,7 @@ brew tap agentuity/tap && brew install agentuity
 
 ### Linux or Windows
 
-See the [Agentuity CLI](https://github.com/agenuity/cli) repository for installation instructions and releases.
+See the [Agentuity CLI](https://github.com/agentuity/cli) repository for installation instructions and releases.
 
 Once installed, you can create a new project with the following command:
 
@@ -70,7 +70,7 @@ Clone the repository and install dependencies:
 
 ```bash
 # Clone the repository
-git clone https://github.com/agenuity/sdk-js.git
+git clone https://github.com/agentuity/sdk-js.git
 cd sdk-js
 
 # Install dependencies using Bun (recommended)
