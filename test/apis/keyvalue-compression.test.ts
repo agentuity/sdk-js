@@ -27,7 +27,7 @@ describe('KeyValue API Compression', () => {
 			}
 		);
 
-		mockGET = mock((url: string, auth: boolean) => {
+		mockGET = mock((_url: string, _auth: boolean) => {
 			return Promise.resolve({
 				status: 200,
 				headers: {
@@ -68,7 +68,7 @@ describe('KeyValue API Compression', () => {
 		mock.module('@opentelemetry/api', () => ({
 			context: {
 				active: () => ({}),
-				with: (ctx: unknown, fn: () => unknown) => fn(),
+				with: (_ctx: unknown, fn: () => unknown) => fn(),
 			},
 			trace: {
 				setSpan: () => ({}),

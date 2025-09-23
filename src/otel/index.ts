@@ -225,7 +225,7 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 		});
 		instrumentationSDK.start();
 		hostMetrics?.start();
-		
+
 		try {
 			const projectName = config.projectId || '';
 			const orgName = config.orgId || '';
@@ -238,16 +238,19 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 
 			initialize({
 				appName,
-				baseUrl: url, 
+				baseUrl: url,
 				headers: traceloopHeaders,
-				disableBatch: devmode,
+				disableBatch: false,
 				tracingEnabled: false, // Disable traceloop's own tracing (equivalent to Python's telemetryEnabled: false)
 				// Note: JavaScript SDK doesn't support resourceAttributes like Python
 			});
 			logger.debug(`Traceloop initialized with app_name: ${appName}`);
 			logger.info('Traceloop configured successfully');
 		} catch (error) {
-			logger.warn('Traceloop not available, skipping automatic instrumentation', { error: error instanceof Error ? error.message : String(error) });
+			logger.warn(
+				'Traceloop not available, skipping automatic instrumentation',
+				{ error: error instanceof Error ? error.message : String(error) }
+			);
 		}
 		running = true;
 	}

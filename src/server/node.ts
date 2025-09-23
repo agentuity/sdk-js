@@ -31,8 +31,8 @@ export class NodeServer implements Server {
 	private readonly logger: Logger;
 	private readonly port: number;
 	private readonly routes: ServerRoute[];
-	private server: ReturnType<typeof createHttpServer> | null = null;
 	private readonly sdkVersion: string;
+	private server: ReturnType<typeof createHttpServer> | null = null;
 
 	/**
 	 * Creates a new Node.js server
@@ -101,7 +101,7 @@ export class NodeServer implements Server {
 	 * Starts the server
 	 */
 	async start(): Promise<void> {
-		const { sdkVersion } = this;
+		const sdkVersion = this.sdkVersion;
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {

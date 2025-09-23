@@ -7,7 +7,7 @@ export type AgentuityTeamsActivityHandlerConstructor = new (
 	ctx: AgentContext
 ) => AgentuityTeamsActivityHandler;
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: prototype chain inspection requires any
 const checkPrototypeChain = (prototype: any): boolean => {
 	let current = prototype;
 	while (current) {

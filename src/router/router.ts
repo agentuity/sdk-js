@@ -26,6 +26,7 @@ import type {
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
+import AgentContextWaitUntilHandler from './context';
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -219,10 +220,8 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 		if (req.headers['x-agentuity-runid']) {
 			runId = req.headers['x-agentuity-runid'];
 			if (runId) {
-				// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 				delete req.headers['x-agentuity-runid'];
 				if (req.request?.metadata?.['runid'] === runId) {
-					// biome-ignore lint/performance/noDelete: remove header from request to avoid forwarding it
 					delete req.request.metadata['runid'];
 				}
 			}
@@ -288,7 +287,11 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 				logger,
 			};
 
-			return await asyncStorage.run(agentDetail, async () => {
+			const contextHandler = new AgentContextWaitUntilHandler(
+				config.context.tracer
+			);
+
+			const response = await asyncStorage.run(agentDetail, async () => {
 				return await context.with(spanContext, async () => {
 					const body = req.body
 						? (req.body as unknown as ReadableStream<ReadableDataType>)
@@ -317,6 +320,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 						getAgent: (params: GetAgentRequestParams) =>
 							resolver.getAgent(params),
 						scope: req.request.scope,
+						waitUntil: contextHandler.waitUntil.bind(contextHandler),
 					} as AgentContext;
 
 					// Wrap handler execution in AsyncLocalStorage scope for thread-safe parameter access
@@ -390,9 +394,25 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 								throw err;
 							}
 						}
-					);
+					).then((r) => {
+						contextHandler.waitUntilAll();
+						return r;
+					});
 				});
 			});
+			if (response) {
+				if (contextHandler.hasPending()) {
+					if (response instanceof Response) {
+						response.headers.set('x-agentuity-session-pending', 'true');
+					} else {
+						if (!response.metadata) {
+							response.metadata = {};
+						}
+						response.metadata['session-pending'] = 'true'; // let the upstream know that we are still processing
+					}
+				}
+			}
+			return response;
 		} finally {
 			executingCount--;
 			executing.record(executingCount, {

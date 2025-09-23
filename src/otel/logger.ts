@@ -231,6 +231,6 @@ export function patchConsole(
 		delegate.debug('profileEnd:', ...args);
 	};
 
-	// biome-ignore lint/suspicious/noGlobalAssign: <explanation>
+	// biome-ignore lint/suspicious/noGlobalAssign: patching console for logging integration
 	console = globalThis.console = _patch;
 }

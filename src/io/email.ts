@@ -468,7 +468,7 @@ export class Email {
 				'email authorization token is required but not found in metadata'
 			);
 		}
-		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: <explanation>
+		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: needed for complex async email operations
 		return new Promise<string>(async (resolve, reject) => {
 			try {
 				let attachments: Attachment[] = [];

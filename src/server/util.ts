@@ -16,7 +16,7 @@ import type { IncomingRequest, ServerRoute } from './types';
 
 export function safeStringify(obj: unknown) {
 	const seen = new WeakSet();
-	return JSON.stringify(obj, (key, value) => {
+	return JSON.stringify(obj, (_key, value) => {
 		if (typeof value === 'object' && value !== null) {
 			if (seen.has(value)) {
 				return '[Circular]';
@@ -33,7 +33,7 @@ export function safeParse(text: string, defaultValue?: unknown) {
 			return defaultValue;
 		}
 		return JSON.parse(text);
-	} catch (error) {
+	} catch (_error) {
 		return defaultValue;
 	}
 }
@@ -343,15 +343,12 @@ export function getRequestFromHeaders(
 	let scope: AgentInvocationScope = 'local';
 	if ('scope' in metadata) {
 		scope = metadata.scope as AgentInvocationScope;
-		// biome-ignore lint/performance/noDelete: deleting scope
 		delete metadata.scope;
 	}
 	if ('trigger' in metadata) {
 		trigger = metadata.trigger as TriggerType;
-		// biome-ignore lint/performance/noDelete: deleting scope
 		delete metadata.trigger;
 	}
-	// biome-ignore lint/performance/noDelete: deleting trigger
 	delete metadata.trigger;
 	return {
 		contentType: headers['content-type'] ?? 'application/octet-stream',

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import AgentRequestHandler from '../../src/router/request';
 import { ReadableStream } from 'node:stream/web';
-import type { TriggerType, JsonObject } from '../../src/types';
+import type { JsonObject } from '../../src/types';
 import '../setup'; // Import global test setup
 
 describe('AgentRequestHandler', () => {

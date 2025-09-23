@@ -50,7 +50,7 @@ async function createRoute(
 	agent: AgentConfig,
 	port: number
 ): Promise<ServerRoute> {
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: dynamic module loading requires any
 	let mod: any;
 	try {
 		mod = await import(filename);

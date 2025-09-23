@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { parseEmail, Email } from '../../src/io/email';
+import { parseEmail, } from '../../src/io/email';
 import { setupTestEnvironment } from '../setup';
 
 describe('Email Attachment Parsing', () => {
