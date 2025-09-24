@@ -21,6 +21,7 @@ import {
 	shouldIgnoreStaticFile,
 	toWelcomePrompt,
 } from './util';
+import { isIdle } from '../router/context';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
@@ -154,6 +155,13 @@ export class NodeServer implements Server {
 				});
 				res.end(safeStringify(result));
 				return;
+			}
+
+			if (req.method === 'GET' && req.url === '/_idle') {
+				if (isIdle()) {
+					return new Response('OK', { status: 200 });
+				}
+				return new Response('NO', { status: 200 });
 			}
 
 			if (req.method === 'GET' && req.url === '/welcome/') {

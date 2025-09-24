@@ -1,9 +1,21 @@
-import type { Tracer } from '@opentelemetry/api';
-import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import {
+	context,
+	SpanStatusCode,
+	trace,
+	type Tracer,
+} from '@opentelemetry/api';
+import { markSessionCompleted } from '../apis/session';
+import type { Logger } from '../logger';
+
+let running = 0;
+export function isIdle(): boolean {
+	return running === 0;
+}
 
 export default class AgentContextWaitUntilHandler {
 	private promises: (() => void | Promise<void>)[];
 	private tracer: Tracer;
+	private started: number | undefined;
 
 	public constructor(tracer: Tracer) {
 		this.tracer = tracer;
@@ -13,6 +25,10 @@ export default class AgentContextWaitUntilHandler {
 	public waitUntil(promise: () => void | Promise<void>): void {
 		const currentContext = context.active();
 		this.promises.push(async () => {
+			running++;
+			if (this.started === undefined) {
+				this.started = Date.now(); /// this first execution marks the start time
+			}
 			const span = this.tracer.startSpan('waitUntil', {}, currentContext);
 			const spanContext = trace.setSpan(currentContext, span);
 			try {
@@ -31,24 +47,18 @@ export default class AgentContextWaitUntilHandler {
 		return this.promises.length > 0;
 	}
 
-	public async waitUntilAll(): Promise<void> {
+	public async waitUntilAll(logger: Logger, sessionId: string): Promise<void> {
 		if (this.promises.length === 0) {
 			return;
 		}
-		const currentContext = context.active();
-		const span = this.tracer.startSpan('waitUntilAll', {}, currentContext);
-		span.setAttribute('count', this.promises.length);
-		const spanContext = trace.setSpan(currentContext, span);
 		try {
-			await context.with(spanContext, async () => {
-				await Promise.all(this.promises.map((p) => p()));
-			});
-			span.setStatus({ code: SpanStatusCode.OK });
+			await Promise.all(this.promises.map((p) => p()));
+			const duration = Date.now() - (this.started as number);
+			await markSessionCompleted(sessionId, duration);
 		} catch (ex) {
-			span.recordException(ex as Error);
-			span.setStatus({ code: SpanStatusCode.ERROR });
+			logger.error('error sending session completed', ex);
 		} finally {
-			span.end();
+			running -= this.promises.length;
 			this.promises.length = 0;
 		}
 	}

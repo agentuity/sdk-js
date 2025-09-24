@@ -101,7 +101,7 @@ export class DataHandler implements Data {
 					// propagate cancellation to the underlying source
 					if (reader && typeof reader.cancel === 'function') {
 						try {
-						await reader.cancel(err);
+							await reader.cancel(err);
 						} catch (_ex) {
 							// ignore
 						}

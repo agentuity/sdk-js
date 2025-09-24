@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { parseEmail, } from '../../src/io/email';
+import { parseEmail } from '../../src/io/email';
 import { setupTestEnvironment } from '../setup';
 
 describe('Email Attachment Parsing', () => {
@@ -28,13 +28,14 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('test.txt');
 	});
 
 	it('should handle Slack-formatted filename without url parameter', async () => {
-		const slackFilename = '<http://google.com|google.com>!<http://agentuity.com|agentuity.com>!1751328000!1751414399.zip';
+		const slackFilename =
+			'<http://google.com|google.com>!<http://agentuity.com|agentuity.com>!1751328000!1751414399.zip';
 		const emailContent = `From: test@example.com
 To: recipient@example.com
 Subject: Test Email with Slack Attachment
@@ -54,7 +55,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		
+
 		expect(() => email.attachments()).not.toThrow();
 		const attachments = email.attachments();
 		expect(attachments).toHaveLength(0);
@@ -80,7 +81,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		
+
 		expect(() => email.attachments()).not.toThrow();
 		const attachments = email.attachments();
 		expect(attachments).toHaveLength(0);
@@ -112,7 +113,7 @@ Invalid attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('valid.txt');
 	});
@@ -137,8 +138,10 @@ Attachment without filename
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		
-		expect(() => email.attachments()).toThrow('Invalid attachment headers: missing filename');
+
+		expect(() => email.attachments()).toThrow(
+			'Invalid attachment headers: missing filename'
+		);
 	});
 
 	it('should use filename fallback mechanisms', async () => {
@@ -162,7 +165,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('test-fallback.txt');
 	});
@@ -188,7 +191,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -213,7 +216,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -238,7 +241,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -263,7 +266,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -288,7 +291,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -313,7 +316,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].contentDisposition).toBe('inline');
 	});
@@ -354,7 +357,7 @@ Malformed URL attachment
 
 		const email = await parseEmail(Buffer.from(emailContent));
 		const attachments = email.attachments();
-		
+
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('valid.txt');
 	});
@@ -367,7 +370,7 @@ Malformed URL attachment
 			'100.64.0.1',
 			'169.254.1.1',
 			'127.0.0.1',
-			'0.0.0.0'
+			'0.0.0.0',
 		];
 
 		for (const ip of privateIPs) {
@@ -391,7 +394,7 @@ Test attachment content
 
 			const email = await parseEmail(Buffer.from(emailContent));
 			const attachments = email.attachments();
-			
+
 			expect(attachments).toHaveLength(0);
 		}
 	});
@@ -403,7 +406,7 @@ Test attachment content
 			'fe80::1',
 			'fc00::1',
 			'fd00::1',
-			'::ffff:192.168.1.1'
+			'::ffff:192.168.1.1',
 		];
 
 		for (const ip of blockedIPv6) {
@@ -427,17 +430,13 @@ Test attachment content
 
 			const email = await parseEmail(Buffer.from(emailContent));
 			const attachments = email.attachments();
-			
+
 			expect(attachments).toHaveLength(0);
 		}
 	});
 
 	it('should allow public IPv4 addresses', async () => {
-		const publicIPs = [
-			'8.8.8.8',
-			'1.1.1.1',
-			'208.67.222.222'
-		];
+		const publicIPs = ['8.8.8.8', '1.1.1.1', '208.67.222.222'];
 
 		for (const ip of publicIPs) {
 			const emailContent = `From: test@example.com
@@ -460,7 +459,7 @@ Test attachment content
 
 			const email = await parseEmail(Buffer.from(emailContent));
 			const attachments = email.attachments();
-			
+
 			expect(attachments).toHaveLength(1);
 			expect(attachments[0].filename).toBe('test.txt');
 		}

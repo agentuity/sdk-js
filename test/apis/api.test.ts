@@ -183,7 +183,7 @@ describe('API Client', () => {
 				start(controller) {
 					controller.enqueue('test data');
 					controller.close();
-				}
+				},
 			});
 
 			await send({

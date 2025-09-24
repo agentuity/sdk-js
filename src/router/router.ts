@@ -264,6 +264,8 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 				req.request.runId = runId;
 			}
 
+			const sessionId = `sess_${span.spanContext().traceId}`;
+
 			executingCount++;
 
 			requests.add(1, {
@@ -395,7 +397,7 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							}
 						}
 					).then((r) => {
-						contextHandler.waitUntilAll();
+						contextHandler.waitUntilAll(logger, sessionId);
 						return r;
 					});
 				});

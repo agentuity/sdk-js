@@ -31,7 +31,7 @@ class OtelLogger implements Logger {
 			return message;
 		}
 		try {
-		return safeStringify(message);
+			return safeStringify(message);
 		} catch (_err) {
 			// Handle circular references or other JSON stringification errors
 			return String(message);

@@ -70,8 +70,8 @@ describe('KeyValueAPI', () => {
 			}));
 
 			keyValueAPI.get = async (
-			_name: string,
-			_key: string
+				_name: string,
+				_key: string
 			): Promise<DataResult> => {
 				const result: DataResultFound = {
 					exists: true,
@@ -103,10 +103,10 @@ describe('KeyValueAPI', () => {
 			}));
 
 			keyValueAPI.get = async (
-			_name: string,
-			_key: string
+				_name: string,
+				_key: string
 			): Promise<DataResult> => {
-			const result: DataResultNotFound = {
+				const result: DataResultNotFound = {
 					exists: false,
 					data: undefined as never,
 				};
@@ -132,10 +132,10 @@ describe('KeyValueAPI', () => {
 			}));
 
 			keyValueAPI.get = async (
-			_name: string,
-			_key: string
+				_name: string,
+				_key: string
 			): Promise<DataResult> => {
-			throw new Error('Internal Server Error');
+				throw new Error('Internal Server Error');
 			};
 
 			await expect(keyValueAPI.get('test-store', 'test-key')).rejects.toThrow();

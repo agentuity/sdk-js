@@ -4,12 +4,13 @@ import { POST } from '../apis/api';
 import type { Logger } from '../logger';
 import { DataHandler } from '../router/data';
 import { getSDKVersion, getTracer, recordException } from '../router/router';
-import type {AgentConfig, 
+import type {
+	AgentConfig,
 	GetAgentRequestParams,
 	InvocationArguments,
 	ReadableDataType,
 	RemoteAgent,
-	RemoteAgentResponse
+	RemoteAgentResponse,
 } from '../types';
 import { isJsonObject } from '../types';
 import { injectTraceContextToHeaders } from './otel';
@@ -81,7 +82,9 @@ class LocalAgentInvoker implements RemoteAgent {
 		// Execute the operation within the new context
 		return await context.with(spanContext, async () => {
 			try {
-				const body = args?.data ? (await dataTypeToBuffer(args.data)) as BodyInit : undefined;
+				const body = args?.data
+					? ((await dataTypeToBuffer(args.data)) as BodyInit)
+					: undefined;
 				const headers: Record<string, string> = {
 					'Content-Type': args?.contentType ?? 'application/octet-stream',
 					'x-agentuity-trigger': 'agent',
@@ -208,7 +211,9 @@ class RemoteAgentInvoker implements RemoteAgent {
 					setMetadataInHeaders(headers, args.metadata);
 				}
 				injectTraceContextToHeaders(headers);
-				const body = args?.data ? (await dataTypeToBuffer(args.data)) as BodyInit : undefined;
+				const body = args?.data
+					? ((await dataTypeToBuffer(args.data)) as BodyInit)
+					: undefined;
 				this.logger.info('invoking remote agent');
 				const resp = await fetch(this.url, {
 					headers,
