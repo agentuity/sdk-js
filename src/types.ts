@@ -722,7 +722,7 @@ export type GetAgentRequestParams =
 /**
  * The signature for the waitUntil method
  */
-export type WaitUntilCallback = (promise: () => void | Promise<void>) => void;
+export type WaitUntilCallback = (promise: Promise<void> | (() => void | Promise<void>)) => void;
 
 export interface AgentContext {
 	/**

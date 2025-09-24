@@ -22,7 +22,7 @@ export default class AgentContextWaitUntilHandler {
 		this.promises = [];
 	}
 
-	public waitUntil(promise: () => void | Promise<void>): void {
+	public waitUntil(promise: Promise<void> | (() => void | Promise<void>)): void {
 		const currentContext = context.active();
 		this.promises.push(async () => {
 			running++;
@@ -32,14 +32,20 @@ export default class AgentContextWaitUntilHandler {
 			const span = this.tracer.startSpan('waitUntil', {}, currentContext);
 			const spanContext = trace.setSpan(currentContext, span);
 			try {
-				await context.with(spanContext, async () => await promise());
+				const resolvedPromise = typeof promise === 'function' ? promise() : promise;
+				await context.with(
+					spanContext,
+					async () => await Promise.resolve(resolvedPromise)
+				);
 				span.setStatus({ code: SpanStatusCode.OK });
-			} catch (ex) {
+			} catch (ex: unknown) {
 				span.recordException(ex as Error);
 				span.setStatus({ code: SpanStatusCode.ERROR });
+				throw ex;
 			} finally {
 				span.end();
 			}
+			// NOTE: we only decrement when the promise is removed from the array in waitUntilAll
 		});
 	}
 
