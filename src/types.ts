@@ -329,6 +329,44 @@ export interface KeyValueStorage {
 	delete(name: string, key: string): Promise<void>;
 }
 
+/**
+ * Properties for creating a stream
+ */
+export interface CreateStreamProps {
+	/**
+	 * optional metadata for the stream
+	 */
+	metadata?: Record<string, string>;
+}
+
+/**
+ * A stream that can be written to and read from
+ */
+export interface Stream extends WritableStream {
+	/**
+	 * unique stream identifier
+	 */
+	id: string;
+	/**
+	 * the unique stream url to consume the stream
+	 */
+	url: string;
+}
+
+/**
+ * Stream API for creating and managing streams
+ */
+export interface StreamAPI {
+	/**
+	 * create a new stream
+	 *
+	 * @param name - the name of the stream (1-254 characters)
+	 * @param props - optional properties for creating the stream
+	 * @returns a Promise that resolves to the created Stream
+	 */
+	create(name: string, props?: CreateStreamProps): Promise<Stream>;
+}
+
 type VectorUpsertEmbeddings = {
 	/**
 	 * the embeddings to upsert
@@ -722,7 +760,9 @@ export type GetAgentRequestParams =
 /**
  * The signature for the waitUntil method
  */
-export type WaitUntilCallback = (promise: Promise<void> | (() => void | Promise<void>)) => void;
+export type WaitUntilCallback = (
+	promise: Promise<void> | (() => void | Promise<void>)
+) => void;
 
 export interface AgentContext {
 	/**
@@ -812,6 +852,11 @@ export interface AgentContext {
 	 * the vector storage
 	 */
 	vector: VectorStorage;
+
+	/**
+	 * the stream api
+	 */
+	stream: StreamAPI;
 
 	/**
 	 * the email service

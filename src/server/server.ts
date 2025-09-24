@@ -5,6 +5,7 @@ import DiscordAPI from '../apis/discord';
 import EmailAPI from '../apis/email';
 import KeyValueAPI from '../apis/keyvalue';
 import ObjectStoreAPI from '../apis/objectstore';
+import StreamAPIImpl from '../apis/stream';
 import VectorAPI from '../apis/vector';
 import type { Logger } from '../logger';
 import { createRouter } from '../router';
@@ -173,6 +174,7 @@ function ensureSessionIdPrefix(sessionId: string): string {
 
 const kv = new KeyValueAPI();
 const vector = new VectorAPI();
+const stream = new StreamAPIImpl();
 const email = new EmailAPI();
 const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
@@ -199,6 +201,7 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		meter: req.meter,
 		kv,
 		vector,
+		stream,
 		email,
 		discord,
 		objectstore,

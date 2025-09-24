@@ -24,11 +24,14 @@ interface ApiRequestWithUrl {
 
 type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
 
+type ServiceName = 'vector' | 'keyvalue' | 'stream' | 'objectstore';
+
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
 	timeout?: number;
 	headers?: Record<string, string>;
 	authToken?: string;
+	service?: ServiceName;
 }
 
 type BaseApiRequest = ApiRequestOptions & ApiRequestBase;
@@ -73,6 +76,33 @@ interface APIResponse<T> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export const getBaseUrlForService = (service?: ServiceName) => {
+	let value = process.env.AGENTUITY_TRANSPORT_URL;
+	switch (service) {
+		case 'vector':
+			value =
+				process.env.AGENTUITY_VECTOR_URL || process.env.AGENTUITY_TRANSPORT_URL;
+			break;
+		case 'keyvalue':
+			value =
+				process.env.AGENTUITY_KEYVALUE_URL ||
+				process.env.AGENTUITY_TRANSPORT_URL;
+			break;
+		case 'stream':
+			value =
+				process.env.AGENTUITY_STREAM_URL || process.env.AGENTUITY_TRANSPORT_URL;
+			break;
+		case 'objectstore':
+			value =
+				process.env.AGENTUITY_OBJECTSTORE_URL ||
+				process.env.AGENTUITY_TRANSPORT_URL;
+			break;
+		default:
+			break;
+	}
+	return value || 'https://agentuity.ai/';
+};
+
 /**
  * Sends an API request
  *
@@ -95,10 +125,7 @@ export async function send<K>(
 	}
 	const url =
 		'path' in request
-			? new URL(
-					request.path,
-					process.env.AGENTUITY_TRANSPORT_URL || 'https://agentuity.ai/'
-				)
+			? new URL(request.path, getBaseUrlForService(request.service))
 			: new URL(request.url);
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
@@ -166,13 +193,15 @@ export async function send<K>(
  * @param forceBuffer - Whether to force the response to be treated as a buffer
  * @param headers - Additional headers for the request
  * @param timeout - The timeout for the request
+ * @param service - The service to send the request to
  * @returns The API response
  */
 export async function GET<K>(
 	path: string,
 	forceBuffer?: boolean,
 	headers?: Record<string, string>,
-	timeout?: number
+	timeout?: number,
+	service?: ServiceName
 ) {
 	return send<K>(
 		{
@@ -180,6 +209,7 @@ export async function GET<K>(
 			path,
 			headers,
 			timeout,
+			service,
 		} as GetApiRequest,
 		forceBuffer
 	);
@@ -192,6 +222,7 @@ export async function GET<K>(
  * @param body - The body of the request
  * @param headers - Additional headers for the request
  * @param timeout - The timeout for the request
+ * @param service - The service to send the request to
  * @returns The API response
  */
 export async function POST<K>(
@@ -199,7 +230,8 @@ export async function POST<K>(
 	body: Body,
 	headers?: Record<string, string>,
 	timeout?: number,
-	authToken?: string
+	authToken?: string,
+	service?: ServiceName
 ) {
 	return send<K>({
 		method: 'POST',
@@ -208,6 +240,7 @@ export async function POST<K>(
 		headers,
 		timeout,
 		authToken,
+		service,
 	} as PostApiRequest);
 }
 
@@ -218,13 +251,15 @@ export async function POST<K>(
  * @param body - The body of the request
  * @param headers - Additional headers for the request
  * @param timeout - The timeout for the request
+ * @param service - The service to send the request to
  * @returns The API response
  */
 export async function PUT<K>(
 	path: string,
 	body: Body,
 	headers?: Record<string, string>,
-	timeout?: number
+	timeout?: number,
+	service?: ServiceName
 ) {
 	return send<K>({
 		method: 'PUT',
@@ -232,6 +267,7 @@ export async function PUT<K>(
 		body,
 		timeout,
 		headers,
+		service,
 	} as PutApiRequest);
 }
 
@@ -242,13 +278,15 @@ export async function PUT<K>(
  * @param body - The body of the request
  * @param headers - Additional headers for the request
  * @param timeout - The timeout for the request
+ * @param service - The service to send the request to
  * @returns The API response
  */
 export async function DELETE<K>(
 	path: string,
 	body?: Body,
 	headers?: Record<string, string>,
-	timeout?: number
+	timeout?: number,
+	service?: ServiceName
 ) {
 	return send<K>({
 		method: 'DELETE',
@@ -256,5 +294,6 @@ export async function DELETE<K>(
 		body,
 		timeout,
 		headers,
+		service,
 	} as DeleteApiRequest);
 }

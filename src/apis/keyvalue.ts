@@ -42,7 +42,10 @@ export default class KeyValueAPI implements KeyValueStorage {
 			return await context.with(spanContext, async () => {
 				const resp = await GET(
 					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
-					true
+					true,
+					undefined,
+					undefined,
+					'keyvalue'
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
@@ -151,7 +154,9 @@ export default class KeyValueAPI implements KeyValueStorage {
 					new Blob([buffer] as BlobPart[], {
 						type: datavalue.data.contentType,
 					}),
-					headers
+					headers,
+					undefined,
+					'keyvalue'
 				);
 
 				if (resp.status !== 201) {
@@ -196,7 +201,11 @@ export default class KeyValueAPI implements KeyValueStorage {
 			// Execute the operation within the new context
 			await context.with(spanContext, async () => {
 				const resp = await DELETE(
-					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					undefined,
+					undefined,
+					undefined,
+					'keyvalue'
 				);
 				if (resp.status !== 200) {
 					throw new Error(

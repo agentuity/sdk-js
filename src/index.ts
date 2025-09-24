@@ -5,7 +5,8 @@ export * from './types';
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
-export { EmailAPI, DiscordAPI };
+import StreamAPIImpl from './apis/stream';
+export { EmailAPI, DiscordAPI, StreamAPIImpl };
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';

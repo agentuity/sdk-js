@@ -1,5 +1,5 @@
 import { describe, expect, it, mock, beforeEach, afterEach } from 'bun:test';
-import { send, GET, POST, PUT, DELETE, setFetch } from '../../src/apis/api';
+import { send, GET, POST, PUT, DELETE, setFetch, getBaseUrlForService } from '../../src/apis/api';
 import { createMockFetch } from '../setup';
 import { ReadableStream } from 'node:stream/web';
 
@@ -281,6 +281,223 @@ describe('API Client', () => {
 			const [, options] = fetchCalls[0];
 			expect(options?.method).toEqual('DELETE');
 			expect(options?.body).toEqual(body);
+		});
+	});
+
+	describe('getBaseUrlForService', () => {
+		beforeEach(() => {
+			// Clear all service-specific environment variables
+			delete process.env.AGENTUITY_VECTOR_URL;
+			delete process.env.AGENTUITY_KEYVALUE_URL;
+			delete process.env.AGENTUITY_STREAM_URL;
+			delete process.env.AGENTUITY_OBJECTSTORE_URL;
+			delete process.env.AGENTUITY_TRANSPORT_URL;
+		});
+
+		it('should return default URL when no environment variables are set', () => {
+			expect(getBaseUrlForService()).toBe('https://agentuity.ai/');
+			expect(getBaseUrlForService('vector')).toBe('https://agentuity.ai/');
+			expect(getBaseUrlForService('keyvalue')).toBe('https://agentuity.ai/');
+			expect(getBaseUrlForService('stream')).toBe('https://agentuity.ai/');
+			expect(getBaseUrlForService('objectstore')).toBe('https://agentuity.ai/');
+		});
+
+		it('should use AGENTUITY_TRANSPORT_URL as fallback', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+
+			expect(getBaseUrlForService()).toBe('https://transport.example.com/');
+			expect(getBaseUrlForService('vector')).toBe('https://transport.example.com/');
+			expect(getBaseUrlForService('keyvalue')).toBe('https://transport.example.com/');
+			expect(getBaseUrlForService('stream')).toBe('https://transport.example.com/');
+			expect(getBaseUrlForService('objectstore')).toBe('https://transport.example.com/');
+		});
+
+		it('should use service-specific URL for vector service', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			process.env.AGENTUITY_VECTOR_URL = 'https://vector.example.com/';
+
+			expect(getBaseUrlForService('vector')).toBe('https://vector.example.com/');
+			// Other services should still use transport URL
+			expect(getBaseUrlForService('keyvalue')).toBe('https://transport.example.com/');
+		});
+
+		it('should use service-specific URL for keyvalue service', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			process.env.AGENTUITY_KEYVALUE_URL = 'https://keyvalue.example.com/';
+
+			expect(getBaseUrlForService('keyvalue')).toBe('https://keyvalue.example.com/');
+			// Other services should still use transport URL
+			expect(getBaseUrlForService('vector')).toBe('https://transport.example.com/');
+		});
+
+		it('should use service-specific URL for stream service', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			process.env.AGENTUITY_STREAM_URL = 'https://stream.example.com/';
+
+			expect(getBaseUrlForService('stream')).toBe('https://stream.example.com/');
+			// Other services should still use transport URL
+			expect(getBaseUrlForService('vector')).toBe('https://transport.example.com/');
+		});
+
+		it('should use service-specific URL for objectstore service', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			process.env.AGENTUITY_OBJECTSTORE_URL = 'https://objectstore.example.com/';
+
+			expect(getBaseUrlForService('objectstore')).toBe('https://objectstore.example.com/');
+			// Other services should still use transport URL
+			expect(getBaseUrlForService('vector')).toBe('https://transport.example.com/');
+		});
+
+		it('should prioritize service-specific URLs over transport URL', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			process.env.AGENTUITY_VECTOR_URL = 'https://vector.example.com/';
+			process.env.AGENTUITY_KEYVALUE_URL = 'https://keyvalue.example.com/';
+			process.env.AGENTUITY_STREAM_URL = 'https://stream.example.com/';
+			process.env.AGENTUITY_OBJECTSTORE_URL = 'https://objectstore.example.com/';
+
+			expect(getBaseUrlForService('vector')).toBe('https://vector.example.com/');
+			expect(getBaseUrlForService('keyvalue')).toBe('https://keyvalue.example.com/');
+			expect(getBaseUrlForService('stream')).toBe('https://stream.example.com/');
+			expect(getBaseUrlForService('objectstore')).toBe('https://objectstore.example.com/');
+		});
+
+		it('should handle undefined service parameter', () => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			expect(getBaseUrlForService(undefined)).toBe('https://transport.example.com/');
+		});
+	});
+
+	describe('HTTP methods with service parameter', () => {
+		beforeEach(() => {
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.example.com/';
+			process.env.AGENTUITY_VECTOR_URL = 'https://vector.example.com/';
+			process.env.AGENTUITY_KEYVALUE_URL = 'https://keyvalue.example.com/';
+			process.env.AGENTUITY_STREAM_URL = 'https://stream.example.com/';
+			process.env.AGENTUITY_OBJECTSTORE_URL = 'https://objectstore.example.com/';
+		});
+
+		it('should use vector service URL for GET request', async () => {
+			await GET('/test', false, undefined, undefined, 'vector');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://vector.example.com/test');
+		});
+
+		it('should use keyvalue service URL for POST request', async () => {
+			await POST('/test', JSON.stringify({ data: 'test' }), undefined, undefined, undefined, 'keyvalue');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://keyvalue.example.com/test');
+		});
+
+		it('should use stream service URL for PUT request', async () => {
+			await PUT('/test', JSON.stringify({ data: 'test' }), undefined, undefined, 'stream');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://stream.example.com/test');
+		});
+
+		it('should use objectstore service URL for DELETE request', async () => {
+			await DELETE('/test', undefined, undefined, undefined, 'objectstore');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://objectstore.example.com/test');
+		});
+
+		it('should use transport URL when no service is specified', async () => {
+			await GET('/test');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://transport.example.com/test');
+		});
+
+		it('should use transport URL as fallback when service-specific URL is not set', async () => {
+			delete process.env.AGENTUITY_VECTOR_URL;
+
+			await GET('/test', false, undefined, undefined, 'vector');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://transport.example.com/test');
+		});
+
+		it('should handle POST request with auth token and service', async () => {
+			await POST('/test', JSON.stringify({ data: 'test' }), undefined, undefined, 'custom-token', 'vector');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url, options] = fetchCalls[0];
+			expect(url.toString()).toBe('https://vector.example.com/test');
+			
+			const headers = options?.headers as Record<string, string>;
+			expect(headers?.Authorization).toBe('Bearer custom-token');
+		});
+
+		it('should validate all services work correctly', async () => {
+			const services: Array<{ name: 'vector' | 'keyvalue' | 'stream' | 'objectstore', expectedUrl: string }> = [
+				{ name: 'vector', expectedUrl: 'https://vector.example.com/test' },
+				{ name: 'keyvalue', expectedUrl: 'https://keyvalue.example.com/test' },
+				{ name: 'stream', expectedUrl: 'https://stream.example.com/test' },
+				{ name: 'objectstore', expectedUrl: 'https://objectstore.example.com/test' },
+			];
+
+			for (const service of services) {
+				fetchCalls.length = 0; // Clear previous calls
+				await GET('/test', false, undefined, undefined, service.name);
+
+				expect(fetchCalls.length).toBeGreaterThan(0);
+				const [url] = fetchCalls[0];
+				expect(url.toString()).toBe(service.expectedUrl);
+			}
+		});
+	});
+
+	describe('Service URL priority integration tests', () => {
+		it('should migrate correctly from transport URL to service-specific URLs', async () => {
+			// Start with only transport URL (legacy setup)
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://legacy.agentuity.ai/';
+			delete process.env.AGENTUITY_VECTOR_URL;
+
+			await GET('/vectors', false, undefined, undefined, 'vector');
+			let [url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://legacy.agentuity.ai/vectors');
+
+			// Add vector-specific URL (migration)
+			fetchCalls.length = 0;
+			process.env.AGENTUITY_VECTOR_URL = 'https://vector.agentuity.ai/';
+
+			await GET('/vectors', false, undefined, undefined, 'vector');
+			[url] = fetchCalls[0];
+			expect(url.toString()).toBe('https://vector.agentuity.ai/vectors');
+		});
+
+		it('should handle mixed service configurations', async () => {
+			// Some services have specific URLs, others use transport URL
+			process.env.AGENTUITY_TRANSPORT_URL = 'https://transport.agentuity.ai/';
+			process.env.AGENTUITY_VECTOR_URL = 'https://vector.agentuity.ai/';
+			delete process.env.AGENTUITY_KEYVALUE_URL;
+			process.env.AGENTUITY_STREAM_URL = 'https://stream.agentuity.ai/';
+			delete process.env.AGENTUITY_OBJECTSTORE_URL;
+
+			const testCases = [
+				{ service: 'vector' as const, expectedUrl: 'https://vector.agentuity.ai/test' },
+				{ service: 'keyvalue' as const, expectedUrl: 'https://transport.agentuity.ai/test' },
+				{ service: 'stream' as const, expectedUrl: 'https://stream.agentuity.ai/test' },
+				{ service: 'objectstore' as const, expectedUrl: 'https://transport.agentuity.ai/test' },
+			];
+
+			for (const testCase of testCases) {
+				fetchCalls.length = 0;
+				await GET('/test', false, undefined, undefined, testCase.service);
+
+				expect(fetchCalls.length).toBeGreaterThan(0);
+				const [url] = fetchCalls[0];
+				expect(url.toString()).toBe(testCase.expectedUrl);
+			}
 		});
 	});
 });

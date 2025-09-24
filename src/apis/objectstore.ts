@@ -69,7 +69,10 @@ export default class ObjectStoreAPI implements ObjectStore {
 			return await context.with(spanContext, async () => {
 				const resp = await GET(
 					`/object/2025-03-17/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`,
-					true
+					true,
+					undefined,
+					undefined,
+					'objectstore'
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
@@ -182,7 +185,9 @@ export default class ObjectStoreAPI implements ObjectStore {
 				const resp = await PUT(
 					`/object/2025-03-17/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`,
 					stream as unknown as ReadableStream,
-					headers
+					headers,
+					undefined,
+					'objectstore'
 				);
 
 				if (resp.status >= 200 && resp.status < 300) {
@@ -240,7 +245,11 @@ export default class ObjectStoreAPI implements ObjectStore {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE(
-					`/object/2025-03-17/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`
+					`/object/2025-03-17/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`,
+					undefined,
+					undefined,
+					undefined,
+					'objectstore'
 				);
 				if (resp.status === 200) {
 					span.addEvent('deleted', { deleted: true });
@@ -312,7 +321,11 @@ export default class ObjectStoreAPI implements ObjectStore {
 
 				const resp = await POST<ObjectStoreCreatePublicURLResponse>(
 					path,
-					JSON.stringify(requestBody)
+					JSON.stringify(requestBody),
+					undefined,
+					undefined,
+					undefined,
+					'objectstore'
 				);
 
 				if (resp.status === 200) {
