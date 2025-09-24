@@ -32,10 +32,12 @@ export default class AgentContextWaitUntilHandler {
 			const span = this.tracer.startSpan('waitUntil', {}, currentContext);
 			const spanContext = trace.setSpan(currentContext, span);
 			try {
-				const resolvedPromise = typeof promise === 'function' ? promise() : promise;
 				await context.with(
 					spanContext,
-					async () => await Promise.resolve(resolvedPromise)
+					async () => {
+						const resolvedPromise = typeof promise === 'function' ? promise() : promise;
+						return await Promise.resolve(resolvedPromise);
+					}
 				);
 				span.setStatus({ code: SpanStatusCode.OK });
 			} catch (ex: unknown) {
