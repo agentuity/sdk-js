@@ -116,10 +116,16 @@ export async function send<K>(
 		method: request.method,
 		body: request.body,
 		headers,
-		keepalive: true,
 		signal: request.timeout ? AbortSignal.timeout(request.timeout) : undefined,
-		duplex: isReadableStream(request.body) ? 'half' : undefined,
 	};
+
+	// Probably we need to check if this should be all done in a single function like this.
+	if (isReadableStream(request.body)) {
+		init.duplex = 'half';
+	} else {
+		init.keepalive = true;
+	}
+
 	const resp = await apiFetch(url, init);
 	let json: K | null = null;
 	switch (resp.status) {
