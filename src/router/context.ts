@@ -16,13 +16,22 @@ export default class AgentContextWaitUntilHandler {
 	private promises: (() => void | Promise<void>)[];
 	private tracer: Tracer;
 	private started: number | undefined;
+	private hasCalledWaitUntilAll = false;
 
 	public constructor(tracer: Tracer) {
 		this.tracer = tracer;
 		this.promises = [];
+		this.hasCalledWaitUntilAll = false;
 	}
 
-	public waitUntil(promise: Promise<void> | (() => void | Promise<void>)): void {
+	public waitUntil(
+		promise: Promise<void> | (() => void | Promise<void>)
+	): void {
+		if (this.hasCalledWaitUntilAll) {
+			throw new Error(
+				'Cannot call waitUntil after waitUntilAll has been called'
+			);
+		}
 		const currentContext = context.active();
 		this.promises.push(async () => {
 			running++;
@@ -32,13 +41,11 @@ export default class AgentContextWaitUntilHandler {
 			const span = this.tracer.startSpan('waitUntil', {}, currentContext);
 			const spanContext = trace.setSpan(currentContext, span);
 			try {
-				await context.with(
-					spanContext,
-					async () => {
-						const resolvedPromise = typeof promise === 'function' ? promise() : promise;
-						return await Promise.resolve(resolvedPromise);
-					}
-				);
+				await context.with(spanContext, async () => {
+					const resolvedPromise =
+						typeof promise === 'function' ? promise() : promise;
+					return await Promise.resolve(resolvedPromise);
+				});
 				span.setStatus({ code: SpanStatusCode.OK });
 			} catch (ex: unknown) {
 				span.recordException(ex as Error);
@@ -56,6 +63,11 @@ export default class AgentContextWaitUntilHandler {
 	}
 
 	public async waitUntilAll(logger: Logger, sessionId: string): Promise<void> {
+		if (this.hasCalledWaitUntilAll) {
+			throw new Error('waitUntilAll can only be called once per instance');
+		}
+		this.hasCalledWaitUntilAll = true;
+
 		if (this.promises.length === 0) {
 			return;
 		}
