@@ -40,7 +40,7 @@ export default class ConsoleLogger implements Logger {
 				? Object.entries(this.context)
 						.map(([key, value]) => {
 							try {
-							return `${key}=${typeof value === 'object' ? safeStringify(value) : value}`;
+								return `${key}=${typeof value === 'object' ? safeStringify(value) : value}`;
 							} catch (_err) {
 								return `${key}=[object Object]`;
 							}

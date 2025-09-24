@@ -59,7 +59,7 @@ export class AgentuityTeamsAdapter {
 			MicrosoftAppTenantId: tenantId,
 			MicrosoftAppPassword: appPassword,
 			MicrosoftAppType: appType,
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			// biome-ignore lint/suspicious/noExplicitAny: BotFrameworkAdapter config typing
 		} as any);
 		const provider = HandlerParameterProvider.getInstance();
 		this.adapter = new CloudAdapter(auth);
@@ -82,9 +82,9 @@ export class AgentuityTeamsAdapter {
 
 	async process() {
 		try {
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			// biome-ignore lint/suspicious/noExplicitAny: Teams payload structure varies
 			const teamsPayload = (await this.req.data.json()) as any;
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			// biome-ignore lint/suspicious/noExplicitAny: mock Restify request object
 			const mockRestifyReq: any = {
 				method: 'POST',
 				body: teamsPayload,
@@ -94,7 +94,7 @@ export class AgentuityTeamsAdapter {
 						: this.req.metadata.headers,
 			};
 
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			// biome-ignore lint/suspicious/noExplicitAny: mock Restify response object
 			const mockRestifyRes: any = {
 				status: (_code: number) => {
 					return {
@@ -109,7 +109,7 @@ export class AgentuityTeamsAdapter {
 			await this.adapter.process(
 				mockRestifyReq,
 				mockRestifyRes,
-				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				// biome-ignore lint/suspicious/noExplicitAny: Bot Framework TurnContext typing
 				async (context: any) => {
 					const res = await this.bot.run(context);
 					return res;

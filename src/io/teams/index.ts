@@ -9,20 +9,20 @@ import { SimpleAgentuityTeamsBot } from './SimpleAgentuityTeamsBot';
 type Mode = 'dev' | 'cloud';
 type parseConfigResult = {
 	config: Record<string, string>;
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: Teams payload can contain various data types
 	justPayload: Record<string, any>;
 	mode: Mode;
 };
 
 const parseConfig = (
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: Teams payload structure is dynamic
 	payload: any,
 	metadata: JsonObject
 ): parseConfigResult => {
 	const keys = Object.keys(metadata);
 	let config: Record<string, string>;
 	let mode: Mode;
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: payload content varies by Teams event type
 	let justPayload: Record<string, any>;
 
 	if (

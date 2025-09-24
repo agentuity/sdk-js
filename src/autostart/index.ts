@@ -54,7 +54,7 @@ export async function run(config: AutostartConfig) {
 				process.exit(1);
 			}
 			const ymlData = readFileSync(ymlfile, 'utf8').toString();
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			// biome-ignore lint/suspicious/noExplicitAny: yml.load requires any type
 			const data = yml.load(ymlData) as any;
 			if (!config.projectId && data?.project_id) {
 				config.projectId = data.project_id;

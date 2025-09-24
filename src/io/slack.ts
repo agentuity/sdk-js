@@ -425,9 +425,9 @@ export interface SlackReply {
 
 export function isSlackEventPayload(data: unknown): data is SlackEventPayload {
 	if (typeof data !== 'object' || data === null) return false;
-	
+
 	const obj = data as Record<string, unknown>;
-	
+
 	return (
 		'token' in data &&
 		'team_id' in data &&
@@ -500,20 +500,14 @@ export class Slack implements SlackService {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				span.setAttribute('@agentuity/agentId', ctx.agent.id);
-				span.setAttribute(
-					'@agentuity/slackEventType',
-					this.eventPayload.type
-				);
+				span.setAttribute('@agentuity/slackEventType', this.eventPayload.type);
 				if (
 					this.eventPayload.type !== 'event_callback' ||
 					!isSlackMessageEvent(this.eventPayload.event)
 				) {
 					throw new UnsupportedSlackPayload('Payload is not Slack message');
 				}
-				span.setAttribute(
-					'@agentuity/slackTeamId',
-					this.eventPayload.team_id
-				);
+				span.setAttribute('@agentuity/slackTeamId', this.eventPayload.team_id);
 
 				// Create payload matching backend structure
 				let payload: SlackReply;

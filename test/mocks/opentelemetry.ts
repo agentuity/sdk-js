@@ -24,8 +24,8 @@ export const mockOpenTelemetry = () => {
 		},
 		context: {
 			active: () => ({}),
-			bind: (context: unknown, target: unknown) => target,
-			with: (context: unknown, fn: unknown) =>
+			bind: (_context: unknown, target: unknown) => target,
+			with: (_context: unknown, fn: unknown) =>
 				typeof fn === 'function' ? fn() : undefined,
 		},
 		trace: {

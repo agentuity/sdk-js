@@ -1,10 +1,5 @@
 import { describe, expect, it, mock, beforeEach } from 'bun:test';
 import ObjectStoreAPI from '../../src/apis/objectstore';
-import type {
-	DataResult,
-	DataResultFound,
-	DataResultNotFound,
-} from '../../src/types';
 import '../setup'; // Import global test setup
 import { DataHandler } from '../../src/router/data';
 
@@ -12,7 +7,7 @@ describe('ObjectStore API', () => {
 	let objectStore: ObjectStoreAPI;
 
 	const mockTracer = {
-		startSpan: mock((name: string, options: unknown, ctx: unknown) => {
+		startSpan: mock((_name: string, _options: unknown, _ctx: unknown) => {
 			return {
 				setAttribute: mock(() => {}),
 				addEvent: mock(() => {}),
@@ -30,10 +25,10 @@ describe('ObjectStore API', () => {
 		mock.module('@opentelemetry/api', () => ({
 			context: {
 				active: () => ({}),
-				with: (ctx: unknown, fn: () => Promise<unknown>) => fn(),
+				with: (_ctx: unknown, fn: () => Promise<unknown>) => fn(),
 			},
 			trace: {
-				setSpan: (ctx: unknown, span: unknown) => ctx,
+				setSpan: (ctx: unknown, _span: unknown) => ctx,
 			},
 			SpanStatusCode: {
 				OK: 1,
@@ -52,7 +47,7 @@ describe('ObjectStore API', () => {
 			const mockResponse = {
 				status: 200,
 				headers: {
-					get: (name: string) => 'text/plain',
+					get: (_name: string) => 'text/plain',
 				},
 				response: {
 					arrayBuffer: () => Promise.resolve(Buffer.from('test data').buffer),
@@ -258,7 +253,7 @@ describe('ObjectStore API', () => {
 
 			let capturedBody: string | undefined;
 			mock.module('../../src/apis/api', () => ({
-				POST: mock((path: string, body: string) => {
+				POST: mock((_path: string, body: string) => {
 					capturedBody = body;
 					return Promise.resolve(mockResponse);
 				}),
@@ -283,7 +278,7 @@ describe('ObjectStore API', () => {
 
 			let capturedBody: string | undefined;
 			mock.module('../../src/apis/api', () => ({
-				POST: mock((path: string, body: string) => {
+				POST: mock((_path: string, body: string) => {
 					capturedBody = body;
 					return Promise.resolve(mockResponse);
 				}),

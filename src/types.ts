@@ -396,7 +396,7 @@ export interface VectorSearchParams<T = unknown> {
 	/**
 	 * Metadata filters to apply to the search. Only vectors whose metadata matches all specified
 	 * key-value pairs will be included in results. Must be a valid JSON object if provided.
-	 * 
+	 *
 	 * @example { category: "furniture", inStock: true }
 	 * @example { userId: "123", type: "product" }
 	 */
@@ -719,6 +719,11 @@ export type GetAgentRequestParams =
 	| GetAgentRequestParamsById
 	| GetAgentRequestParamsByName;
 
+/**
+ * The signature for the waitUntil method
+ */
+export type WaitUntilCallback = (promise: Promise<void> | (() => void | Promise<void>)) => void;
+
 export interface AgentContext {
 	/**
 	 * the version of the Agentuity SDK
@@ -790,6 +795,13 @@ export interface AgentContext {
 	 * get a handle to a remote agent that you can invoke
 	 */
 	getAgent(params: GetAgentRequestParams): Promise<RemoteAgent>;
+
+	/**
+	 * extends the lifetime of the request handler for the lifetime of the passed in Promise.
+	 * The waitUntil() method enqueues an asynchronous task to be performed during the lifecycle of the request.
+	 * You can use it for anything that can be done after the response is sent without blocking the response.
+	 */
+	waitUntil: WaitUntilCallback;
 
 	/**
 	 * the key value storage

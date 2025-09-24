@@ -17,6 +17,7 @@ import {
 	shouldIgnoreStaticFile,
 	toWelcomePrompt,
 } from './util';
+import { isIdle } from '../router/context';
 
 const idleTimeout = 255; // expressed in seconds
 
@@ -107,6 +108,14 @@ export class BunServer implements Server {
 								'Content-Type': 'application/json',
 							},
 						});
+					},
+				},
+				'/_idle': {
+					GET: async () => {
+						if (isIdle()) {
+							return new Response('OK', { status: 200 });
+						}
+						return new Response('NO', { status: 200 });
 					},
 				},
 				'/welcome/:id': {

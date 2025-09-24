@@ -21,6 +21,7 @@ import {
 	shouldIgnoreStaticFile,
 	toWelcomePrompt,
 } from './util';
+import { isIdle } from '../router/context';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
@@ -31,8 +32,8 @@ export class NodeServer implements Server {
 	private readonly logger: Logger;
 	private readonly port: number;
 	private readonly routes: ServerRoute[];
-	private server: ReturnType<typeof createHttpServer> | null = null;
 	private readonly sdkVersion: string;
+	private server: ReturnType<typeof createHttpServer> | null = null;
 
 	/**
 	 * Creates a new Node.js server
@@ -101,7 +102,7 @@ export class NodeServer implements Server {
 	 * Starts the server
 	 */
 	async start(): Promise<void> {
-		const { sdkVersion } = this;
+		const sdkVersion = this.sdkVersion;
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
@@ -154,6 +155,13 @@ export class NodeServer implements Server {
 				});
 				res.end(safeStringify(result));
 				return;
+			}
+
+			if (req.method === 'GET' && req.url === '/_idle') {
+				if (isIdle()) {
+					return new Response('OK', { status: 200 });
+				}
+				return new Response('NO', { status: 200 });
 			}
 
 			if (req.method === 'GET' && req.url === '/welcome/') {

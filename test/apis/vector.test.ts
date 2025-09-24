@@ -6,7 +6,7 @@ import '../setup'; // Import global test setup
 describe('VectorAPI', () => {
 	let vectorAPI: VectorAPI;
 	const mockTracer = {
-		startSpan: mock((name: string, options: unknown, ctx: unknown) => {
+		startSpan: mock((_name: string, _options: unknown, _ctx: unknown) => {
 			return {
 				setAttribute: mock(() => {}),
 				addEvent: mock(() => {}),
@@ -26,7 +26,7 @@ describe('VectorAPI', () => {
 				active: () => ({}),
 			},
 			trace: {
-				setSpan: (ctx: unknown, span: unknown) => ctx,
+				setSpan: (ctx: unknown, _span: unknown) => ctx,
 				getTracer: () => mockTracer,
 			},
 			SpanStatusCode: {
@@ -65,8 +65,8 @@ describe('VectorAPI', () => {
 
 			const originalSearch = vectorAPI.search;
 			vectorAPI.search = async (
-				name: string,
-				params: unknown
+				_name: string,
+				_params: unknown
 			): Promise<VectorSearchResult[]> => mockSearchResults;
 
 			const searchParams = { query: 'test query' };
@@ -88,8 +88,8 @@ describe('VectorAPI', () => {
 
 			const originalSearch = vectorAPI.search;
 			vectorAPI.search = async (
-				name: string,
-				params: unknown
+				_name: string,
+				_params: unknown
 			): Promise<VectorSearchResult[]> => [];
 
 			const searchParams = { query: 'not found query' };
@@ -117,8 +117,8 @@ describe('VectorAPI', () => {
 
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
-				...keys: string[]
+				_name: string,
+				..._keys: string[]
 			): Promise<number> => 1;
 
 			const result = await vectorAPI.delete('test-store', 'id1');
@@ -143,8 +143,8 @@ describe('VectorAPI', () => {
 
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
-				...keys: string[]
+				_name: string,
+				..._keys: string[]
 			): Promise<number> => 0;
 
 			const result = await vectorAPI.delete('test-store', 'nonexistent-id');
@@ -169,8 +169,8 @@ describe('VectorAPI', () => {
 
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
-				...keys: string[]
+				_name: string,
+				..._keys: string[]
 			): Promise<number> => {
 				throw new Error('Delete failed');
 			};
@@ -197,7 +197,7 @@ describe('VectorAPI', () => {
 
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
+				_name: string,
 				...keys: string[]
 			): Promise<number> => keys.length;
 
@@ -211,8 +211,8 @@ describe('VectorAPI', () => {
 		it('should handle empty keys array', async () => {
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
-				...keys: string[]
+				_name: string,
+				..._keys: string[]
 			): Promise<number> => 0;
 
 			const result = await vectorAPI.delete('test-store');
@@ -236,8 +236,8 @@ describe('VectorAPI', () => {
 
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
-				...keys: string[]
+				_name: string,
+				..._keys: string[]
 			): Promise<number> => 1;
 
 			const result = await vectorAPI.delete('test-store', 'single-id');
@@ -262,8 +262,8 @@ describe('VectorAPI', () => {
 
 			const originalDelete = vectorAPI.delete;
 			vectorAPI.delete = async (
-				name: string,
-				...keys: string[]
+				_name: string,
+				..._keys: string[]
 			): Promise<number> => {
 				throw new Error('Bulk delete failed');
 			};

@@ -30,7 +30,7 @@ describe('ConsoleLogger', () => {
 			safeStringify: (obj: unknown) => {
 				try {
 					return JSON.stringify(obj);
-				} catch (err) {
+				} catch (_err) {
 					return '[object Object]';
 				}
 			},
