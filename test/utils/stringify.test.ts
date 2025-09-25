@@ -82,4 +82,24 @@ describe('safeStringify', () => {
 		expect(parsed.maxSafe).toBe('9007199254740991');
 		expect(parsed.large).toBe('123456789012345678901234567890');
 	});
+
+	it('should handle shared references without marking them as circular', () => {
+		const sharedObject = { name: 'shared', value: 42 };
+		const obj = {
+			first: sharedObject,
+			second: sharedObject,
+			nested: {
+				third: sharedObject
+			}
+		};
+		
+		const result = safeStringify(obj);
+		const expected = '{"first":{"name":"shared","value":42},"second":{"name":"shared","value":42},"nested":{"third":{"name":"shared","value":42}}}';
+		expect(result).toBe(expected);
+		
+		// Verify that the shared object appears multiple times, not as [Circular]
+		expect(result).not.toContain('[Circular]');
+		const occurrences = (result.match(/{"name":"shared","value":42}/g) || []).length;
+		expect(occurrences).toBe(3);
+	});
 });
