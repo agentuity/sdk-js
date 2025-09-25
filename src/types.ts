@@ -385,7 +385,7 @@ export interface StreamAPI {
 	/**
 	 * create a new stream
 	 *
-	 * @param name - the name of the stream (1-254 characters)
+	 * @param name - the name of the stream (1-254 characters). you can group streams by name to organize them.
 	 * @param props - optional properties for creating the stream
 	 * @returns a Promise that resolves to the created Stream
 	 */

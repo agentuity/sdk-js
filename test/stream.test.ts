@@ -785,9 +785,11 @@ describe('StreamAPI', () => {
 
 	describe('getReader', () => {
 		let fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]>;
+		let originalFetch: typeof fetch;
 
 		beforeEach(() => {
 			fetchCalls = [];
+			originalFetch = globalThis.fetch;
 
 			const mockFetch = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
 				fetchCalls.push([url, options]);
@@ -836,6 +838,10 @@ describe('StreamAPI', () => {
 
 			setFetch(mockFetch as unknown as typeof fetch);
 			globalThis.fetch = mockFetch as unknown as typeof fetch;
+		});
+
+		afterEach(() => {
+			globalThis.fetch = originalFetch;
 		});
 
 		it('should return a ReadableStream when calling getReader()', async () => {
