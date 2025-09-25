@@ -180,7 +180,11 @@ export default class VectorAPI implements VectorStorage {
 			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
 				const resp = await GET<VectorGetResponse>(
-					`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`
+					`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					undefined,
+					undefined,
+					undefined,
+					'vector'
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
@@ -246,7 +250,11 @@ export default class VectorAPI implements VectorStorage {
 			return await context.with(spanContext, async () => {
 				const resp = await POST<VectorSearchResponse>(
 					`/vector/2025-03-17/search/${encodeURIComponent(name)}`,
-					safeStringify(params)
+					safeStringify(params),
+					undefined,
+					undefined,
+					undefined,
+					'vector'
 				);
 				if (resp.status === 404) {
 					span.addEvent('miss');
@@ -306,7 +314,12 @@ export default class VectorAPI implements VectorStorage {
 
 				if (keys.length === 1) {
 					resp = await DELETE<VectorDeleteResponse>(
-						`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(keys[0])}`
+						`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(keys[0])}`,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						'vector'
 					);
 				} else {
 					resp = await DELETE<VectorDeleteResponse>(

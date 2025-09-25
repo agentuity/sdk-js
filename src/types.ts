@@ -1,4 +1,4 @@
-import type { ReadableStream } from 'node:stream/web';
+import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
@@ -327,6 +327,53 @@ export interface KeyValueStorage {
 	 * @param key - the key to delete
 	 */
 	delete(name: string, key: string): Promise<void>;
+}
+
+/**
+ * Properties for creating a stream
+ */
+export interface CreateStreamProps {
+	/**
+	 * optional metadata for the stream
+	 */
+	metadata?: Record<string, string>;
+
+	/**
+	 * optional contentType for the stream data. If not set, defaults to application/octet-stream
+	 */
+	contentType?: string;
+}
+
+/**
+ * A stream that can be written to and read from
+ */
+export interface Stream extends WritableStream {
+	/**
+	 * unique stream identifier
+	 */
+	id: string;
+	/**
+	 * the unique stream url to consume the stream
+	 */
+	url: string;
+	/**
+	 * close the stream gracefully, handling already closed streams without error
+	 */
+	close(): Promise<void>;
+}
+
+/**
+ * Stream API for creating and managing streams
+ */
+export interface StreamAPI {
+	/**
+	 * create a new stream
+	 *
+	 * @param name - the name of the stream (1-254 characters)
+	 * @param props - optional properties for creating the stream
+	 * @returns a Promise that resolves to the created Stream
+	 */
+	create(name: string, props?: CreateStreamProps): Promise<Stream>;
 }
 
 type VectorUpsertEmbeddings = {
@@ -722,7 +769,9 @@ export type GetAgentRequestParams =
 /**
  * The signature for the waitUntil method
  */
-export type WaitUntilCallback = (promise: Promise<void> | (() => void | Promise<void>)) => void;
+export type WaitUntilCallback = (
+	promise: Promise<void> | (() => void | Promise<void>)
+) => void;
 
 export interface AgentContext {
 	/**
@@ -812,6 +861,11 @@ export interface AgentContext {
 	 * the vector storage
 	 */
 	vector: VectorStorage;
+
+	/**
+	 * the stream api
+	 */
+	stream: StreamAPI;
 
 	/**
 	 * the email service
