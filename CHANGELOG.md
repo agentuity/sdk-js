@@ -1,5 +1,16 @@
 # @agentuity/sdk Changelog
 
+## 0.0.146
+
+### Patch Changes
+
+- a2257f2: Fixed issue where fetch would error in certain environments with around error around keepalive not being defined
+- f4e9154: Added ability to create a low-level stream as a first class API
+- 60cf45a: Adds the ability to getReader() to return a reader for the Stream
+  Immediately schedules tasks sent to context.waitUntil instead of waiting until the response is returned
+  Adds the ability to return a Stream directly from a Agent handler and have it return a 302 with the stream location automatically
+- 4611143: Add support for context.waitUntil to be able to run background processing without blocking the response
+
 ## 0.0.145
 
 ### Patch Changes
