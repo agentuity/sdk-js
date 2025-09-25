@@ -298,7 +298,7 @@ describe('API Client', () => {
 			expect(getBaseUrlForService()).toBe('https://agentuity.ai/');
 			expect(getBaseUrlForService('vector')).toBe('https://agentuity.ai/');
 			expect(getBaseUrlForService('keyvalue')).toBe('https://agentuity.ai/');
-			expect(getBaseUrlForService('stream')).toBe('https://agentuity.ai/');
+			expect(getBaseUrlForService('stream')).toBe('https://streams.agentuity.cloud');
 			expect(getBaseUrlForService('objectstore')).toBe('https://agentuity.ai/');
 		});
 
@@ -308,7 +308,7 @@ describe('API Client', () => {
 			expect(getBaseUrlForService()).toBe('https://transport.example.com/');
 			expect(getBaseUrlForService('vector')).toBe('https://transport.example.com/');
 			expect(getBaseUrlForService('keyvalue')).toBe('https://transport.example.com/');
-			expect(getBaseUrlForService('stream')).toBe('https://transport.example.com/');
+			expect(getBaseUrlForService('stream')).toBe('https://streams.agentuity.cloud'); // Stream service has its own default
 			expect(getBaseUrlForService('objectstore')).toBe('https://transport.example.com/');
 		});
 

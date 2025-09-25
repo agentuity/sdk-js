@@ -1,7 +1,8 @@
-import { context, SpanStatusCode, trace } from '@opentelemetry/api';
-import { getTracer, recordException } from '../router/router';
+import { getBaseUrlForService, POST } from './api';
+import { getSDKVersion, getTracer, recordException } from '../router/router';
 import type { CreateStreamProps, Stream, StreamAPI } from '../types';
-import { POST, getBaseUrlForService } from './api';
+import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import { safeStringify } from '../server/util';
 
 /**
  * A writable stream implementation that extends WritableStream
@@ -10,10 +11,37 @@ class StreamImpl extends WritableStream implements Stream {
 	public readonly id: string;
 	public readonly url: string;
 
-	constructor(id: string, url: string, underlyingStream: WritableStream) {
-		super(underlyingStream);
+	constructor(id: string, url: string, underlyingSink: UnderlyingSink) {
+		super(underlyingSink);
 		this.id = id;
 		this.url = url;
+	}
+
+	/**
+	 * Override close to handle already closed streams gracefully
+	 * This method safely closes the stream, or silently returns if already closed
+	 */
+	async close(): Promise<void> {
+		try {
+			// Check if stream is already closed by attempting to get a writer
+			const writer = this.getWriter();
+			await writer.close();
+		} catch (error) {
+			// If we get a TypeError about the stream being closed, locked, or errored,
+			// that means pipeTo() or another operation already closed it or it's in use
+			if (
+				error instanceof TypeError &&
+				(error.message.includes('closed') ||
+					error.message.includes('errored') ||
+					error.message.includes('locked') ||
+					error.message.includes('Cannot close'))
+			) {
+				// Silently return - this is the desired behavior
+				return Promise.resolve();
+			}
+			// Re-throw any other errors
+			throw error;
+		}
 	}
 }
 
@@ -57,6 +85,7 @@ export default class StreamAPIImpl implements StreamAPI {
 				const requestBody = {
 					name,
 					...(props?.metadata && { metadata: props.metadata }),
+					...(props?.contentType && { contentType: props.contentType }),
 				};
 
 				const resp = await POST(
@@ -71,7 +100,7 @@ export default class StreamAPIImpl implements StreamAPI {
 				);
 
 				if (resp.status === 200) {
-					const result = (await resp.response.json()) as {
+					const result = resp.json as {
 						id: string;
 					};
 
@@ -84,9 +113,12 @@ export default class StreamAPIImpl implements StreamAPI {
 					let abortController: AbortController | null = null;
 					let writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
 					let putRequestPromise: Promise<Response> | null = null;
+					let total = 0;
+					let closed = false;
 
 					// Create a WritableStream that writes to the backend stream
-					const underlyingStream = new WritableStream({
+					// Create the underlying sink that will handle the actual streaming
+					const underlyingSink = {
 						async start() {
 							// Create AbortController for the fetch request
 							abortController = new AbortController();
@@ -96,24 +128,59 @@ export default class StreamAPIImpl implements StreamAPI {
 							writer = writable.getWriter();
 
 							// Start the PUT request with the readable stream as body
+							const apiKey =
+								process.env.AGENTUITY_SDK_KEY || process.env.AGENTUITY_API_KEY;
+							if (!apiKey) {
+								throw new Error(
+									'AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set'
+								);
+							}
+							const sdkVersion = getSDKVersion();
+
 							putRequestPromise = fetch(url, {
 								method: 'PUT',
 								headers: {
-									'Content-Type': 'application/octet-stream',
+									'Content-Type':
+										props?.contentType || 'application/octet-stream',
+									'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
+									Authorization: `Bearer ${apiKey}`,
 								},
 								body: readable,
 								signal: abortController.signal,
 								duplex: 'half',
 							} as RequestInit & { duplex: 'half' });
 						},
-						async write(chunk: Uint8Array) {
+						async write(
+							chunk: string | Uint8Array | ArrayBuffer | Buffer | object
+						) {
 							if (!writer) {
 								throw new Error('Stream writer not initialized');
 							}
+							// Convert input to Uint8Array if needed
+							let binaryChunk: Uint8Array;
+							if (chunk instanceof Uint8Array) {
+								binaryChunk = chunk;
+							} else if (typeof chunk === 'string') {
+								binaryChunk = new TextEncoder().encode(chunk);
+							} else if (chunk instanceof ArrayBuffer) {
+								binaryChunk = new Uint8Array(chunk);
+							} else if (typeof chunk === 'object' && chunk !== null) {
+								// Convert objects to JSON string, then to bytes
+								binaryChunk = new TextEncoder().encode(safeStringify(chunk));
+							} else {
+								// Handle primitive types (number, boolean, etc.)
+								binaryChunk = new TextEncoder().encode(String(chunk));
+							}
 							// Write the chunk to the transform stream, which pipes to the PUT request
-							await writer.write(chunk);
+							await writer.write(binaryChunk);
+							total += binaryChunk.length;
 						},
 						async close() {
+							if (closed) {
+								return;
+							}
+							closed = true;
+							span.setAttribute('stream.total', total);
 							if (writer) {
 								await writer.close();
 								writer = null;
@@ -148,9 +215,9 @@ export default class StreamAPIImpl implements StreamAPI {
 							}
 							putRequestPromise = null;
 						},
-					});
+					};
 
-					const stream = new StreamImpl(result.id, url, underlyingStream);
+					const stream = new StreamImpl(result.id, url, underlyingSink);
 
 					span.setStatus({ code: SpanStatusCode.OK });
 					return stream;

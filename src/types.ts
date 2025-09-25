@@ -337,6 +337,11 @@ export interface CreateStreamProps {
 	 * optional metadata for the stream
 	 */
 	metadata?: Record<string, string>;
+
+	/**
+	 * optional contentType for the stream data. If not set, defaults to application/octet-stream
+	 */
+	contentType?: string;
 }
 
 /**

@@ -90,7 +90,7 @@ export const getBaseUrlForService = (service?: ServiceName) => {
 			break;
 		case 'stream':
 			value =
-				process.env.AGENTUITY_STREAM_URL || process.env.AGENTUITY_TRANSPORT_URL;
+				process.env.AGENTUITY_STREAM_URL || 'https://streams.agentuity.cloud';
 			break;
 		case 'objectstore':
 			value =
