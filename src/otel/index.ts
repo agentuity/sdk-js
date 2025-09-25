@@ -139,7 +139,7 @@ export const createUserLoggerProvider = ({
 	headers,
 	resource,
 }: {
-	url?: string,
+	url: string,
 	headers?: Record<string, string>,
 	resource: Resource;
 }) => {

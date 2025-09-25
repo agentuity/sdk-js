@@ -6,6 +6,7 @@ import { OtelLogger } from '../otel/logger';
 import { createServer, createServerContext } from '../server';
 import type { AgentConfig } from '../types';
 import { Resource } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 /**
  * Configuration for user provided OpenTelemetry
@@ -14,7 +15,6 @@ interface UserOpenTelemetryConfig {
 	endpoint: string;
 	protocol: 'grpc' | 'http/protobuf' | 'http/json';
 	serviceName: string;
-	environment: string;
 	samplingRate: number;
 	resourceAttributes: Record<string, string>;
 	headers: Record<string, string>;
@@ -124,6 +124,7 @@ export async function run(config: AutostartConfig) {
 	const otel = registerOtel(otelConfig);
 	if (config.userOtelConf) {
 
+		config.userOtelConf.resourceAttributes[ATTR_SERVICE_NAME] = config.userOtelConf.serviceName;
 		const resource = new Resource({
 			...createResource(otelConfig).attributes,
 			...config.userOtelConf.resourceAttributes,
@@ -133,7 +134,11 @@ export async function run(config: AutostartConfig) {
 			headers: config.userOtelConf.headers,
 			resource,
 		});
-		(otel.logger as OtelLogger).addDelegate(logger);
+		if (otel.logger instanceof OtelLogger) {
+			otel.logger.addDelegate(logger);
+		} else {
+			console.warn('[WARN] user OTEL logger not attached: logger does not support addDelegate');
+		}
 	}
 
 	const server = await createServer({
