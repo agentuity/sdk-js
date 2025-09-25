@@ -345,7 +345,14 @@ export interface CreateStreamProps {
 }
 
 /**
- * A stream that can be written to and read from
+ * A durable and resumable stream that can be written to and read many times.
+ * The underlying stream is backed by a durable storage system and the URL
+ * returned is public and guaranteed to return the same data every time it is accessed.
+ * You can read from this stream internal in the agent using the getReader() method or
+ * return the URL to the stream to be used externally.
+ *
+ * You must write and close the stream before it can be read but if you attempt to read
+ * before any data is written, the reader will block until the first write occurs.
  */
 export interface Stream extends WritableStream {
 	/**
@@ -360,6 +367,15 @@ export interface Stream extends WritableStream {
 	 * close the stream gracefully, handling already closed streams without error
 	 */
 	close(): Promise<void>;
+	/**
+	 * get a ReadableStream that streams from the internal URL
+	 *
+	 * Note: This method will block waiting for data until writes start to the Stream.
+	 * The returned ReadableStream will remain open until the Stream is closed or an error occurs.
+	 *
+	 * @returns a ReadableStream that can be passed to response.stream()
+	 */
+	getReader(): ReadableStream<Uint8Array>;
 }
 
 /**
@@ -1094,7 +1110,7 @@ export type AgentHandler = (
 	request: AgentRequest,
 	response: AgentResponse,
 	context: AgentContext
-) => Promise<AgentResponseData | Response>;
+) => Promise<AgentResponseData | Response | Stream>;
 
 export interface AgentWelcomePrompt {
 	/**

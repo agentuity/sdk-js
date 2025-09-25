@@ -3,6 +3,7 @@ import { getSDKVersion, getTracer, recordException } from '../router/router';
 import type { CreateStreamProps, Stream, StreamAPI } from '../types';
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { safeStringify } from '../utils/stringify';
+import { ReadableStream } from 'node:stream/web';
 
 /**
  * A writable stream implementation that extends WritableStream
@@ -42,6 +43,76 @@ class StreamImpl extends WritableStream implements Stream {
 			// Re-throw any other errors
 			throw error;
 		}
+	}
+
+	/**
+	 * Get a ReadableStream that streams from the internal URL
+	 *
+	 * Note: This method will block waiting for data until writes start to the Stream.
+	 * The returned ReadableStream will remain open until the Stream is closed or an error occurs.
+	 *
+	 * @returns a ReadableStream that can be passed to response.stream()
+	 */
+	getReader(): ReadableStream<Uint8Array> {
+		const url = this.url;
+		return new ReadableStream({
+			async start(controller) {
+				try {
+					const apiKey =
+						process.env.AGENTUITY_SDK_KEY || process.env.AGENTUITY_API_KEY;
+					if (!apiKey) {
+						controller.error(
+							new Error('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set')
+						);
+						return;
+					}
+
+					const sdkVersion = getSDKVersion();
+					const response = await getFetch()(url, {
+						method: 'GET',
+						headers: {
+							'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
+							Authorization: `Bearer ${apiKey}`,
+						},
+					});
+
+					if (!response.ok) {
+						controller.error(
+							new Error(
+								`Failed to read stream: ${response.status} ${response.statusText}`
+							)
+						);
+						return;
+					}
+
+					if (!response.body) {
+						controller.error(new Error('Response body is null'));
+						return;
+					}
+
+					// Pipe the response body to our controller
+					const reader = response.body.getReader();
+
+					const pump = async (): Promise<void> => {
+						try {
+							const { done, value } = await reader.read();
+							if (done) {
+								controller.close();
+								return;
+							}
+							controller.enqueue(value);
+							await pump();
+						} catch (error) {
+							controller.error(error);
+						}
+					};
+
+					await pump();
+				} catch (error) {
+					controller.error(error);
+				}
+			},
+		});
 	}
 }
 
@@ -127,7 +198,10 @@ export default class StreamAPIImpl implements StreamAPI {
 							abortController = new AbortController();
 
 							// Create a ReadableStream to pipe data to the PUT request
-							const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+							const { readable, writable } = new TransformStream<
+								Uint8Array,
+								Uint8Array
+							>();
 							writer = writable.getWriter();
 
 							// Start the PUT request with the readable stream as body

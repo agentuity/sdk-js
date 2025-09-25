@@ -13,7 +13,7 @@ export function isIdle(): boolean {
 }
 
 export default class AgentContextWaitUntilHandler {
-	private promises: (() => void | Promise<void>)[];
+	private promises: Promise<void>[];
 	private tracer: Tracer;
 	private started: number | undefined;
 	private hasCalledWaitUntilAll = false;
@@ -33,7 +33,9 @@ export default class AgentContextWaitUntilHandler {
 			);
 		}
 		const currentContext = context.active();
-		this.promises.push(async () => {
+		
+		// Start execution immediately, don't defer it
+		const executingPromise = (async () => {
 			running++;
 			if (this.started === undefined) {
 				this.started = Date.now(); /// this first execution marks the start time
@@ -55,7 +57,10 @@ export default class AgentContextWaitUntilHandler {
 				span.end();
 			}
 			// NOTE: we only decrement when the promise is removed from the array in waitUntilAll
-		});
+		})();
+		
+		// Store the executing promise for cleanup tracking
+		this.promises.push(executingPromise);
 	}
 
 	public hasPending(): boolean {
@@ -72,7 +77,8 @@ export default class AgentContextWaitUntilHandler {
 			return;
 		}
 		try {
-			await Promise.all(this.promises.map((p) => p()));
+			// Promises are already executing, just wait for them to complete
+			await Promise.all(this.promises);
 			const duration = Date.now() - (this.started as number);
 			await markSessionCompleted(sessionId, duration);
 		} catch (ex) {

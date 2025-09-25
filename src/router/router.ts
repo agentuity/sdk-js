@@ -23,6 +23,7 @@ import type {
 	GetAgentRequestParams,
 	ReadableDataType,
 	RemoteAgent,
+	Stream,
 } from '../types';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
@@ -349,7 +350,22 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 										'handler returned null instead of a response'
 									);
 								}
-
+								// check to see if this is a Stream
+								if (
+									typeof handlerResponse === 'object' &&
+									'url' in handlerResponse &&
+									'id' in handlerResponse &&
+									'close' in handlerResponse
+								) {
+									const streamResponse = handlerResponse as unknown as Stream;
+									const url = streamResponse.url;
+									return new Response(null, {
+										status: 302,
+										headers: {
+											Location: url,
+										},
+									});
+								}
 								if (handlerResponse instanceof Response) {
 									return await handlerResponse;
 								}

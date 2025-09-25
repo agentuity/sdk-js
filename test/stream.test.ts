@@ -782,4 +782,340 @@ describe('StreamAPI', () => {
 			await expect(stream.close()).resolves.toBeUndefined();
 		});
 	});
+
+	describe('getReader', () => {
+		let fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]>;
+
+		beforeEach(() => {
+			fetchCalls = [];
+
+			const mockFetch = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
+				fetchCalls.push([url, options]);
+
+				// Handle POST request to create stream
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				// Handle GET request to read stream data
+				if (options?.method === 'GET') {
+					const testData = 'Hello World from stream!';
+					const encoder = new TextEncoder();
+					const chunks = encoder.encode(testData);
+
+					return {
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+						body: new ReadableStream({
+							start(controller) {
+								controller.enqueue(chunks);
+								controller.close();
+							}
+						}),
+					};
+				}
+
+				return {
+					status: 404,
+					response: {
+						status: 404,
+						statusText: 'Not Found',
+					},
+				};
+			});
+
+			setFetch(mockFetch as unknown as typeof fetch);
+			globalThis.fetch = mockFetch as unknown as typeof fetch;
+		});
+
+		it('should return a ReadableStream when calling getReader()', async () => {
+			const stream = await streamAPI.create('test-stream');
+			
+			// Verify getReader method exists and returns a ReadableStream
+			expect(typeof stream.getReader).toBe('function');
+			
+			const reader = stream.getReader();
+			expect(reader).toBeInstanceOf(ReadableStream);
+		});
+
+		it('should make a GET request to the stream URL when reading', async () => {
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Read from the stream to trigger the GET request
+			const reader = readableStream.getReader();
+			const { value, done } = await reader.read();
+			
+			expect(done).toBe(false);
+			expect(value).toBeInstanceOf(Uint8Array);
+			
+			// Verify GET request was made to correct URL
+			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			expect(getRequest).toBeDefined();
+			expect(getRequest?.[0].toString()).toBe('https://stream.test.com/stream-123');
+		});
+
+		it('should include proper headers in GET request', async () => {
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Read from the stream
+			const reader = readableStream.getReader();
+			await reader.read();
+			
+			// Verify GET request headers
+			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			expect(getRequest?.[1]?.headers).toMatchObject({
+				'User-Agent': 'Agentuity JS SDK/1.0.0',
+				'Authorization': 'Bearer test-api-key',
+			});
+		});
+
+		it('should stream data correctly from the GET response', async () => {
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Read all data from the stream
+			const reader = readableStream.getReader();
+			const chunks: Uint8Array[] = [];
+			
+			while (true) {
+				const { value, done } = await reader.read();
+				if (done) break;
+				chunks.push(value);
+			}
+			
+			// Combine chunks and verify data
+			const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+			const combined = new Uint8Array(totalLength);
+			let offset = 0;
+			for (const chunk of chunks) {
+				combined.set(chunk, offset);
+				offset += chunk.length;
+			}
+			
+			const result = new TextDecoder().decode(combined);
+			expect(result).toBe('Hello World from stream!');
+		});
+
+		it('should handle API key authentication errors', async () => {
+			// First create the stream with API key
+			const stream = await streamAPI.create('test-stream');
+			
+			// Then temporarily remove API key before calling getReader
+			const originalApiKey = process.env.AGENTUITY_API_KEY;
+			delete process.env.AGENTUITY_API_KEY;
+			delete process.env.AGENTUITY_SDK_KEY;
+			
+			const readableStream = stream.getReader();
+			
+			// Reading should fail with missing API key error
+			const reader = readableStream.getReader();
+			await expect(reader.read()).rejects.toThrow('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
+			
+			// Restore API key
+			process.env.AGENTUITY_API_KEY = originalApiKey;
+		});
+
+		it('should handle HTTP error responses', async () => {
+			// Mock a failing GET request
+			const errorMockFetch = mock(async (_url: URL | RequestInfo, options?: RequestInit) => {
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				if (options?.method === 'GET') {
+					return {
+						ok: false,
+						status: 500,
+						statusText: 'Internal Server Error',
+					};
+				}
+
+				return { status: 404 };
+			});
+
+			setFetch(errorMockFetch as unknown as typeof fetch);
+			globalThis.fetch = errorMockFetch as unknown as typeof fetch;
+
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Reading should fail with HTTP error
+			const reader = readableStream.getReader();
+			await expect(reader.read()).rejects.toThrow('Failed to read stream: 500 Internal Server Error');
+		});
+
+		it('should handle null response body', async () => {
+			// Mock a GET request with null body
+			const nullBodyMockFetch = mock(async (_url: URL | RequestInfo, options?: RequestInit) => {
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				if (options?.method === 'GET') {
+					return {
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+						body: null, // Null body
+					};
+				}
+
+				return { status: 404 };
+			});
+
+			setFetch(nullBodyMockFetch as unknown as typeof fetch);
+			globalThis.fetch = nullBodyMockFetch as unknown as typeof fetch;
+
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Reading should fail with null body error
+			const reader = readableStream.getReader();
+			await expect(reader.read()).rejects.toThrow('Response body is null');
+		});
+
+		it('should handle large streams with multiple chunks', async () => {
+			// Mock a GET request that returns multiple chunks
+			const multiChunkMockFetch = mock(async (_url: URL | RequestInfo, options?: RequestInit) => {
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				if (options?.method === 'GET') {
+					const chunks = [
+						'Chunk 1: ',
+						'Chunk 2: ',
+						'Chunk 3: ',
+						'Final chunk!'
+					];
+
+					return {
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+						body: new ReadableStream({
+							start(controller) {
+								for (const chunk of chunks) {
+									controller.enqueue(new TextEncoder().encode(chunk));
+								}
+								controller.close();
+							}
+						}),
+					};
+				}
+
+				return { status: 404 };
+			});
+
+			setFetch(multiChunkMockFetch as unknown as typeof fetch);
+			globalThis.fetch = multiChunkMockFetch as unknown as typeof fetch;
+
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Read all chunks
+			const reader = readableStream.getReader();
+			const receivedChunks: Uint8Array[] = [];
+			
+			while (true) {
+				const { value, done } = await reader.read();
+				if (done) break;
+				receivedChunks.push(value);
+			}
+			
+			// Verify we received multiple chunks
+			expect(receivedChunks.length).toBeGreaterThan(1);
+			
+			// Combine and verify final result
+			const totalLength = receivedChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+			const combined = new Uint8Array(totalLength);
+			let offset = 0;
+			for (const chunk of receivedChunks) {
+				combined.set(chunk, offset);
+				offset += chunk.length;
+			}
+			
+			const result = new TextDecoder().decode(combined);
+			expect(result).toBe('Chunk 1: Chunk 2: Chunk 3: Final chunk!');
+		});
+
+		it('should use AGENTUITY_SDK_KEY if AGENTUITY_API_KEY is not set', async () => {
+			// Remove AGENTUITY_API_KEY and set AGENTUITY_SDK_KEY
+			const originalApiKey = process.env.AGENTUITY_API_KEY;
+			delete process.env.AGENTUITY_API_KEY;
+			process.env.AGENTUITY_SDK_KEY = 'test-sdk-key';
+			
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			
+			// Read from the stream
+			const reader = readableStream.getReader();
+			await reader.read();
+			
+			// Verify GET request used SDK key
+			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			expect(getRequest?.[1]?.headers).toMatchObject({
+				'Authorization': 'Bearer test-sdk-key',
+			});
+			
+			// Restore original environment
+			process.env.AGENTUITY_API_KEY = originalApiKey;
+			delete process.env.AGENTUITY_SDK_KEY;
+		});
+
+		it('should work without automatic delays when used properly', async () => {
+			const stream = await streamAPI.create('test-stream');
+			const readableStream = stream.getReader();
+			const reader = readableStream.getReader();
+			
+			// Read from the stream - should work immediately
+			const { value, done } = await reader.read();
+			
+			expect(done).toBe(false);
+			expect(value).toBeInstanceOf(Uint8Array);
+			
+			// Verify GET request was made
+			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			expect(getRequest).toBeDefined();
+		});
+	});
 });
