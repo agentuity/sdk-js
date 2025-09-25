@@ -1,4 +1,4 @@
-import type { ReadableStream } from 'node:stream/web';
+import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
