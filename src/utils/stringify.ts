@@ -21,10 +21,10 @@ export function safeStringify(obj: unknown): string {
 			stack.push(value);
 
 			// Process the object
-			const result: Record<string, unknown> = Array.isArray(value) ? [] : {};
+			const result = Array.isArray(value) ? [] : {};
 
 			for (const [k, v] of Object.entries(value)) {
-				result[k] = replacer(k, v);
+				(result as Record<string, unknown>)[k] = replacer(k, v);
 			}
 
 			// Remove from stack after processing
