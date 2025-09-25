@@ -1,5 +1,5 @@
 import { describe, expect, it, mock, beforeEach, afterEach } from 'bun:test';
-import { send, GET, POST, PUT, DELETE, setFetch, getBaseUrlForService } from '../../src/apis/api';
+import { send, GET, POST, PUT, DELETE, setFetch, getFetch, getBaseUrlForService } from '../../src/apis/api';
 import { createMockFetch } from '../setup';
 import { ReadableStream } from 'node:stream/web';
 
@@ -377,7 +377,7 @@ describe('API Client', () => {
 		});
 
 		it('should use vector service URL for GET request', async () => {
-			await GET('/test', false, undefined, undefined, 'vector');
+			await GET('/test', false, undefined, undefined, undefined, 'vector');
 
 			expect(fetchCalls.length).toBeGreaterThan(0);
 			const [url] = fetchCalls[0];
@@ -393,7 +393,7 @@ describe('API Client', () => {
 		});
 
 		it('should use stream service URL for PUT request', async () => {
-			await PUT('/test', JSON.stringify({ data: 'test' }), undefined, undefined, 'stream');
+			await PUT('/test', JSON.stringify({ data: 'test' }), undefined, undefined, undefined, 'stream');
 
 			expect(fetchCalls.length).toBeGreaterThan(0);
 			const [url] = fetchCalls[0];
@@ -401,7 +401,7 @@ describe('API Client', () => {
 		});
 
 		it('should use objectstore service URL for DELETE request', async () => {
-			await DELETE('/test', undefined, undefined, undefined, 'objectstore');
+			await DELETE('/test', undefined, undefined, undefined, undefined, 'objectstore');
 
 			expect(fetchCalls.length).toBeGreaterThan(0);
 			const [url] = fetchCalls[0];
@@ -419,7 +419,7 @@ describe('API Client', () => {
 		it('should use transport URL as fallback when service-specific URL is not set', async () => {
 			delete process.env.AGENTUITY_VECTOR_URL;
 
-			await GET('/test', false, undefined, undefined, 'vector');
+			await GET('/test', false, undefined, undefined, undefined, 'vector');
 
 			expect(fetchCalls.length).toBeGreaterThan(0);
 			const [url] = fetchCalls[0];
@@ -437,6 +437,39 @@ describe('API Client', () => {
 			expect(headers?.Authorization).toBe('Bearer custom-token');
 		});
 
+		it('should handle GET request with auth token and service', async () => {
+			await GET('/test', false, undefined, undefined, 'get-custom-token', 'keyvalue');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url, options] = fetchCalls[0];
+			expect(url.toString()).toBe('https://keyvalue.example.com/test');
+			
+			const headers = options?.headers as Record<string, string>;
+			expect(headers?.Authorization).toBe('Bearer get-custom-token');
+		});
+
+		it('should handle PUT request with auth token and service', async () => {
+			await PUT('/test', JSON.stringify({ data: 'test' }), undefined, undefined, 'put-custom-token', 'stream');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url, options] = fetchCalls[0];
+			expect(url.toString()).toBe('https://stream.example.com/test');
+			
+			const headers = options?.headers as Record<string, string>;
+			expect(headers?.Authorization).toBe('Bearer put-custom-token');
+		});
+
+		it('should handle DELETE request with auth token and service', async () => {
+			await DELETE('/test', undefined, undefined, undefined, 'delete-custom-token', 'objectstore');
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [url, options] = fetchCalls[0];
+			expect(url.toString()).toBe('https://objectstore.example.com/test');
+			
+			const headers = options?.headers as Record<string, string>;
+			expect(headers?.Authorization).toBe('Bearer delete-custom-token');
+		});
+
 		it('should validate all services work correctly', async () => {
 			const services: Array<{ name: 'vector' | 'keyvalue' | 'stream' | 'objectstore', expectedUrl: string }> = [
 				{ name: 'vector', expectedUrl: 'https://vector.example.com/test' },
@@ -447,7 +480,7 @@ describe('API Client', () => {
 
 			for (const service of services) {
 				fetchCalls.length = 0; // Clear previous calls
-				await GET('/test', false, undefined, undefined, service.name);
+				await GET('/test', false, undefined, undefined, undefined, service.name);
 
 				expect(fetchCalls.length).toBeGreaterThan(0);
 				const [url] = fetchCalls[0];
@@ -462,7 +495,7 @@ describe('API Client', () => {
 			process.env.AGENTUITY_TRANSPORT_URL = 'https://legacy.agentuity.ai/';
 			delete process.env.AGENTUITY_VECTOR_URL;
 
-			await GET('/vectors', false, undefined, undefined, 'vector');
+			await GET('/vectors', false, undefined, undefined, undefined, 'vector');
 			let [url] = fetchCalls[0];
 			expect(url.toString()).toBe('https://legacy.agentuity.ai/vectors');
 
@@ -470,7 +503,7 @@ describe('API Client', () => {
 			fetchCalls.length = 0;
 			process.env.AGENTUITY_VECTOR_URL = 'https://vector.agentuity.ai/';
 
-			await GET('/vectors', false, undefined, undefined, 'vector');
+			await GET('/vectors', false, undefined, undefined, undefined, 'vector');
 			[url] = fetchCalls[0];
 			expect(url.toString()).toBe('https://vector.agentuity.ai/vectors');
 		});
@@ -492,12 +525,32 @@ describe('API Client', () => {
 
 			for (const testCase of testCases) {
 				fetchCalls.length = 0;
-				await GET('/test', false, undefined, undefined, testCase.service);
+				await GET('/test', false, undefined, undefined, undefined, testCase.service);
 
 				expect(fetchCalls.length).toBeGreaterThan(0);
 				const [url] = fetchCalls[0];
 				expect(url.toString()).toBe(testCase.expectedUrl);
 			}
+		});
+	});
+
+	describe('getFetch', () => {
+		it('should return the currently set fetch function', () => {
+			const originalFetch = getFetch();
+			
+			const mockFetch = mock(() => Promise.resolve({} as Response));
+			setFetch(mockFetch as unknown as typeof fetch);
+			
+			expect(getFetch()).toBe(mockFetch);
+			
+			// Restore original
+			setFetch(originalFetch);
+		});
+
+		it('should return globalThis.fetch by default', () => {
+			// Reset to default
+			setFetch(globalThis.fetch);
+			expect(getFetch()).toBe(globalThis.fetch);
 		});
 	});
 });

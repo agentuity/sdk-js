@@ -318,6 +318,7 @@ export default class VectorAPI implements VectorStorage {
 						undefined,
 						undefined,
 						undefined,
+						undefined,
 						'vector'
 					);
 				} else {

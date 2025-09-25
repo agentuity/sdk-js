@@ -9,6 +9,10 @@ export function setFetch(f: typeof fetch) {
 	apiFetch = f;
 }
 
+export function getFetch() {
+	return apiFetch;
+}
+
 interface ApiRequestWithPath {
 	/**
 	 * The path to send the request to
@@ -24,7 +28,11 @@ interface ApiRequestWithUrl {
 
 type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
 
-type ServiceName = 'vector' | 'keyvalue' | 'stream' | 'objectstore';
+export type ServiceName =
+	| 'vector'
+	| 'keyvalue'
+	| 'stream'
+	| 'objectstore';
 
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
@@ -201,6 +209,7 @@ export async function GET<K>(
 	forceBuffer?: boolean,
 	headers?: Record<string, string>,
 	timeout?: number,
+	authToken?: string,
 	service?: ServiceName
 ) {
 	return send<K>(
@@ -209,6 +218,7 @@ export async function GET<K>(
 			path,
 			headers,
 			timeout,
+			authToken,
 			service,
 		} as GetApiRequest,
 		forceBuffer
@@ -259,6 +269,7 @@ export async function PUT<K>(
 	body: Body,
 	headers?: Record<string, string>,
 	timeout?: number,
+	authToken?: string,
 	service?: ServiceName
 ) {
 	return send<K>({
@@ -267,6 +278,7 @@ export async function PUT<K>(
 		body,
 		timeout,
 		headers,
+		authToken,
 		service,
 	} as PutApiRequest);
 }
@@ -286,6 +298,7 @@ export async function DELETE<K>(
 	body?: Body,
 	headers?: Record<string, string>,
 	timeout?: number,
+	authToken?: string,
 	service?: ServiceName
 ) {
 	return send<K>({
@@ -294,6 +307,7 @@ export async function DELETE<K>(
 		body,
 		timeout,
 		headers,
+		authToken,
 		service,
 	} as DeleteApiRequest);
 }

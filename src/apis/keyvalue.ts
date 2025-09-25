@@ -45,6 +45,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					true,
 					undefined,
 					undefined,
+					undefined,
 					'keyvalue'
 				);
 				if (resp.status === 404) {
@@ -156,6 +157,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 					}),
 					headers,
 					undefined,
+					undefined,
 					'keyvalue'
 				);
 
@@ -202,6 +204,7 @@ export default class KeyValueAPI implements KeyValueStorage {
 			await context.with(spanContext, async () => {
 				const resp = await DELETE(
 					`/kv/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					undefined,
 					undefined,
 					undefined,
 					undefined,

@@ -1,8 +1,8 @@
-import { getBaseUrlForService, POST } from './api';
+import { getBaseUrlForService, POST, getFetch } from './api';
 import { getSDKVersion, getTracer, recordException } from '../router/router';
 import type { CreateStreamProps, Stream, StreamAPI } from '../types';
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
-import { safeStringify } from '../server/util';
+import { safeStringify } from '../utils/stringify';
 
 /**
  * A writable stream implementation that extends WritableStream
@@ -76,6 +76,9 @@ export default class StreamAPIImpl implements StreamAPI {
 			if (props?.metadata) {
 				span.setAttribute('metadata', JSON.stringify(props.metadata));
 			}
+			if (props?.contentType) {
+				span.setAttribute('stream.content_type', props.contentType);
+			}
 
 			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
@@ -124,7 +127,7 @@ export default class StreamAPIImpl implements StreamAPI {
 							abortController = new AbortController();
 
 							// Create a ReadableStream to pipe data to the PUT request
-							const { readable, writable } = new TransformStream();
+							const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
 							writer = writable.getWriter();
 
 							// Start the PUT request with the readable stream as body
@@ -137,7 +140,7 @@ export default class StreamAPIImpl implements StreamAPI {
 							}
 							const sdkVersion = getSDKVersion();
 
-							putRequestPromise = fetch(url, {
+							putRequestPromise = getFetch()(url, {
 								method: 'PUT',
 								headers: {
 									'Content-Type':

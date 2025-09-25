@@ -356,6 +356,10 @@ export interface Stream extends WritableStream {
 	 * the unique stream url to consume the stream
 	 */
 	url: string;
+	/**
+	 * close the stream gracefully, handling already closed streams without error
+	 */
+	close(): Promise<void>;
 }
 
 /**

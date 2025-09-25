@@ -72,6 +72,7 @@ export default class ObjectStoreAPI implements ObjectStore {
 					true,
 					undefined,
 					undefined,
+					undefined,
 					'objectstore'
 				);
 				if (resp.status === 404) {
@@ -187,6 +188,7 @@ export default class ObjectStoreAPI implements ObjectStore {
 					stream as unknown as ReadableStream,
 					headers,
 					undefined,
+					undefined,
 					'objectstore'
 				);
 
@@ -246,6 +248,7 @@ export default class ObjectStoreAPI implements ObjectStore {
 			return await context.with(spanContext, async () => {
 				const resp = await DELETE(
 					`/object/2025-03-17/${encodeURIComponent(bucket)}/${encodeURIComponent(key)}`,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
