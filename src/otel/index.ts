@@ -154,7 +154,11 @@ export const createUserLoggerProvider = ({
 		resource,
 	});
 	provider.addLogRecordProcessor(processor);
-	return provider.getLogger('default');
+	return {
+		provider,
+		exporter,
+		processor,
+	};
 };
 
 /**
