@@ -4,12 +4,13 @@
 
 ### Patch Changes
 
-- a2257f2: Fixed issue where fetch would error in certain environments with around error around keepalive not being defined
-- f4e9154: Added ability to create a low-level stream as a first class API
-- 60cf45a: Adds the ability to getReader() to return a reader for the Stream
-  Immediately schedules tasks sent to context.waitUntil instead of waiting until the response is returned
-  Adds the ability to return a Stream directly from a Agent handler and have it return a 302 with the stream location automatically
-- 4611143: Add support for context.waitUntil to be able to run background processing without blocking the response
+- 5ff39a8: Changes for waitUntil and low-level streams support ([#182](https://github.com/agentuity/sdk-js/pull/182))
+- 60cf45a: Stream improvements - adds the ability to getReader() to return a reader for the Stream, immediately schedules tasks sent to context.waitUntil instead of waiting until the response is returned, and adds the ability to return a Stream directly from an Agent handler with automatic 302 redirect ([#181](https://github.com/agentuity/sdk-js/pull/181))
+- f4e9154: Add streams as first class context API ([#180](https://github.com/agentuity/sdk-js/pull/180))
+- 4611143: Add support for context.waitUntil to be able to run background processing without blocking the response ([#179](https://github.com/agentuity/sdk-js/pull/179))
+- a2257f2: Fix fetch function issues with streaming - fixed issue where fetch would error in certain environments with error around keepalive not being defined ([#178](https://github.com/agentuity/sdk-js/pull/178))
+- 0cd808f: Fix spelling errors in link and repository information ([#177](https://github.com/agentuity/sdk-js/pull/177))
+- 11c64cd: Update changelog formatting for v0.0.145 ([#175](https://github.com/agentuity/sdk-js/pull/175))
 
 ## 0.0.145
 
