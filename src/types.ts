@@ -2,6 +2,7 @@ import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
+
 import type {
 	Slack,
 	SlackAttachmentsMessage,
@@ -633,6 +634,10 @@ export interface SlackService {
 	): Promise<void>;
 }
 
+export interface PromptStorage {
+	test(): Promise<string>;
+}
+
 export interface ObjectStorePutParams {
 	/**
 	 * the content type of the object
@@ -902,6 +907,11 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
+
+	/**
+	 * the prompt storage
+	 */
+	prompt: PromptStorage;
 }
 
 /**

@@ -5,6 +5,8 @@ import DiscordAPI from '../apis/discord';
 import EmailAPI from '../apis/email';
 import KeyValueAPI from '../apis/keyvalue';
 import ObjectStoreAPI from '../apis/objectstore';
+import PatchPortal from '../apis/patchportal';
+import PromptAPI from '../apis/prompt';
 import StreamAPIImpl from '../apis/stream';
 import VectorAPI from '../apis/vector';
 import type { Logger } from '../logger';
@@ -178,6 +180,10 @@ const stream = new StreamAPIImpl();
 const email = new EmailAPI();
 const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
+const prompt = new PromptAPI();
+
+// PatchPortal will be initialized lazily since it's async
+let patchportal: PatchPortal | null = null;
 
 /**
  * Creates an agent context for server operations
@@ -185,9 +191,16 @@ const objectstore = new ObjectStoreAPI();
  * @param req - The server context request parameters
  * @returns An agent context object
  */
-export function createServerContext(req: ServerContextRequest): AgentContext {
+export async function createServerContext(
+	req: ServerContextRequest
+): Promise<AgentContext> {
 	// Use sessionId if provided, otherwise fallback to runId, and ensure sess_ prefix
 	const sessionId = ensureSessionIdPrefix(req.sessionId || req.runId || '');
+
+	// Initialize PatchPortal if not already done
+	if (!patchportal) {
+		patchportal = await PatchPortal.getInstance();
+	}
 
 	return {
 		devmode: req.devmode,
@@ -205,6 +218,8 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		email,
 		discord,
 		objectstore,
+		prompt,
+		patchportal,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
 		scope: 'local',

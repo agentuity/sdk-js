@@ -32,7 +32,8 @@ export type ServiceName =
 	| 'vector'
 	| 'keyvalue'
 	| 'stream'
-	| 'objectstore';
+	| 'objectstore'
+	| 'prompt';
 
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
@@ -104,6 +105,10 @@ export const getBaseUrlForService = (service?: ServiceName) => {
 			value =
 				process.env.AGENTUITY_OBJECTSTORE_URL ||
 				process.env.AGENTUITY_TRANSPORT_URL;
+			break;
+		case 'prompt':
+			value =
+				process.env.AGENTUITY_PROMPT_URL || process.env.AGENTUITY_TRANSPORT_URL;
 			break;
 		default:
 			break;
