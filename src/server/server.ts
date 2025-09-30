@@ -201,6 +201,7 @@ export async function createServerContext(
 	if (!patchportal) {
 		patchportal = await PatchPortal.getInstance();
 	}
+	await promptAPI.loadPrompts();
 
 	return {
 		devmode: req.devmode,
