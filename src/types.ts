@@ -634,10 +634,6 @@ export interface SlackService {
 	): Promise<void>;
 }
 
-export interface PromptStorage {
-	test(): Promise<string>;
-}
-
 export interface ObjectStorePutParams {
 	/**
 	 * the content type of the object
@@ -909,9 +905,9 @@ export interface AgentContext {
 	slack: SlackService;
 
 	/**
-	 * the prompt storage
+	 * get the prompts collection for compiling dynamic prompts
 	 */
-	prompt: PromptStorage;
+	prompts(): import('./apis/prompt/generated/index.js').PromptsCollection;
 }
 
 /**
