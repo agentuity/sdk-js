@@ -907,7 +907,7 @@ export interface AgentContext {
 	/**
 	 * get the prompts collection for compiling dynamic prompts
 	 */
-	prompts(): import('./apis/prompt/generated/index.js').PromptsCollection;
+	_experimental_prompts(): import('./apis/prompt/generated/index.js').PromptsCollection;
 }
 
 /**

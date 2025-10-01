@@ -217,7 +217,7 @@ export async function createServerContext(
 		vector,
 		stream,
 		email,
-		prompts: () => promptAPI.prompts,
+		_experimental_prompts: () => promptAPI.prompts,
 		discord,
 		objectstore,
 		patchportal,
