@@ -1,34 +1,50 @@
 // Main entry point for prompts - following POC pattern exactly
 
+import fs from 'fs/promises';
+import path from 'path';
+import { pathToFileURL } from 'url';
 import { PromptConfig, PromptName } from './generated/_index.js';
+import type { PromptsCollection } from './generated/index.js';
 
 // Default empty prompts object
 const defaultPrompts = {};
 
+// Expected shape of generated module
+interface GeneratedModule {
+	prompts?: PromptsCollection;
+}
+
 export default class PromptAPI {
-	public prompts: typeof defaultPrompts;
+	public prompts: PromptsCollection;
 
 	constructor() {
 		// Initialize with empty prompts by default
 		this.prompts = defaultPrompts;
 	}
 
-	// Method to load prompts dynamically (called by context)
-	public async loadPrompts(): Promise<void> {
-		// console.log('loadPrompts() called');
+	/**
+	 * Resolve possible paths for generated prompts using dynamic module resolution
+	 */
+	private async resolveGeneratedPaths(): Promise<string[]> {
+		const paths: string[] = [];
+
 		try {
-			// Try multiple possible paths for the generated prompts
-			let generatedModule: any;
+			// Try to resolve the @agentuity/sdk package
+			const sdkPath = require.resolve('@agentuity/sdk/package.json');
+			const sdkRoot = path.dirname(sdkPath);
 
-			// Skip relative path - doesn't work in bundled environment
-			// Try absolute path from node_modules
-			const path = require('path');
-			const fs = require('fs');
-
-			// Look for the generated file in common locations
-			const possiblePaths = [
+			// Add both dist and src paths relative to resolved package
+			paths.push(
+				path.join(sdkRoot, 'dist', 'apis', 'prompt', 'generated', '_index.js'),
+				path.join(sdkRoot, 'src', 'apis', 'prompt', 'generated', '_index.js')
+			);
+		} catch {
+			// Fallback to process.cwd() if package resolution fails
+			// (e.g., in bundled/serverless environments)
+			const fallbackRoot = process.cwd();
+			paths.push(
 				path.join(
-					process.cwd(),
+					fallbackRoot,
 					'node_modules',
 					'@agentuity',
 					'sdk',
@@ -39,7 +55,7 @@ export default class PromptAPI {
 					'_index.js'
 				),
 				path.join(
-					process.cwd(),
+					fallbackRoot,
 					'node_modules',
 					'@agentuity',
 					'sdk',
@@ -48,23 +64,61 @@ export default class PromptAPI {
 					'prompt',
 					'generated',
 					'_index.js'
-				),
-			];
+				)
+			);
+		}
+
+		return paths;
+	}
+
+	/**
+	 * Type guard to validate generated module shape
+	 */
+	private isValidGeneratedModule(module: unknown): module is GeneratedModule {
+		return (
+			typeof module === 'object' &&
+			module !== null &&
+			((module as GeneratedModule).prompts === undefined ||
+				typeof (module as GeneratedModule).prompts === 'object')
+		);
+	}
+
+	// Method to load prompts dynamically (called by context)
+	public async loadPrompts(): Promise<void> {
+		// console.log('loadPrompts() called');
+		try {
+			// Try multiple possible paths for the generated prompts
+			let generatedModule: unknown;
+
+			// Dynamic module resolution strategy
+			const possiblePaths = await this.resolveGeneratedPaths();
 
 			// console.log('Trying absolute paths:');
 			for (const possiblePath of possiblePaths) {
 				// console.log('  Checking:', possiblePath);
-				// console.log('  Exists:', fs.existsSync(possiblePath));
-				if (fs.existsSync(possiblePath)) {
-					delete require.cache[possiblePath];
-					generatedModule = require(possiblePath);
+				try {
+					await fs.access(possiblePath);
+					// Get file stats for cache-busting
+					const stats = await fs.stat(possiblePath);
+					const mtime = stats.mtime.getTime();
+
+					// Convert to file URL with cache-busting query param
+					const fileUrl = pathToFileURL(possiblePath).href + `?t=${mtime}`;
+
+					// Use ESM dynamic import instead of require
+					generatedModule = await import(fileUrl);
 					// console.log('  Successfully loaded from:', possiblePath);
 					break;
-				}
+				} catch {}
 			}
 
 			if (!generatedModule) {
 				throw new Error('Generated prompts file not found');
+			}
+
+			// Type guard to ensure generatedModule has expected shape
+			if (!this.isValidGeneratedModule(generatedModule)) {
+				throw new Error('Generated module has invalid shape');
 			}
 
 			// console.log('Generated module:', generatedModule);
@@ -72,7 +126,8 @@ export default class PromptAPI {
 			// 	'Prompts in module:',
 			// 	Object.keys(generatedModule.prompts || {})
 			// );
-			this.prompts = generatedModule.prompts || defaultPrompts;
+			this.prompts =
+				generatedModule.prompts || (defaultPrompts as PromptsCollection);
 			// console.log('Final prompts:', Object.keys(this.prompts));
 		} catch (error) {
 			// Fallback to empty prompts if generated file doesn't exist

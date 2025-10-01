@@ -148,4 +148,22 @@ try {
 - Avoid `import()` statements for generated content
 - Ensure fallbacks work when generated content is missing
 
+## Development Workflow
+
+### When Making Changes to Generated Content Structure:
+1. **Update CLI code generation** in `cli/internal/bundler/prompts/code_generator.go`
+2. **Update SDK to handle new structure** in `src/apis/prompt/index.ts`
+3. **Bump SDK version** in `package.json`
+4. **Build SDK**: `npm run build`
+5. **Install in test project**: `npm install /path/to/sdk-js`
+6. **Run bundle command**: `agentuity-cli bundle` to regenerate content
+7. **Copy dist to node_modules**: `cp -r dist/* node_modules/@agentuity/sdk/dist/` (if needed)
+
+**Note**: After the first setup, you only need to run step 7 (`cp -r dist/* node_modules/@agentuity/sdk/dist/`) for subsequent changes to avoid reinstalling the entire package.
+
+### Required Exports
+- ✅ Always export `interpolateTemplate` from main SDK index
+- ✅ Generated content must import from `@agentuity/sdk` (not relative paths)
+- ✅ Ensure all dependencies are properly exported
+
 Remember: The SDK's job is to load generated content dynamically, not contain hardcoded generated content.

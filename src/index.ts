@@ -1,6 +1,7 @@
 export * from './logger';
 export * from './server';
 export * from './types';
+export * from './utils/interpolate';
 
 import DiscordAPI from './apis/discord';
 // Export APIs
