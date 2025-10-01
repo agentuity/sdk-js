@@ -4,6 +4,7 @@ import type { CreateStreamProps, Stream, StreamAPI } from '../types';
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { safeStringify } from '../utils/stringify';
 import { ReadableStream } from 'node:stream/web';
+import { createGzip } from 'node:zlib';
 
 /**
  * A writable stream implementation that extends WritableStream
@@ -210,10 +211,34 @@ export default class StreamAPIImpl implements StreamAPI {
 							abortController = new AbortController();
 
 							// Create a ReadableStream to pipe data to the PUT request
-							const { readable, writable } = new TransformStream<
+							let { readable, writable } = new TransformStream<
 								Uint8Array,
 								Uint8Array
 							>();
+
+							// If compression is enabled, add gzip transform
+							if (props?.compress) {
+								const { Readable, Writable } = await import('node:stream');
+
+								// Create a new transform for the compressed output
+								const { readable: compressedReadable, writable: compressedWritable } = new TransformStream<
+									Uint8Array,
+									Uint8Array
+								>();
+
+								// Set up compression pipeline
+								const gzipStream = createGzip();
+								const nodeWritable = Writable.toWeb(gzipStream) as WritableStream<Uint8Array>;
+
+								// Pipe gzip output to the compressed readable
+								const gzipReader = Readable.toWeb(gzipStream) as ReadableStream<Uint8Array>;
+								gzipReader.pipeTo(compressedWritable).catch(() => {});
+
+								// Chain: writable -> gzip -> compressedReadable
+								readable.pipeTo(nodeWritable).catch(() => {});
+								readable = compressedReadable;
+							}
+
 							writer = writable.getWriter();
 
 							// Start the PUT request with the readable stream as body
@@ -226,14 +251,20 @@ export default class StreamAPIImpl implements StreamAPI {
 							}
 							const sdkVersion = getSDKVersion();
 
+							const headers: Record<string, string> = {
+								'Content-Type':
+									props?.contentType || 'application/octet-stream',
+								'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
+								Authorization: `Bearer ${apiKey}`,
+							};
+
+							if (props?.compress) {
+								headers['Content-Encoding'] = 'gzip';
+							}
+
 							putRequestPromise = getFetch()(url, {
 								method: 'PUT',
-								headers: {
-									'Content-Type':
-										props?.contentType || 'application/octet-stream',
-									'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
-									Authorization: `Bearer ${apiKey}`,
-								},
+								headers,
 								body: readable,
 								signal: abortController.signal,
 								duplex: 'half',

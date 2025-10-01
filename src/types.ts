@@ -342,6 +342,13 @@ export interface CreateStreamProps {
 	 * optional contentType for the stream data. If not set, defaults to application/octet-stream
 	 */
 	contentType?: string;
+
+	/**
+	 * optional flag to enable gzip compression of stream data during upload. if true, will also add
+    * add Content-Encoding: gzip header to responses. The client MUST be able to accept gzip
+    * compression for this to work or must be able to uncompress the raw data it receives.
+	 */
+	compress?: true;
 }
 
 /**
