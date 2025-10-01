@@ -12,17 +12,17 @@ describe('safeStringify', () => {
 	it('should handle circular references', () => {
 		const obj = { name: 'test' } as Record<string, unknown>;
 		obj.self = obj;
-		
+
 		const result = safeStringify(obj);
 		expect(result).toBe('{"name":"test","self":"[Circular]"}');
 	});
 
 	it('should handle bigint values', () => {
-		const obj = { 
+		const obj = {
 			regularNumber: 123,
-			bigNumber: 9007199254740991n 
+			bigNumber: 9007199254740991n,
 		};
-		
+
 		const result = safeStringify(obj);
 		expect(result).toBe('{"regularNumber":123,"bigNumber":"9007199254740991"}');
 	});
@@ -33,14 +33,14 @@ describe('safeStringify', () => {
 				id: 1n,
 				timestamp: BigInt(Date.now()),
 				nested: {
-					value: 42n
-				}
-			}
+					value: 42n,
+				},
+			},
 		};
-		
+
 		const result = safeStringify(obj);
 		const parsed = JSON.parse(result);
-		
+
 		expect(typeof parsed.data.id).toBe('string');
 		expect(parsed.data.id).toBe('1');
 		expect(typeof parsed.data.timestamp).toBe('string');
@@ -49,19 +49,19 @@ describe('safeStringify', () => {
 	});
 
 	it('should handle bigint with circular references', () => {
-		const obj = { 
+		const obj = {
 			id: 123n,
-			name: 'test' 
+			name: 'test',
 		} as Record<string, unknown>;
 		obj.self = obj;
-		
+
 		const result = safeStringify(obj);
 		expect(result).toBe('{"id":"123","name":"test","self":"[Circular]"}');
 	});
 
 	it('should handle arrays with bigint values', () => {
 		const arr = [1n, 2n, { value: 3n }];
-		
+
 		const result = safeStringify(arr);
 		expect(result).toBe('[\"1\",\"2\",{\"value\":\"3\"}]');
 	});
@@ -71,12 +71,12 @@ describe('safeStringify', () => {
 			zero: 0n,
 			negative: -123n,
 			maxSafe: BigInt(Number.MAX_SAFE_INTEGER),
-			large: 123456789012345678901234567890n
+			large: 123456789012345678901234567890n,
 		};
-		
+
 		const result = safeStringify(obj);
 		const parsed = JSON.parse(result);
-		
+
 		expect(parsed.zero).toBe('0');
 		expect(parsed.negative).toBe('-123');
 		expect(parsed.maxSafe).toBe('9007199254740991');
@@ -89,17 +89,19 @@ describe('safeStringify', () => {
 			first: sharedObject,
 			second: sharedObject,
 			nested: {
-				third: sharedObject
-			}
+				third: sharedObject,
+			},
 		};
-		
+
 		const result = safeStringify(obj);
-		const expected = '{"first":{"name":"shared","value":42},"second":{"name":"shared","value":42},"nested":{"third":{"name":"shared","value":42}}}';
+		const expected =
+			'{"first":{"name":"shared","value":42},"second":{"name":"shared","value":42},"nested":{"third":{"name":"shared","value":42}}}';
 		expect(result).toBe(expected);
-		
+
 		// Verify that the shared object appears multiple times, not as [Circular]
 		expect(result).not.toContain('[Circular]');
-		const occurrences = (result.match(/{"name":"shared","value":42}/g) || []).length;
+		const occurrences = (result.match(/{"name":"shared","value":42}/g) || [])
+			.length;
 		expect(occurrences).toBe(3);
 	});
 });

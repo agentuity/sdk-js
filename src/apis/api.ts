@@ -28,11 +28,7 @@ interface ApiRequestWithUrl {
 
 type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
 
-export type ServiceName =
-	| 'vector'
-	| 'keyvalue'
-	| 'stream'
-	| 'objectstore';
+export type ServiceName = 'vector' | 'keyvalue' | 'stream' | 'objectstore';
 
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
@@ -140,11 +136,7 @@ export async function send<K>(
 		Accept: 'application/json',
 		'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 	};
-	
-	// Only send Content-Type when a body is present
-	if (request.body) {
-		headers['Content-Type'] = 'application/json';
-	}
+
 	// allow headers to be overridden
 	for (const key in request.headers) {
 		headers[key] = request.headers[key];

@@ -39,27 +39,29 @@ describe('StreamAPI', () => {
 	describe('create', () => {
 		it('should validate stream name length', async () => {
 			// Test empty name
-			await expect(
-				streamAPI.create('')
-			).rejects.toThrow('Stream name must be between 1 and 254 characters');
+			await expect(streamAPI.create('')).rejects.toThrow(
+				'Stream name must be between 1 and 254 characters'
+			);
 
 			// Test too long name
 			const longName = 'a'.repeat(255);
-			await expect(
-				streamAPI.create(longName)
-			).rejects.toThrow('Stream name must be between 1 and 254 characters');
+			await expect(streamAPI.create(longName)).rejects.toThrow(
+				'Stream name must be between 1 and 254 characters'
+			);
 		});
 
 		it('should accept valid stream props', async () => {
 			const props: CreateStreamProps = {
-				metadata: { customerId: 'customer-123', type: 'llm-response' }
+				metadata: { customerId: 'customer-123', type: 'llm-response' },
 			};
 
 			// Mock a simple successful response for validation tests
-			const mockFetch = mock(() => Promise.resolve({
-				status: 200,
-				response: { status: 200, statusText: 'OK' }
-			}));
+			const mockFetch = mock(() =>
+				Promise.resolve({
+					status: 200,
+					response: { status: 200, statusText: 'OK' },
+				})
+			);
 			setFetch(mockFetch as unknown as typeof fetch);
 
 			// This should not throw for valid props
@@ -73,10 +75,12 @@ describe('StreamAPI', () => {
 
 		it('should accept minimal stream props', async () => {
 			// Mock a simple successful response for validation tests
-			const mockFetch = mock(() => Promise.resolve({
-				status: 200,
-				response: { status: 200, statusText: 'OK' }
-			}));
+			const mockFetch = mock(() =>
+				Promise.resolve({
+					status: 200,
+					response: { status: 200, statusText: 'OK' },
+				})
+			);
 			setFetch(mockFetch as unknown as typeof fetch);
 
 			try {
@@ -94,10 +98,12 @@ describe('StreamAPI', () => {
 			const maxName = 'a'.repeat(254);
 
 			// Mock a simple successful response for validation tests
-			const mockFetch = mock(() => Promise.resolve({
-				status: 200,
-				response: { status: 200, statusText: 'OK' }
-			}));
+			const mockFetch = mock(() =>
+				Promise.resolve({
+					status: 200,
+					response: { status: 200, statusText: 'OK' },
+				})
+			);
 			setFetch(mockFetch as unknown as typeof fetch);
 
 			// These should not throw validation errors, only network-related errors
@@ -135,90 +141,96 @@ describe('StreamAPI', () => {
 			streamReadingComplete = false;
 			streamReadingCompleteResolve = null;
 
-			const mockFetch = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
-				fetchCalls.push([url, options]);
+			const mockFetch = mock(
+				async (url: URL | RequestInfo, options?: RequestInit) => {
+					fetchCalls.push([url, options]);
 
-				// Handle POST request to create stream
-				if (options?.method === 'POST') {
-					return {
-						status: 200,
-						response: {
-							json: () => Promise.resolve({ id: 'stream-123' }),
+					// Handle POST request to create stream
+					if (options?.method === 'POST') {
+						return {
 							status: 200,
-							statusText: 'OK',
-						},
-						json: () => Promise.resolve({ id: 'stream-123' }),
-						headers: new Headers({ 'content-type': 'application/json' }),
-					};
-				}
+							response: {
+								json: () => Promise.resolve({ id: 'stream-123' }),
+								status: 200,
+								statusText: 'OK',
+							},
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							headers: new Headers({ 'content-type': 'application/json' }),
+						};
+					}
 
-				// Handle PUT request to upload stream data
-				if (options?.method === 'PUT') {
-					capturedAbortSignal = options.signal as AbortSignal;
+					// Handle PUT request to upload stream data
+					if (options?.method === 'PUT') {
+						capturedAbortSignal = options.signal as AbortSignal;
 
-					// Create a promise that we can resolve manually
-					putRequestPromise = new Promise<Response>((resolve, reject) => {
-						putRequestResolve = resolve;
-						_putRequestReject = reject;
+						// Create a promise that we can resolve manually
+						putRequestPromise = new Promise<Response>((resolve, reject) => {
+							putRequestResolve = resolve;
+							_putRequestReject = reject;
 
-						// Handle abort signal
-						if (capturedAbortSignal) {
-							capturedAbortSignal.addEventListener('abort', () => {
-								reject(new DOMException('The operation was aborted.', 'AbortError'));
-							});
-						}
-					});
-
-					// Capture the stream data if present
-					if (options.body instanceof ReadableStream) {
-						const reader = options.body.getReader();
-
-						// Create a promise we can await for stream reading completion
-						const _streamReadingCompletePromise = new Promise<void>((resolve) => {
-							streamReadingCompleteResolve = resolve;
+							// Handle abort signal
+							if (capturedAbortSignal) {
+								capturedAbortSignal.addEventListener('abort', () => {
+									reject(
+										new DOMException('The operation was aborted.', 'AbortError')
+									);
+								});
+							}
 						});
 
-						// Read all chunks from the stream in background
-						const readStream = async () => {
-							try {
-								while (true) {
-									const { done, value } = await reader.read();
-									if (done) {
-										streamReadingComplete = true;
-										if (streamReadingCompleteResolve) {
-											streamReadingCompleteResolve();
-										}
-										break;
-									}
-									capturedStreamData.push(value);
+						// Capture the stream data if present
+						if (options.body instanceof ReadableStream) {
+							const reader = options.body.getReader();
+
+							// Create a promise we can await for stream reading completion
+							const _streamReadingCompletePromise = new Promise<void>(
+								(resolve) => {
+									streamReadingCompleteResolve = resolve;
 								}
-							} catch (_error) {
+							);
+
+							// Read all chunks from the stream in background
+							const readStream = async () => {
+								try {
+									while (true) {
+										const { done, value } = await reader.read();
+										if (done) {
+											streamReadingComplete = true;
+											if (streamReadingCompleteResolve) {
+												streamReadingCompleteResolve();
+											}
+											break;
+										}
+										capturedStreamData.push(value);
+									}
+								} catch (_error) {
+									streamReadingComplete = true;
+									if (streamReadingCompleteResolve) {
+										streamReadingCompleteResolve();
+									}
+								}
+							};
+
+							readStream().catch(() => {
 								streamReadingComplete = true;
 								if (streamReadingCompleteResolve) {
 									streamReadingCompleteResolve();
 								}
-							}
-						};
+							});
+						}
 
-						readStream().catch(() => {
-							streamReadingComplete = true;
-							if (streamReadingCompleteResolve) {
-								streamReadingCompleteResolve();
-							}
-						});
+						return putRequestPromise;
 					}
 
-					return putRequestPromise;
-				}
-
-				return {
-					status: 404,
-					response: {
+					return {
 						status: 404,
-						statusText: 'Not Found',
-					},
-				};
-			});
+						response: {
+							status: 404,
+							statusText: 'Not Found',
+						},
+					};
+				}
+			);
 
 			setFetch(mockFetch as unknown as typeof fetch);
 			// Also set globalThis.fetch for the internal fetch call in stream.ts
@@ -299,7 +311,9 @@ describe('StreamAPI', () => {
 			}, 10);
 
 			// Closing should throw an error due to failed PUT request
-			await expect(writer.close()).rejects.toThrow('PUT request failed: 500 Internal Server Error');
+			await expect(writer.close()).rejects.toThrow(
+				'PUT request failed: 500 Internal Server Error'
+			);
 		});
 
 		it('should handle large data streams', async () => {
@@ -354,7 +368,9 @@ describe('StreamAPI', () => {
 			await writer.close();
 
 			// Writing after close should throw
-			await expect(writer.write(new TextEncoder().encode('After close'))).rejects.toThrow();
+			await expect(
+				writer.write(new TextEncoder().encode('After close'))
+			).rejects.toThrow();
 		});
 
 		it('should handle concurrent writes', async () => {
@@ -449,7 +465,7 @@ describe('StreamAPI', () => {
 				'World! ',
 				'This is a test of data integrity. ',
 				'🚀 Unicode works too! ',
-				'Final chunk.'
+				'Final chunk.',
 			];
 
 			const sourceStream = new ReadableStream({
@@ -459,7 +475,7 @@ describe('StreamAPI', () => {
 						controller.enqueue(new TextEncoder().encode(data));
 					}
 					controller.close();
-				}
+				},
 			});
 
 			const stream = await streamAPI.create('test-stream');
@@ -480,7 +496,7 @@ describe('StreamAPI', () => {
 
 			// Wait for stream reading to complete
 			if (!streamReadingComplete) {
-				await new Promise(resolve => setTimeout(resolve, 100));
+				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 
 			// Verify that the PUT request was made with a ReadableStream body
@@ -502,83 +518,88 @@ describe('StreamAPI', () => {
 		it('should correctly convert different data types to Uint8Array', async () => {
 			// Test the data type conversion logic directly by using a simpler mock
 			const writtenChunks: Uint8Array[] = [];
-			
-			const simpleMockFetch = mock(async (_url: string | URL | Request, options?: RequestInit) => {
-				if (options?.method === 'POST') {
-					return {
-						status: 200,
-						json: () => Promise.resolve({ id: 'test-123' }),
-						headers: new Headers({ 'content-type': 'application/json' }),
-					};
-				}
-				
-				if (options?.method === 'PUT') {
-					// Capture the actual written data for validation
-					if (options.body instanceof ReadableStream) {
-						const reader = options.body.getReader();
-						const captureData = async () => {
-							try {
-								while (true) {
-									const { done, value } = await reader.read();
-									if (done) break;
-									writtenChunks.push(value);
-								}
-							} catch (_error) {
-								// Ignore stream errors
-							}
+
+			const simpleMockFetch = mock(
+				async (_url: string | URL | Request, options?: RequestInit) => {
+					if (options?.method === 'POST') {
+						return {
+							status: 200,
+							json: () => Promise.resolve({ id: 'test-123' }),
+							headers: new Headers({ 'content-type': 'application/json' }),
 						};
-						captureData().catch(() => {});
 					}
-					
-					return Promise.resolve({
-						ok: true,
-						status: 200,
-						statusText: 'OK',
-					} as Response);
+
+					if (options?.method === 'PUT') {
+						// Capture the actual written data for validation
+						if (options.body instanceof ReadableStream) {
+							const reader = options.body.getReader();
+							const captureData = async () => {
+								try {
+									while (true) {
+										const { done, value } = await reader.read();
+										if (done) break;
+										writtenChunks.push(value);
+									}
+								} catch (_error) {
+									// Ignore stream errors
+								}
+							};
+							captureData().catch(() => {});
+						}
+
+						return Promise.resolve({
+							ok: true,
+							status: 200,
+							statusText: 'OK',
+						} as Response);
+					}
+
+					return { status: 404 };
 				}
-				
-				return { status: 404 };
-			});
+			);
 
 			setFetch(simpleMockFetch as unknown as typeof fetch);
 			globalThis.fetch = simpleMockFetch as unknown as typeof fetch;
-			
+
 			const stream = await streamAPI.create('type-test-stream');
 			const writer = stream.getWriter();
-			
+
 			// Test different data types
 			await writer.write(new Uint8Array([65])); // 'A' as Uint8Array
-			await writer.write('B');                   // 'B' as string
-			
+			await writer.write('B'); // 'B' as string
+
 			const arrayBuffer = new ArrayBuffer(1);
 			new Uint8Array(arrayBuffer)[0] = 67; // 'C'
-			await writer.write(arrayBuffer);          // 'C' as ArrayBuffer
-			
+			await writer.write(arrayBuffer); // 'C' as ArrayBuffer
+
 			// Test Node.js Buffer (should be handled as Uint8Array since Buffer extends Uint8Array)
 			const buffer = Buffer.from('D');
-			await writer.write(buffer);               // 'D' as Buffer
-			
+			await writer.write(buffer); // 'D' as Buffer
+
 			// Test object (should be converted to JSON string)
 			const testObject = { message: 'E', number: 42 };
-			await writer.write(testObject);          // Object as JSON
-			
+			await writer.write(testObject); // Object as JSON
+
 			await writer.close();
-			
+
 			// Wait for data capture
-			await new Promise(resolve => setTimeout(resolve, 50));
-			
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
 			// Verify the data was converted correctly
 			expect(writtenChunks.length).toBeGreaterThan(0);
-			
+
 			// Combine all chunks to verify the final result
-			const totalLength = writtenChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+			const totalLength = writtenChunks.reduce(
+				(sum, chunk) => sum + chunk.length,
+				0
+			);
 			const combined = new Uint8Array(totalLength);
 			let offset = 0;
 			for (const chunk of writtenChunks) {
 				combined.set(chunk, offset);
 				offset += chunk.length;
 			}
-			
+
 			// Should spell "ABCD" + JSON object
 			const result = new TextDecoder().decode(combined);
 			expect(result).toBe('ABCD{"message":"E","number":42}');
@@ -587,16 +608,16 @@ describe('StreamAPI', () => {
 		it('should handle object serialization correctly', async () => {
 			const stream = await streamAPI.create('test-stream');
 			const writer = stream.getWriter();
-			
+
 			// Test various object types
 			await writer.write({ simple: 'object' });
 			await writer.write({ nested: { data: 'value' }, array: [1, 2, 3] });
 			await writer.write({ number: 42, boolean: true, null: null });
-			
+
 			// Test edge cases
 			await writer.write({}); // Empty object
 			await writer.write([]); // Empty array
-			
+
 			// Close the writer
 			setTimeout(() => {
 				if (putRequestResolve) {
@@ -607,7 +628,7 @@ describe('StreamAPI', () => {
 					} as Response);
 				}
 			}, 10);
-			
+
 			await writer.close();
 
 			// Verify PUT request was made with ReadableStream body
@@ -620,22 +641,22 @@ describe('StreamAPI', () => {
 		it('should handle various data sizes and content', async () => {
 			const stream = await streamAPI.create('test-stream');
 			const writer = stream.getWriter();
-			
+
 			// Test different content types and sizes
 			await writer.write(new Uint8Array([72, 101, 108, 108, 111])); // "Hello" as binary
-			await writer.write(' World');                                  // String
-			await writer.write(' 🚀 Unicode test! 🎉');                   // Unicode string
-			await writer.write('');                                        // Empty string
-			await writer.write('x'.repeat(1000));                         // Large string
-			
+			await writer.write(' World'); // String
+			await writer.write(' 🚀 Unicode test! 🎉'); // Unicode string
+			await writer.write(''); // Empty string
+			await writer.write('x'.repeat(1000)); // Large string
+
 			// Test ArrayBuffer
 			const arrayBuffer = new ArrayBuffer(3);
 			const view = new Uint8Array(arrayBuffer);
 			view[0] = 33; // !
-			view[1] = 32; // space  
+			view[1] = 32; // space
 			view[2] = 65; // A
 			await writer.write(arrayBuffer);
-			
+
 			// Close the writer
 			setTimeout(() => {
 				if (putRequestResolve) {
@@ -646,7 +667,7 @@ describe('StreamAPI', () => {
 					} as Response);
 				}
 			}, 10);
-			
+
 			await writer.close();
 
 			// Verify PUT request was made with ReadableStream body
@@ -660,7 +681,7 @@ describe('StreamAPI', () => {
 			// Test with custom content type
 			const stream = await streamAPI.create('json-stream', {
 				contentType: 'application/json',
-				metadata: { type: 'json-data' }
+				metadata: { type: 'json-data' },
 			});
 
 			const writer = stream.getWriter();
@@ -727,7 +748,7 @@ describe('StreamAPI', () => {
 				fetchCalls.length = 0;
 
 				const stream = await streamAPI.create(testCase.name, {
-					contentType: testCase.contentType
+					contentType: testCase.contentType,
 				});
 
 				const writer = stream.getWriter();
@@ -791,50 +812,52 @@ describe('StreamAPI', () => {
 			fetchCalls = [];
 			originalFetch = globalThis.fetch;
 
-			const mockFetch = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
-				fetchCalls.push([url, options]);
+			const mockFetch = mock(
+				async (url: URL | RequestInfo, options?: RequestInit) => {
+					fetchCalls.push([url, options]);
 
-				// Handle POST request to create stream
-				if (options?.method === 'POST') {
-					return {
-						status: 200,
-						response: {
+					// Handle POST request to create stream
+					if (options?.method === 'POST') {
+						return {
+							status: 200,
+							response: {
+								json: () => Promise.resolve({ id: 'stream-123' }),
+								status: 200,
+								statusText: 'OK',
+							},
 							json: () => Promise.resolve({ id: 'stream-123' }),
+							headers: new Headers({ 'content-type': 'application/json' }),
+						};
+					}
+
+					// Handle GET request to read stream data
+					if (options?.method === 'GET') {
+						const testData = 'Hello World from stream!';
+						const encoder = new TextEncoder();
+						const chunks = encoder.encode(testData);
+
+						return {
+							ok: true,
 							status: 200,
 							statusText: 'OK',
-						},
-						json: () => Promise.resolve({ id: 'stream-123' }),
-						headers: new Headers({ 'content-type': 'application/json' }),
-					};
-				}
-
-				// Handle GET request to read stream data
-				if (options?.method === 'GET') {
-					const testData = 'Hello World from stream!';
-					const encoder = new TextEncoder();
-					const chunks = encoder.encode(testData);
+							body: new ReadableStream({
+								start(controller) {
+									controller.enqueue(chunks);
+									controller.close();
+								},
+							}),
+						};
+					}
 
 					return {
-						ok: true,
-						status: 200,
-						statusText: 'OK',
-						body: new ReadableStream({
-							start(controller) {
-								controller.enqueue(chunks);
-								controller.close();
-							}
-						}),
+						status: 404,
+						response: {
+							status: 404,
+							statusText: 'Not Found',
+						},
 					};
 				}
-
-				return {
-					status: 404,
-					response: {
-						status: 404,
-						statusText: 'Not Found',
-					},
-				};
-			});
+			);
 
 			setFetch(mockFetch as unknown as typeof fetch);
 			globalThis.fetch = mockFetch as unknown as typeof fetch;
@@ -846,10 +869,10 @@ describe('StreamAPI', () => {
 
 		it('should return a ReadableStream when calling getReader()', async () => {
 			const stream = await streamAPI.create('test-stream');
-			
+
 			// Verify getReader method exists and returns a ReadableStream
 			expect(typeof stream.getReader).toBe('function');
-			
+
 			const reader = stream.getReader();
 			expect(reader).toBeInstanceOf(ReadableStream);
 		});
@@ -857,50 +880,56 @@ describe('StreamAPI', () => {
 		it('should make a GET request to the stream URL when reading', async () => {
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Read from the stream to trigger the GET request
 			const reader = readableStream.getReader();
 			const { value, done } = await reader.read();
-			
+
 			expect(done).toBe(false);
 			expect(value).toBeInstanceOf(Uint8Array);
-			
+
 			// Verify GET request was made to correct URL
-			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			const getRequest = fetchCalls.find(
+				([, options]) => options?.method === 'GET'
+			);
 			expect(getRequest).toBeDefined();
-			expect(getRequest?.[0].toString()).toBe('https://stream.test.com/stream-123');
+			expect(getRequest?.[0].toString()).toBe(
+				'https://stream.test.com/stream-123'
+			);
 		});
 
 		it('should include proper headers in GET request', async () => {
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Read from the stream
 			const reader = readableStream.getReader();
 			await reader.read();
-			
+
 			// Verify GET request headers
-			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			const getRequest = fetchCalls.find(
+				([, options]) => options?.method === 'GET'
+			);
 			expect(getRequest?.[1]?.headers).toMatchObject({
 				'User-Agent': 'Agentuity JS SDK/1.0.0',
-				'Authorization': 'Bearer test-api-key',
+				Authorization: 'Bearer test-api-key',
 			});
 		});
 
 		it('should stream data correctly from the GET response', async () => {
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Read all data from the stream
 			const reader = readableStream.getReader();
 			const chunks: Uint8Array[] = [];
-			
+
 			while (true) {
 				const { value, done } = await reader.read();
 				if (done) break;
 				chunks.push(value);
 			}
-			
+
 			// Combine chunks and verify data
 			const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
 			const combined = new Uint8Array(totalLength);
@@ -909,7 +938,7 @@ describe('StreamAPI', () => {
 				combined.set(chunk, offset);
 				offset += chunk.length;
 			}
-			
+
 			const result = new TextDecoder().decode(combined);
 			expect(result).toBe('Hello World from stream!');
 		});
@@ -917,94 +946,102 @@ describe('StreamAPI', () => {
 		it('should handle API key authentication errors', async () => {
 			// First create the stream with API key
 			const stream = await streamAPI.create('test-stream');
-			
+
 			// Then temporarily remove API key before calling getReader
 			const originalApiKey = process.env.AGENTUITY_API_KEY;
 			delete process.env.AGENTUITY_API_KEY;
 			delete process.env.AGENTUITY_SDK_KEY;
-			
+
 			const readableStream = stream.getReader();
-			
+
 			// Reading should fail with missing API key error
 			const reader = readableStream.getReader();
-			await expect(reader.read()).rejects.toThrow('AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set');
-			
+			await expect(reader.read()).rejects.toThrow(
+				'AGENTUITY_API_KEY or AGENTUITY_SDK_KEY is not set'
+			);
+
 			// Restore API key
 			process.env.AGENTUITY_API_KEY = originalApiKey;
 		});
 
 		it('should handle HTTP error responses', async () => {
 			// Mock a failing GET request
-			const errorMockFetch = mock(async (_url: URL | RequestInfo, options?: RequestInit) => {
-				if (options?.method === 'POST') {
-					return {
-						status: 200,
-						response: {
-							json: () => Promise.resolve({ id: 'stream-123' }),
+			const errorMockFetch = mock(
+				async (_url: URL | RequestInfo, options?: RequestInit) => {
+					if (options?.method === 'POST') {
+						return {
 							status: 200,
-							statusText: 'OK',
-						},
-						json: () => Promise.resolve({ id: 'stream-123' }),
-						headers: new Headers({ 'content-type': 'application/json' }),
-					};
-				}
+							response: {
+								json: () => Promise.resolve({ id: 'stream-123' }),
+								status: 200,
+								statusText: 'OK',
+							},
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							headers: new Headers({ 'content-type': 'application/json' }),
+						};
+					}
 
-				if (options?.method === 'GET') {
-					return {
-						ok: false,
-						status: 500,
-						statusText: 'Internal Server Error',
-					};
-				}
+					if (options?.method === 'GET') {
+						return {
+							ok: false,
+							status: 500,
+							statusText: 'Internal Server Error',
+						};
+					}
 
-				return { status: 404 };
-			});
+					return { status: 404 };
+				}
+			);
 
 			setFetch(errorMockFetch as unknown as typeof fetch);
 			globalThis.fetch = errorMockFetch as unknown as typeof fetch;
 
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Reading should fail with HTTP error
 			const reader = readableStream.getReader();
-			await expect(reader.read()).rejects.toThrow('Failed to read stream: 500 Internal Server Error');
+			await expect(reader.read()).rejects.toThrow(
+				'Failed to read stream: 500 Internal Server Error'
+			);
 		});
 
 		it('should handle null response body', async () => {
 			// Mock a GET request with null body
-			const nullBodyMockFetch = mock(async (_url: URL | RequestInfo, options?: RequestInit) => {
-				if (options?.method === 'POST') {
-					return {
-						status: 200,
-						response: {
+			const nullBodyMockFetch = mock(
+				async (_url: URL | RequestInfo, options?: RequestInit) => {
+					if (options?.method === 'POST') {
+						return {
+							status: 200,
+							response: {
+								json: () => Promise.resolve({ id: 'stream-123' }),
+								status: 200,
+								statusText: 'OK',
+							},
 							json: () => Promise.resolve({ id: 'stream-123' }),
+							headers: new Headers({ 'content-type': 'application/json' }),
+						};
+					}
+
+					if (options?.method === 'GET') {
+						return {
+							ok: true,
 							status: 200,
 							statusText: 'OK',
-						},
-						json: () => Promise.resolve({ id: 'stream-123' }),
-						headers: new Headers({ 'content-type': 'application/json' }),
-					};
-				}
+							body: null, // Null body
+						};
+					}
 
-				if (options?.method === 'GET') {
-					return {
-						ok: true,
-						status: 200,
-						statusText: 'OK',
-						body: null, // Null body
-					};
+					return { status: 404 };
 				}
-
-				return { status: 404 };
-			});
+			);
 
 			setFetch(nullBodyMockFetch as unknown as typeof fetch);
 			globalThis.fetch = nullBodyMockFetch as unknown as typeof fetch;
 
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Reading should fail with null body error
 			const reader = readableStream.getReader();
 			await expect(reader.read()).rejects.toThrow('Response body is null');
@@ -1012,74 +1049,79 @@ describe('StreamAPI', () => {
 
 		it('should handle large streams with multiple chunks', async () => {
 			// Mock a GET request that returns multiple chunks
-			const multiChunkMockFetch = mock(async (_url: URL | RequestInfo, options?: RequestInit) => {
-				if (options?.method === 'POST') {
-					return {
-						status: 200,
-						response: {
+			const multiChunkMockFetch = mock(
+				async (_url: URL | RequestInfo, options?: RequestInit) => {
+					if (options?.method === 'POST') {
+						return {
+							status: 200,
+							response: {
+								json: () => Promise.resolve({ id: 'stream-123' }),
+								status: 200,
+								statusText: 'OK',
+							},
 							json: () => Promise.resolve({ id: 'stream-123' }),
+							headers: new Headers({ 'content-type': 'application/json' }),
+						};
+					}
+
+					if (options?.method === 'GET') {
+						const chunks = [
+							'Chunk 1: ',
+							'Chunk 2: ',
+							'Chunk 3: ',
+							'Final chunk!',
+						];
+
+						return {
+							ok: true,
 							status: 200,
 							statusText: 'OK',
-						},
-						json: () => Promise.resolve({ id: 'stream-123' }),
-						headers: new Headers({ 'content-type': 'application/json' }),
-					};
+							body: new ReadableStream({
+								start(controller) {
+									for (const chunk of chunks) {
+										controller.enqueue(new TextEncoder().encode(chunk));
+									}
+									controller.close();
+								},
+							}),
+						};
+					}
+
+					return { status: 404 };
 				}
-
-				if (options?.method === 'GET') {
-					const chunks = [
-						'Chunk 1: ',
-						'Chunk 2: ',
-						'Chunk 3: ',
-						'Final chunk!'
-					];
-
-					return {
-						ok: true,
-						status: 200,
-						statusText: 'OK',
-						body: new ReadableStream({
-							start(controller) {
-								for (const chunk of chunks) {
-									controller.enqueue(new TextEncoder().encode(chunk));
-								}
-								controller.close();
-							}
-						}),
-					};
-				}
-
-				return { status: 404 };
-			});
+			);
 
 			setFetch(multiChunkMockFetch as unknown as typeof fetch);
 			globalThis.fetch = multiChunkMockFetch as unknown as typeof fetch;
 
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Read all chunks
 			const reader = readableStream.getReader();
 			const receivedChunks: Uint8Array[] = [];
-			
+
 			while (true) {
 				const { value, done } = await reader.read();
 				if (done) break;
 				receivedChunks.push(value);
 			}
-			
+
 			// Verify we received multiple chunks
 			expect(receivedChunks.length).toBeGreaterThan(1);
-			
+
 			// Combine and verify final result
-			const totalLength = receivedChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+			const totalLength = receivedChunks.reduce(
+				(sum, chunk) => sum + chunk.length,
+				0
+			);
 			const combined = new Uint8Array(totalLength);
 			let offset = 0;
 			for (const chunk of receivedChunks) {
 				combined.set(chunk, offset);
 				offset += chunk.length;
 			}
-			
+
 			const result = new TextDecoder().decode(combined);
 			expect(result).toBe('Chunk 1: Chunk 2: Chunk 3: Final chunk!');
 		});
@@ -1089,20 +1131,22 @@ describe('StreamAPI', () => {
 			const originalApiKey = process.env.AGENTUITY_API_KEY;
 			delete process.env.AGENTUITY_API_KEY;
 			process.env.AGENTUITY_SDK_KEY = 'test-sdk-key';
-			
+
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
-			
+
 			// Read from the stream
 			const reader = readableStream.getReader();
 			await reader.read();
-			
+
 			// Verify GET request used SDK key
-			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			const getRequest = fetchCalls.find(
+				([, options]) => options?.method === 'GET'
+			);
 			expect(getRequest?.[1]?.headers).toMatchObject({
-				'Authorization': 'Bearer test-sdk-key',
+				Authorization: 'Bearer test-sdk-key',
 			});
-			
+
 			// Restore original environment
 			process.env.AGENTUITY_API_KEY = originalApiKey;
 			delete process.env.AGENTUITY_SDK_KEY;
@@ -1112,15 +1156,17 @@ describe('StreamAPI', () => {
 			const stream = await streamAPI.create('test-stream');
 			const readableStream = stream.getReader();
 			const reader = readableStream.getReader();
-			
+
 			// Read from the stream - should work immediately
 			const { value, done } = await reader.read();
-			
+
 			expect(done).toBe(false);
 			expect(value).toBeInstanceOf(Uint8Array);
-			
+
 			// Verify GET request was made
-			const getRequest = fetchCalls.find(([, options]) => options?.method === 'GET');
+			const getRequest = fetchCalls.find(
+				([, options]) => options?.method === 'GET'
+			);
 			expect(getRequest).toBeDefined();
 		});
 	});
