@@ -71,42 +71,6 @@ describe('API Client', () => {
 			const headers = options?.headers as Record<string, string>;
 			expect(headers?.Authorization).toEqual('Bearer test-api-key');
 			expect(headers?.['User-Agent']).toEqual('Agentuity JS SDK/1.0.0');
-			expect(headers?.['Content-Type']).toEqual('application/json');
-		});
-
-		it('should send request with correct headers', async () => {
-			process.env.AGENTUITY_API_KEY = undefined;
-			await send({
-				method: 'GET',
-				path: '/test',
-				body: undefined as never,
-			});
-
-			expect(fetchCalls.length).toBeGreaterThan(0);
-			const [url, options] = fetchCalls[0];
-
-			expect(url.toString()).toEqual('https://test.agentuity.ai/test');
-			const headers = options?.headers as Record<string, string>;
-			expect(headers?.Authorization).toEqual('Bearer test-api-key');
-			expect(headers?.['User-Agent']).toEqual('Agentuity JS SDK/1.0.0');
-			expect(headers?.['Content-Type']).toEqual('application/json');
-		});
-
-		it('should send request with correct headers', async () => {
-			await send({
-				method: 'GET',
-				path: '/test',
-				body: undefined as never,
-			});
-
-			expect(fetchCalls.length).toBeGreaterThan(0);
-			const [url, options] = fetchCalls[0];
-
-			expect(url.toString()).toEqual('https://test.agentuity.ai/test');
-			const headers = options?.headers as Record<string, string>;
-			expect(headers?.Authorization).toEqual('Bearer test-api-key');
-			expect(headers?.['User-Agent']).toEqual('Agentuity JS SDK/1.0.0');
-			expect(headers?.['Content-Type']).toEqual('application/json');
 		});
 
 		it('should handle custom headers', async () => {

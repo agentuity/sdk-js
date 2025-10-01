@@ -134,9 +134,9 @@ export async function send<K>(
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
-		'Content-Type': 'application/json',
 		'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 	};
+
 	// allow headers to be overridden
 	for (const key in request.headers) {
 		headers[key] = request.headers[key];

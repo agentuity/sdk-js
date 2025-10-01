@@ -92,13 +92,6 @@ class StreamImpl extends WritableStream implements Stream {
 			}
 			// If the stream is locked, try to close the underlying writer
 			if (error instanceof TypeError && error.message.includes('locked')) {
-				// If we have an active writer, close it
-				if (this.activeWriter) {
-					const writer = this.activeWriter;
-					this.activeWriter = null;
-					await writer.close();
-					return;
-				}
 				// Best-effort closure for locked streams
 				return Promise.resolve();
 			}
