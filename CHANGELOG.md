@@ -1,5 +1,15 @@
 # @agentuity/sdk Changelog
 
+## 0.0.147
+
+### Patch Changes
+
+- 96f5561: - Added support for automatic stream compression
+  - Added support for direct write to Stream in addition to getWriter()
+  - Added property `bytesWritten` to the Stream interface which represents the number of bytes written to the stream
+  - Added property `compressed` to the Stream interface which represents if the stream has compression enabled
+- 9928a32: Remove the explicit Content-Type header for application/json in send (internal) to allow each service caller to properly set
+
 ## 0.0.146
 
 ### Patch Changes
