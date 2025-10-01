@@ -1,6 +1,6 @@
 // Main entry point for prompts - following POC pattern exactly
 
-import { PromptConfig, PromptName } from './generated/index.ts';
+import { PromptConfig, PromptName } from './generated/_index.js';
 
 // Default empty prompts object
 const defaultPrompts = {};
