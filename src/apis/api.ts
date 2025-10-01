@@ -138,9 +138,13 @@ export async function send<K>(
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
-		'Content-Type': 'application/json',
 		'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 	};
+	
+	// Only send Content-Type when a body is present
+	if (request.body) {
+		headers['Content-Type'] = 'application/json';
+	}
 	// allow headers to be overridden
 	for (const key in request.headers) {
 		headers[key] = request.headers[key];
