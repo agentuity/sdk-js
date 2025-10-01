@@ -371,6 +371,18 @@ export interface Stream extends WritableStream {
 	 */
 	url: string;
 	/**
+	 * the total number of bytes written to the stream
+	 */
+	readonly bytesWritten: number;
+	/**
+	 * whether the stream is using compression
+	 */
+	readonly compressed: boolean;
+	/**
+	 * write data to the stream
+	 */
+	write(chunk: string | Uint8Array | ArrayBuffer | Buffer | object): Promise<void>;
+	/**
 	 * close the stream gracefully, handling already closed streams without error
 	 */
 	close(): Promise<void>;

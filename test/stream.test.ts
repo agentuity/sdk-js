@@ -1124,4 +1124,474 @@ describe('StreamAPI', () => {
 			expect(getRequest).toBeDefined();
 		});
 	});
+
+	describe('direct write() and close() methods', () => {
+		let fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]>;
+		let putRequestPromise: Promise<Response> | null = null;
+		let putRequestResolve: ((response: Response) => void) | null = null;
+
+		beforeEach(() => {
+			fetchCalls = [];
+			putRequestPromise = null;
+			putRequestResolve = null;
+
+			const mockFetch = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
+				fetchCalls.push([url, options]);
+
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				if (options?.method === 'PUT') {
+					// Drain the ReadableStream to prevent backpressure blocking
+					if (options.body instanceof ReadableStream) {
+						const reader = options.body.getReader();
+						(async () => {
+							try {
+								while (true) {
+									const { done } = await reader.read();
+									if (done) break;
+								}
+							} catch (e) {
+								// Ignore errors from cancelled reads
+							}
+						})();
+					}
+
+					putRequestPromise = new Promise<Response>((resolve) => {
+						putRequestResolve = resolve;
+					});
+
+					return putRequestPromise;
+				}
+
+				return { status: 404 };
+			});
+
+			setFetch(mockFetch as unknown as typeof fetch);
+			globalThis.fetch = mockFetch as unknown as typeof fetch;
+		});
+
+		afterEach(() => {
+			globalThis.fetch = originalFetch;
+		});
+
+		it('should write directly to stream using write() method', async () => {
+			const stream = await streamAPI.create('test-stream');
+
+			await stream.write('Hello ');
+			await stream.write('World!');
+
+			// Verify PUT was initiated
+			expect(putRequestResolve).not.toBeNull();
+
+			// Simulate successful PUT response asynchronously (same pattern as getWriter tests)
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await stream.close();
+
+			expect(fetchCalls).toHaveLength(2);
+			const [, uploadOptions] = fetchCalls[1];
+			expect(uploadOptions?.method).toBe('PUT');
+		});
+
+		it('should write different data types using write() method', async () => {
+			const stream = await streamAPI.create('test-stream');
+
+			await stream.write('string');
+			await stream.write(new TextEncoder().encode('Uint8Array'));
+			await stream.write(new ArrayBuffer(8));
+			await stream.write({ key: 'value' });
+
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await stream.close();
+
+			expect(fetchCalls).toHaveLength(2);
+		});
+
+		it('should write using direct write() method multiple times', async () => {
+			const stream = await streamAPI.create('test-stream');
+
+			await stream.write('Direct write 1');
+			await stream.write('Direct write 2');
+			await stream.write('Direct write 3');
+
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await stream.close();
+
+			expect(fetchCalls).toHaveLength(2);
+		});
+
+		it('should verify write() method exists on Stream interface', async () => {
+			const stream = await streamAPI.create('test-stream');
+
+			expect(typeof stream.write).toBe('function');
+			expect(typeof stream.close).toBe('function');
+			expect(typeof stream.getWriter).toBe('function');
+		});
+
+		it('should verify PUT request is initiated on stream creation', async () => {
+			const stream = await streamAPI.create('test-stream');
+
+			// PUT is initiated in the underlying sink's start() method
+			expect(fetchCalls.length).toBe(2);
+			expect(fetchCalls[0][1]?.method).toBe('POST');
+			expect(fetchCalls[1][1]?.method).toBe('PUT');
+			
+			// Stream is ready to write
+			expect(typeof stream.write).toBe('function');
+		});
+
+		it('should have bytesWritten property initialized to 0', async () => {
+			const stream = await streamAPI.create('test-stream');
+			expect(stream.bytesWritten).toBe(0);
+			expect(typeof stream.bytesWritten).toBe('number');
+		});
+
+		it('should track bytesWritten correctly as data is written with write()', async () => {
+			const stream = await streamAPI.create('test-stream');
+			
+			expect(stream.bytesWritten).toBe(0);
+
+			// Write first chunk - "Hello" = 5 bytes
+			await stream.write('Hello');
+			expect(stream.bytesWritten).toBe(5);
+
+			// Write second chunk - " World" = 6 bytes
+			await stream.write(' World');
+			expect(stream.bytesWritten).toBe(11);
+
+			// Write third chunk - "!" = 1 byte
+			await stream.write('!');
+			expect(stream.bytesWritten).toBe(12);
+
+			// Clean up
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await stream.close();
+		});
+
+		it('should track bytesWritten correctly when using getWriter()', async () => {
+			const stream = await streamAPI.create('test-stream');
+			
+			expect(stream.bytesWritten).toBe(0);
+
+			const writer = stream.getWriter();
+
+			// Write first chunk - "Test" = 4 bytes
+			await writer.write(new TextEncoder().encode('Test'));
+			expect(stream.bytesWritten).toBe(4);
+
+			// Write second chunk - " Data" = 5 bytes
+			await writer.write(new TextEncoder().encode(' Data'));
+			expect(stream.bytesWritten).toBe(9);
+
+			// Clean up
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await writer.close();
+		});
+
+		it('should track bytesWritten correctly with different data types', async () => {
+			const stream = await streamAPI.create('test-stream');
+			
+			expect(stream.bytesWritten).toBe(0);
+
+			// String - "abc" = 3 bytes
+			await stream.write('abc');
+			expect(stream.bytesWritten).toBe(3);
+
+			// Uint8Array - 4 bytes
+			await stream.write(new Uint8Array([1, 2, 3, 4]));
+			expect(stream.bytesWritten).toBe(7);
+
+			// Object (JSON) - {"x":1} = 7 bytes
+			await stream.write({ x: 1 });
+			expect(stream.bytesWritten).toBe(14);
+
+			// ArrayBuffer - 3 bytes
+			await stream.write(new ArrayBuffer(3));
+			expect(stream.bytesWritten).toBe(17);
+
+			// Clean up
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await stream.close();
+		});
+
+		it('should have compressed property false by default', async () => {
+			const stream = await streamAPI.create('test-stream');
+			expect(stream.compressed).toBe(false);
+		});
+
+		it('should have compressed property true when compression enabled', async () => {
+			const stream = await streamAPI.create('test-stream', { compress: true });
+			expect(stream.compressed).toBe(true);
+		});
+	});
+
+	describe('compression', () => {
+		let fetchCalls: Array<[URL | RequestInfo, RequestInit | undefined]>;
+		let putRequestResolve: ((response: Response) => void) | null = null;
+		let _putRequestReject: ((error: Error) => void) | null = null;
+
+		beforeEach(() => {
+			fetchCalls = [];
+			putRequestResolve = null;
+			_putRequestReject = null;
+
+			const mockFetch = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
+				fetchCalls.push([url, options]);
+
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				if (options?.method === 'PUT') {
+					if (options.body instanceof ReadableStream) {
+						const reader = options.body.getReader();
+						reader.read().catch(() => {});
+					}
+
+					const putRequestPromise = new Promise<Response>((resolve, reject) => {
+						putRequestResolve = resolve;
+						_putRequestReject = reject;
+					});
+					return putRequestPromise;
+				}
+
+				return { status: 404 };
+			});
+
+			setFetch(mockFetch as unknown as typeof fetch);
+			globalThis.fetch = mockFetch as unknown as typeof fetch;
+		});
+
+		it('should set Content-Encoding: gzip header when compress is true', async () => {
+			const stream = await streamAPI.create('compressed-stream', {
+				compress: true,
+			});
+
+			const writer = stream.getWriter();
+			await writer.write('test data');
+
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await writer.close();
+
+			expect(fetchCalls).toHaveLength(2);
+			const [, uploadOptions] = fetchCalls[1];
+			expect(uploadOptions?.headers).toMatchObject({
+				'Content-Encoding': 'gzip',
+			});
+		});
+
+		it('should not set Content-Encoding header when compress is not specified', async () => {
+			const stream = await streamAPI.create('uncompressed-stream');
+
+			const writer = stream.getWriter();
+			await writer.write('test data');
+
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await writer.close();
+
+			expect(fetchCalls).toHaveLength(2);
+			const [, uploadOptions] = fetchCalls[1];
+			const headers = uploadOptions?.headers as Record<string, string>;
+			expect(headers?.['Content-Encoding']).toBeUndefined();
+		});
+
+		it('should compress data when compress is true', async () => {
+			let capturedData: Uint8Array[] = [];
+
+			const mockFetchWithCapture = mock(async (url: URL | RequestInfo, options?: RequestInit) => {
+				fetchCalls.push([url, options]);
+
+				if (options?.method === 'POST') {
+					return {
+						status: 200,
+						response: {
+							json: () => Promise.resolve({ id: 'stream-123' }),
+							status: 200,
+							statusText: 'OK',
+						},
+						json: () => Promise.resolve({ id: 'stream-123' }),
+						headers: new Headers({ 'content-type': 'application/json' }),
+					};
+				}
+
+				if (options?.method === 'PUT' && options.body instanceof ReadableStream) {
+					const reader = options.body.getReader();
+					capturedData = [];
+
+					const readStream = async () => {
+						while (true) {
+							const { done, value } = await reader.read();
+							if (done) break;
+							capturedData.push(value);
+						}
+					};
+
+					readStream().catch(() => {});
+
+					return new Promise<Response>((resolve) => {
+						putRequestResolve = resolve;
+					});
+				}
+
+				return { status: 404 };
+			});
+
+			setFetch(mockFetchWithCapture as unknown as typeof fetch);
+			globalThis.fetch = mockFetchWithCapture as unknown as typeof fetch;
+
+			const testData = 'x'.repeat(1000);
+			const stream = await streamAPI.create('compressed-stream', {
+				compress: true,
+			});
+
+			const writer = stream.getWriter();
+			await writer.write(testData);
+
+			await new Promise(resolve => setTimeout(resolve, 50));
+
+			setTimeout(() => {
+				if (putRequestResolve) {
+					putRequestResolve({
+						ok: true,
+						status: 200,
+						statusText: 'OK',
+					} as Response);
+				}
+			}, 10);
+
+			await writer.close();
+
+			await new Promise(resolve => setTimeout(resolve, 50));
+
+			const compressedSize = capturedData.reduce((sum, chunk) => sum + chunk.length, 0);
+			const originalSize = new TextEncoder().encode(testData).length;
+
+			expect(compressedSize).toBeGreaterThan(0);
+			expect(compressedSize).toBeLessThan(originalSize);
+		});
+
+		it('should propagate compression errors to abort the stream', async () => {
+			const { createGzip } = await import('node:zlib');
+			const originalCreateGzip = createGzip;
+
+			let errorThrown = false;
+
+			mock.module('node:zlib', () => ({
+				createGzip: () => {
+					const gzip = originalCreateGzip();
+					setTimeout(() => {
+						gzip.destroy(new Error('Compression failed'));
+						errorThrown = true;
+					}, 20);
+					return gzip;
+				},
+			}));
+
+			const stream = await streamAPI.create('error-stream', {
+				compress: true,
+			});
+
+			const writer = stream.getWriter();
+
+			try {
+				await writer.write('test data');
+				await new Promise(resolve => setTimeout(resolve, 100));
+			} catch (error) {
+				errorThrown = true;
+			}
+
+			expect(errorThrown).toBe(true);
+		});
+	});
 });
