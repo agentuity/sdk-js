@@ -13,7 +13,7 @@ class StreamImpl extends WritableStream implements Stream {
 	public readonly id: string;
 	public readonly url: string;
 	private activeWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
-	private _bytesWritten = 0;
+	public _bytesWritten = 0;
 	private _compressed: boolean;
 
 	constructor(
