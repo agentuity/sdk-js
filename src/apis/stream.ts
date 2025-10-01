@@ -4,6 +4,7 @@ import type { CreateStreamProps, Stream, StreamAPI } from '../types';
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { safeStringify } from '../utils/stringify';
 import { ReadableStream } from 'node:stream/web';
+import { createGzip } from 'node:zlib';
 
 /**
  * A writable stream implementation that extends WritableStream
@@ -11,11 +12,53 @@ import { ReadableStream } from 'node:stream/web';
 class StreamImpl extends WritableStream implements Stream {
 	public readonly id: string;
 	public readonly url: string;
+	private activeWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
+	public _bytesWritten = 0;
+	private _compressed: boolean;
 
-	constructor(id: string, url: string, underlyingSink: UnderlyingSink) {
+	constructor(
+		id: string,
+		url: string,
+		compressed: boolean,
+		underlyingSink: UnderlyingSink
+	) {
 		super(underlyingSink);
 		this.id = id;
 		this.url = url;
+		this._compressed = compressed;
+	}
+
+	get bytesWritten(): number {
+		return this._bytesWritten;
+	}
+
+	get compressed(): boolean {
+		return this._compressed;
+	}
+
+	/**
+	 * Write data to the stream
+	 */
+	async write(
+		chunk: string | Uint8Array | ArrayBuffer | Buffer | object
+	): Promise<void> {
+		let binaryChunk: Uint8Array;
+		if (chunk instanceof Uint8Array) {
+			binaryChunk = chunk;
+		} else if (typeof chunk === 'string') {
+			binaryChunk = new TextEncoder().encode(chunk);
+		} else if (chunk instanceof ArrayBuffer) {
+			binaryChunk = new Uint8Array(chunk);
+		} else if (typeof chunk === 'object' && chunk !== null) {
+			binaryChunk = new TextEncoder().encode(safeStringify(chunk));
+		} else {
+			binaryChunk = new TextEncoder().encode(String(chunk));
+		}
+
+		if (!this.activeWriter) {
+			this.activeWriter = this.getWriter();
+		}
+		await this.activeWriter.write(binaryChunk);
 	}
 
 	/**
@@ -24,7 +67,15 @@ class StreamImpl extends WritableStream implements Stream {
 	 */
 	async close(): Promise<void> {
 		try {
-			// Check if stream is already closed by attempting to get a writer
+			// If we have an active writer from write() calls, use that
+			if (this.activeWriter) {
+				const writer = this.activeWriter;
+				this.activeWriter = null;
+				await writer.close();
+				return;
+			}
+
+			// Otherwise, get a writer and close it
 			const writer = this.getWriter();
 			await writer.close();
 		} catch (error) {
@@ -40,13 +91,15 @@ class StreamImpl extends WritableStream implements Stream {
 				return Promise.resolve();
 			}
 			// If the stream is locked, try to close the underlying writer
-			if (
-				error instanceof TypeError &&
-				error.message.includes('locked')
-			) {
+			if (error instanceof TypeError && error.message.includes('locked')) {
+				// If we have an active writer, close it
+				if (this.activeWriter) {
+					const writer = this.activeWriter;
+					this.activeWriter = null;
+					await writer.close();
+					return;
+				}
 				// Best-effort closure for locked streams
-				// Note: We can't directly access the active writer, so we silently return
-				// In a real implementation, we would track the writer and close it here
 				return Promise.resolve();
 			}
 			// Re-throw any other errors
@@ -201,6 +254,7 @@ export default class StreamAPIImpl implements StreamAPI {
 					let putRequestPromise: Promise<Response> | null = null;
 					let total = 0;
 					let closed = false;
+					let streamInstance: StreamImpl | null = null;
 
 					// Create a WritableStream that writes to the backend stream
 					// Create the underlying sink that will handle the actual streaming
@@ -210,10 +264,44 @@ export default class StreamAPIImpl implements StreamAPI {
 							abortController = new AbortController();
 
 							// Create a ReadableStream to pipe data to the PUT request
-							const { readable, writable } = new TransformStream<
+							let { readable, writable } = new TransformStream<
 								Uint8Array,
 								Uint8Array
 							>();
+
+							// If compression is enabled, add gzip transform
+							if (props?.compress) {
+								const { Readable, Writable } = await import('node:stream');
+
+								// Create a new transform for the compressed output
+								const {
+									readable: compressedReadable,
+									writable: compressedWritable,
+								} = new TransformStream<Uint8Array, Uint8Array>();
+
+								// Set up compression pipeline
+								const gzipStream = createGzip();
+								const nodeWritable = Writable.toWeb(
+									gzipStream
+								) as WritableStream<Uint8Array>;
+
+								// Pipe gzip output to the compressed readable
+								const gzipReader = Readable.toWeb(
+									gzipStream
+								) as ReadableStream<Uint8Array>;
+								gzipReader.pipeTo(compressedWritable).catch((error) => {
+									abortController?.abort(error);
+									writer?.abort(error).catch(() => {});
+								});
+
+								// Chain: writable -> gzip -> compressedReadable
+								readable.pipeTo(nodeWritable).catch((error) => {
+									abortController?.abort(error);
+									writer?.abort(error).catch(() => {});
+								});
+								readable = compressedReadable;
+							}
+
 							writer = writable.getWriter();
 
 							// Start the PUT request with the readable stream as body
@@ -226,14 +314,20 @@ export default class StreamAPIImpl implements StreamAPI {
 							}
 							const sdkVersion = getSDKVersion();
 
+							const headers: Record<string, string> = {
+								'Content-Type':
+									props?.contentType || 'application/octet-stream',
+								'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
+								Authorization: `Bearer ${apiKey}`,
+							};
+
+							if (props?.compress) {
+								headers['Content-Encoding'] = 'gzip';
+							}
+
 							putRequestPromise = getFetch()(url, {
 								method: 'PUT',
-								headers: {
-									'Content-Type':
-										props?.contentType || 'application/octet-stream',
-									'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
-									Authorization: `Bearer ${apiKey}`,
-								},
+								headers,
 								body: readable,
 								signal: abortController.signal,
 								duplex: 'half',
@@ -263,6 +357,9 @@ export default class StreamAPIImpl implements StreamAPI {
 							// Write the chunk to the transform stream, which pipes to the PUT request
 							await writer.write(binaryChunk);
 							total += binaryChunk.length;
+							if (streamInstance) {
+								streamInstance._bytesWritten = total;
+							}
 						},
 						async close() {
 							if (closed) {
@@ -306,7 +403,13 @@ export default class StreamAPIImpl implements StreamAPI {
 						},
 					};
 
-					const stream = new StreamImpl(result.id, url, underlyingSink);
+					const stream = new StreamImpl(
+						result.id,
+						url,
+						props?.compress ?? false,
+						underlyingSink
+					);
+					streamInstance = stream;
 
 					span.setStatus({ code: SpanStatusCode.OK });
 					return stream;

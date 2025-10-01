@@ -28,11 +28,7 @@ interface ApiRequestWithUrl {
 
 type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
 
-export type ServiceName =
-	| 'vector'
-	| 'keyvalue'
-	| 'stream'
-	| 'objectstore';
+export type ServiceName = 'vector' | 'keyvalue' | 'stream' | 'objectstore';
 
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';

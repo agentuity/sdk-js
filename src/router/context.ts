@@ -33,7 +33,7 @@ export default class AgentContextWaitUntilHandler {
 			);
 		}
 		const currentContext = context.active();
-		
+
 		// Start execution immediately, don't defer it
 		const executingPromise = (async () => {
 			running++;
@@ -58,7 +58,7 @@ export default class AgentContextWaitUntilHandler {
 			}
 			// NOTE: we only decrement when the promise is removed from the array in waitUntilAll
 		})();
-		
+
 		// Store the executing promise for cleanup tracking
 		this.promises.push(executingPromise);
 	}
