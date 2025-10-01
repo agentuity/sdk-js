@@ -345,8 +345,8 @@ export interface CreateStreamProps {
 
 	/**
 	 * optional flag to enable gzip compression of stream data during upload. if true, will also add
-    * add Content-Encoding: gzip header to responses. The client MUST be able to accept gzip
-    * compression for this to work or must be able to uncompress the raw data it receives.
+	 * add Content-Encoding: gzip header to responses. The client MUST be able to accept gzip
+	 * compression for this to work or must be able to uncompress the raw data it receives.
 	 */
 	compress?: true;
 }
@@ -381,7 +381,9 @@ export interface Stream extends WritableStream {
 	/**
 	 * write data to the stream
 	 */
-	write(chunk: string | Uint8Array | ArrayBuffer | Buffer | object): Promise<void>;
+	write(
+		chunk: string | Uint8Array | ArrayBuffer | Buffer | object
+	): Promise<void>;
 	/**
 	 * close the stream gracefully, handling already closed streams without error
 	 */

@@ -16,7 +16,12 @@ class StreamImpl extends WritableStream implements Stream {
 	private _bytesWritten = 0;
 	private _compressed: boolean;
 
-	constructor(id: string, url: string, compressed: boolean, underlyingSink: UnderlyingSink) {
+	constructor(
+		id: string,
+		url: string,
+		compressed: boolean,
+		underlyingSink: UnderlyingSink
+	) {
 		super(underlyingSink);
 		this.id = id;
 		this.url = url;
@@ -34,7 +39,9 @@ class StreamImpl extends WritableStream implements Stream {
 	/**
 	 * Write data to the stream
 	 */
-	async write(chunk: string | Uint8Array | ArrayBuffer | Buffer | object): Promise<void> {
+	async write(
+		chunk: string | Uint8Array | ArrayBuffer | Buffer | object
+	): Promise<void> {
 		let binaryChunk: Uint8Array;
 		if (chunk instanceof Uint8Array) {
 			binaryChunk = chunk;
@@ -47,7 +54,7 @@ class StreamImpl extends WritableStream implements Stream {
 		} else {
 			binaryChunk = new TextEncoder().encode(String(chunk));
 		}
-		
+
 		if (!this.activeWriter) {
 			this.activeWriter = this.getWriter();
 		}
@@ -67,7 +74,7 @@ class StreamImpl extends WritableStream implements Stream {
 				await writer.close();
 				return;
 			}
-			
+
 			// Otherwise, get a writer and close it
 			const writer = this.getWriter();
 			await writer.close();
@@ -84,10 +91,7 @@ class StreamImpl extends WritableStream implements Stream {
 				return Promise.resolve();
 			}
 			// If the stream is locked, try to close the underlying writer
-			if (
-				error instanceof TypeError &&
-				error.message.includes('locked')
-			) {
+			if (error instanceof TypeError && error.message.includes('locked')) {
 				// If we have an active writer, close it
 				if (this.activeWriter) {
 					const writer = this.activeWriter;
@@ -250,6 +254,7 @@ export default class StreamAPIImpl implements StreamAPI {
 					let putRequestPromise: Promise<Response> | null = null;
 					let total = 0;
 					let closed = false;
+					let streamInstance: StreamImpl | null = null;
 
 					// Create a WritableStream that writes to the backend stream
 					// Create the underlying sink that will handle the actual streaming
@@ -269,27 +274,31 @@ export default class StreamAPIImpl implements StreamAPI {
 								const { Readable, Writable } = await import('node:stream');
 
 								// Create a new transform for the compressed output
-								const { readable: compressedReadable, writable: compressedWritable } = new TransformStream<
-									Uint8Array,
-									Uint8Array
-								>();
+								const {
+									readable: compressedReadable,
+									writable: compressedWritable,
+								} = new TransformStream<Uint8Array, Uint8Array>();
 
 								// Set up compression pipeline
 								const gzipStream = createGzip();
-								const nodeWritable = Writable.toWeb(gzipStream) as WritableStream<Uint8Array>;
+								const nodeWritable = Writable.toWeb(
+									gzipStream
+								) as WritableStream<Uint8Array>;
 
 								// Pipe gzip output to the compressed readable
-								const gzipReader = Readable.toWeb(gzipStream) as ReadableStream<Uint8Array>;
+								const gzipReader = Readable.toWeb(
+									gzipStream
+								) as ReadableStream<Uint8Array>;
 								gzipReader.pipeTo(compressedWritable).catch((error) => {
-								abortController?.abort(error);
-								 writer?.abort(error).catch(() => {});
+									abortController?.abort(error);
+									writer?.abort(error).catch(() => {});
 								});
 
-							// Chain: writable -> gzip -> compressedReadable
-							readable.pipeTo(nodeWritable).catch((error) => {
-								abortController?.abort(error);
-								writer?.abort(error).catch(() => {});
-							});
+								// Chain: writable -> gzip -> compressedReadable
+								readable.pipeTo(nodeWritable).catch((error) => {
+									abortController?.abort(error);
+									writer?.abort(error).catch(() => {});
+								});
 								readable = compressedReadable;
 							}
 
@@ -348,6 +357,9 @@ export default class StreamAPIImpl implements StreamAPI {
 							// Write the chunk to the transform stream, which pipes to the PUT request
 							await writer.write(binaryChunk);
 							total += binaryChunk.length;
+							if (streamInstance) {
+								streamInstance._bytesWritten = total;
+							}
 						},
 						async close() {
 							if (closed) {
@@ -391,14 +403,13 @@ export default class StreamAPIImpl implements StreamAPI {
 						},
 					};
 
-					const stream = new StreamImpl(result.id, url, props?.compress ?? false, underlyingSink);
-					
-					// Provide access to total bytes written
-					Object.defineProperty(stream, '_bytesWritten', {
-						get() { return total; },
-						enumerable: false,
-						configurable: false
-					});
+					const stream = new StreamImpl(
+						result.id,
+						url,
+						props?.compress ?? false,
+						underlyingSink
+					);
+					streamInstance = stream;
 
 					span.setStatus({ code: SpanStatusCode.OK });
 					return stream;
