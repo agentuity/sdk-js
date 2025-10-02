@@ -28,12 +28,7 @@ interface ApiRequestWithUrl {
 
 type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
 
-export type ServiceName =
-	| 'vector'
-	| 'keyvalue'
-	| 'stream'
-	| 'objectstore'
-	| 'prompt';
+export type ServiceName = 'vector' | 'keyvalue' | 'stream' | 'objectstore';
 
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
@@ -106,10 +101,6 @@ export const getBaseUrlForService = (service?: ServiceName) => {
 				process.env.AGENTUITY_OBJECTSTORE_URL ||
 				process.env.AGENTUITY_TRANSPORT_URL;
 			break;
-		case 'prompt':
-			value =
-				process.env.AGENTUITY_PROMPT_URL || process.env.AGENTUITY_TRANSPORT_URL;
-			break;
 		default:
 			break;
 	}
@@ -143,9 +134,9 @@ export async function send<K>(
 	const sdkVersion = getSDKVersion();
 	const headers: Record<string, string> = {
 		Accept: 'application/json',
-		'Content-Type': 'application/json',
 		'User-Agent': `Agentuity JS SDK/${sdkVersion}`,
 	};
+
 	// allow headers to be overridden
 	for (const key in request.headers) {
 		headers[key] = request.headers[key];

@@ -343,6 +343,13 @@ export interface CreateStreamProps {
 	 * optional contentType for the stream data. If not set, defaults to application/octet-stream
 	 */
 	contentType?: string;
+
+	/**
+	 * optional flag to enable gzip compression of stream data during upload. if true, will also add
+	 * add Content-Encoding: gzip header to responses. The client MUST be able to accept gzip
+	 * compression for this to work or must be able to uncompress the raw data it receives.
+	 */
+	compress?: true;
 }
 
 /**
@@ -364,6 +371,20 @@ export interface Stream extends WritableStream {
 	 * the unique stream url to consume the stream
 	 */
 	url: string;
+	/**
+	 * the total number of bytes written to the stream
+	 */
+	readonly bytesWritten: number;
+	/**
+	 * whether the stream is using compression
+	 */
+	readonly compressed: boolean;
+	/**
+	 * write data to the stream
+	 */
+	write(
+		chunk: string | Uint8Array | ArrayBuffer | Buffer | object
+	): Promise<void>;
 	/**
 	 * close the stream gracefully, handling already closed streams without error
 	 */
