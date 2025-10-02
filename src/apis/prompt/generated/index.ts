@@ -1,6 +1,3 @@
-export type PromptConfig = any;
-export type PromptName = any;
-
 // This will be replaced by the CLI with the actual generated types
 export interface PromptsCollection {
 	[promptSlug: string]: {

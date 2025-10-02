@@ -3,11 +3,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
-import { PromptConfig, PromptName } from './generated/_index.js';
 import type { PromptsCollection } from './generated/index.js';
 
-// Default empty prompts object
-const defaultPrompts = {};
+// Default empty prompts object that satisfies PromptsCollection
+const defaultPrompts: PromptsCollection = {};
 
 // Expected shape of generated module
 interface GeneratedModule {
@@ -30,7 +29,7 @@ export default class PromptAPI {
 	 */
 	public compile<T extends keyof PromptsCollection>(
 		name: T,
-		variables: {
+		variables?: {
 			system?: Parameters<PromptsCollection[T]['system']>[0];
 			prompt?: Parameters<PromptsCollection[T]['prompt']>[0];
 		}
@@ -41,8 +40,8 @@ export default class PromptAPI {
 		}
 
 		return {
-			system: prompt.system(variables.system as any),
-			prompt: prompt.prompt(variables.prompt as any),
+			system: prompt.system(variables?.system as any),
+			prompt: prompt.prompt(variables?.prompt as any),
 		};
 	}
 
@@ -189,5 +188,5 @@ export default class PromptAPI {
 }
 
 // Re-export generated types and prompts (following POC pattern)
-export { defaultPrompts as prompts, PromptConfig, PromptName };
+export { defaultPrompts as prompts };
 export * from './generated/index.js';

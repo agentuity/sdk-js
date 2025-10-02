@@ -902,24 +902,17 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
-<<<<<<< Updated upstream
-=======
 
 	/**
-	 * get the prompts collection for compiling dynamic prompts
-	 */
-	_experimental_prompts(): import('./apis/prompt/generated/index.js').PromptsCollection;
-
-	/**
-	 * compile a prompt by name with optional variables
+	 * the prompts API
 	 */
 	prompts: {
-		compile<
+		compile: <
 			T extends
 				keyof import('./apis/prompt/generated/index.js').PromptsCollection,
 		>(
 			name: T,
-			variables: {
+			variables?: {
 				system?: Parameters<
 					import('./apis/prompt/generated/index.js').PromptsCollection[T]['system']
 				>[0];
@@ -927,18 +920,17 @@ export interface AgentContext {
 					import('./apis/prompt/generated/index.js').PromptsCollection[T]['prompt']
 				>[0];
 			}
-		): { system: string; prompt: string };
-		getPrompt<
+		) => { system: string; prompt: string };
+		getPrompt: <
 			T extends
 				keyof import('./apis/prompt/generated/index.js').PromptsCollection,
 		>(
 			name: T
-		): {
+		) => {
 			system: import('./apis/prompt/generated/index.js').PromptsCollection[T]['system'];
 			prompt: import('./apis/prompt/generated/index.js').PromptsCollection[T]['prompt'];
 		};
 	};
->>>>>>> Stashed changes
 }
 
 /**

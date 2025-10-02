@@ -5,6 +5,7 @@ import DiscordAPI from '../apis/discord';
 import EmailAPI from '../apis/email';
 import KeyValueAPI from '../apis/keyvalue';
 import ObjectStoreAPI from '../apis/objectstore';
+import PromptAPI from '../apis/prompt';
 import StreamAPIImpl from '../apis/stream';
 import VectorAPI from '../apis/vector';
 import type { Logger } from '../logger';
@@ -178,6 +179,7 @@ const stream = new StreamAPIImpl();
 const email = new EmailAPI();
 const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
+const promptAPI = new PromptAPI();
 
 /**
  * Creates an agent context for server operations
@@ -203,13 +205,12 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		vector,
 		stream,
 		email,
-<<<<<<< Updated upstream
-=======
-		_experimental_prompts: () => promptAPI.prompts,
+		discord,
+		objectstore,
 		prompts: {
 			compile: <T extends keyof typeof promptAPI.prompts>(
 				name: T,
-				variables: {
+				variables?: {
 					system?: Parameters<(typeof promptAPI.prompts)[T]['system']>[0];
 					prompt?: Parameters<(typeof promptAPI.prompts)[T]['prompt']>[0];
 				}
@@ -217,9 +218,6 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 			getPrompt: <T extends keyof typeof promptAPI.prompts>(name: T) =>
 				promptAPI.getPrompt(name),
 		},
->>>>>>> Stashed changes
-		discord,
-		objectstore,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
 		scope: 'local',
