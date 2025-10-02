@@ -29,16 +29,28 @@ export default class PromptAPI {
 	 */
 	public compile<T extends keyof PromptsCollection>(
 		name: T,
-		variables?: {
-			system?: Parameters<PromptsCollection[T]['system']>[0];
-			prompt?: Parameters<PromptsCollection[T]['prompt']>[0];
-		}
+		...args: PromptsCollection[T]['system'] extends () => string
+			? PromptsCollection[T]['prompt'] extends () => string
+				? [] // No variables needed
+				: [
+						{
+							system?: Parameters<PromptsCollection[T]['system']>[0];
+							prompt?: Parameters<PromptsCollection[T]['prompt']>[0];
+						},
+					]
+			: [
+					{
+						system: Parameters<PromptsCollection[T]['system']>[0];
+						prompt: Parameters<PromptsCollection[T]['prompt']>[0];
+					},
+				]
 	): { system: string; prompt: string } {
 		const prompt = this.prompts[name as string];
 		if (!prompt) {
 			throw new Error(`Prompt '${String(name)}' not found`);
 		}
 
+		const variables = args[0];
 		return {
 			system: prompt.system(variables?.system as any),
 			prompt: prompt.prompt(variables?.prompt as any),

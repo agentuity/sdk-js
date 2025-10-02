@@ -210,11 +210,26 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		prompts: {
 			compile: <T extends keyof typeof promptAPI.prompts>(
 				name: T,
-				variables?: {
-					system?: Parameters<(typeof promptAPI.prompts)[T]['system']>[0];
-					prompt?: Parameters<(typeof promptAPI.prompts)[T]['prompt']>[0];
-				}
-			) => promptAPI.compile(name, variables),
+				...args: (typeof promptAPI.prompts)[T]['system'] extends () => string
+					? (typeof promptAPI.prompts)[T]['prompt'] extends () => string
+						? [] // No variables needed
+						: [
+								{
+									system?: Parameters<
+										(typeof promptAPI.prompts)[T]['system']
+									>[0];
+									prompt?: Parameters<
+										(typeof promptAPI.prompts)[T]['prompt']
+									>[0];
+								},
+							]
+					: [
+							{
+								system: Parameters<(typeof promptAPI.prompts)[T]['system']>[0];
+								prompt: Parameters<(typeof promptAPI.prompts)[T]['prompt']>[0];
+							},
+						]
+			) => promptAPI.compile(name, ...args),
 			getPrompt: <T extends keyof typeof promptAPI.prompts>(name: T) =>
 				promptAPI.getPrompt(name),
 		},

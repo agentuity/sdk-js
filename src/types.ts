@@ -912,14 +912,29 @@ export interface AgentContext {
 				keyof import('./apis/prompt/generated/index.js').PromptsCollection,
 		>(
 			name: T,
-			variables?: {
-				system?: Parameters<
-					import('./apis/prompt/generated/index.js').PromptsCollection[T]['system']
-				>[0];
-				prompt?: Parameters<
-					import('./apis/prompt/generated/index.js').PromptsCollection[T]['prompt']
-				>[0];
-			}
+			...args: import('./apis/prompt/generated/index.js').PromptsCollection[T]['system'] extends () => string
+				? import('./apis/prompt/generated/index.js').PromptsCollection[T]['prompt'] extends () => string
+					? [] // No variables needed
+					: [
+							{
+								system?: Parameters<
+									import('./apis/prompt/generated/index.js').PromptsCollection[T]['system']
+								>[0];
+								prompt?: Parameters<
+									import('./apis/prompt/generated/index.js').PromptsCollection[T]['prompt']
+								>[0];
+							},
+						]
+				: [
+						{
+							system: Parameters<
+								import('./apis/prompt/generated/index.js').PromptsCollection[T]['system']
+							>[0];
+							prompt: Parameters<
+								import('./apis/prompt/generated/index.js').PromptsCollection[T]['prompt']
+							>[0];
+						},
+					]
 		) => { system: string; prompt: string };
 		getPrompt: <
 			T extends
