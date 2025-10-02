@@ -1,12 +1,12 @@
 # @agentuity/sdk Changelog
 
-## 0.0.148
+## [0.0.148]
 
 ### Patch Changes
 
 - added experimental support for prompts ([#184](https://github.com/agentuity/sdk-js/pull/184))
 
-## 0.0.147
+## [0.0.147]
 
 ### Patch Changes
 
@@ -16,7 +16,7 @@
   - Added property `compressed` to the Stream interface which represents if the stream has compression enabled
 - 9928a32: Remove the explicit Content-Type header for application/json in send (internal) to allow each service caller to properly set ([#185](https://github.com/agentuity/sdk-js/pull/185))
 
-## 0.0.146
+## [0.0.146]
 
 ### Patch Changes
 
