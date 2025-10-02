@@ -106,7 +106,7 @@ export async function run(config: AutostartConfig) {
 		environment: config.devmode ? 'development' : config.environment,
 	});
 	const server = await createServer({
-		context: createServerContext({
+		context: await createServerContext({
 			devmode: config.devmode,
 			deploymentId: config.deploymentId,
 			projectId: config.projectId,

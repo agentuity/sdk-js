@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.148
+
+### Patch Changes
+
+- added experimental support for prompts
+
 ## 0.0.147
 
 ### Patch Changes

@@ -2,6 +2,7 @@ import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
+
 import type {
 	Slack,
 	SlackAttachmentsMessage,
@@ -923,6 +924,11 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
+
+	/**
+	 * get the prompts collection for compiling dynamic prompts
+	 */
+	_experimental_prompts(): import('./apis/prompt/generated/index.js').PromptsCollection;
 }
 
 /**

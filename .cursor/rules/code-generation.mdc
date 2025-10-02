@@ -1,0 +1,169 @@
+---
+description: Code Generation Development Rules for SDK
+globs: src/apis/**/*.ts, src/server/*.ts, src/types.ts
+alwaysApply: true
+---
+
+# Code Generation Development Rules
+
+> **⚠️ IMPORTANT**: These rules work in conjunction with the CLI rules. When updating these SDK rules, also update `cli/.cursor/rules/code-generation.mdc` to keep them in sync.
+
+## Core Principles
+
+### Optional Field Handling
+- ✅ Generated code should NEVER require optional chaining (`?.`)
+- ✅ Always generate both `system` and `prompt` fields, even if empty
+- ✅ Empty fields should return empty strings, not undefined
+- ❌ Never generate partial objects that require optional chaining
+
+### Never Modify Generated Content in Source Files
+- ❌ NEVER edit files in `src/` that contain generated content
+- ❌ NEVER hardcode generated content like `copyWriter` prompts in source files
+- ✅ ALWAYS load generated content dynamically at runtime
+- ✅ Provide fallbacks for missing generated content
+
+### Dynamic Loading Pattern
+Generated content doesn't exist at SDK build time, so use dynamic loading patterns:
+
+```typescript
+// ✅ Good: Dynamic loading with fallbacks
+public async loadGeneratedContent(): Promise<void> {
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    
+    const possiblePaths = [
+      path.join(process.cwd(), 'node_modules', '@agentuity', 'sdk', 'dist', 'generated', 'content.js'),
+      path.join(process.cwd(), 'node_modules', '@agentuity', 'sdk', 'src', 'generated', 'content.js')
+    ];
+    
+    for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+        const generatedModule = require(possiblePath);
+        this.content = generatedModule.content || defaultContent;
+        break;
+      }
+    }
+  } catch (error) {
+    this.content = defaultContent;
+    console.warn('No generated content found');
+  }
+}
+```
+
+## SDK-Specific Rules
+
+### Path Resolution
+- Use absolute paths only (relative paths don't work in bundled environments)
+- Check `dist/` directory first, then `src/` directory
+- Always provide fallbacks for missing generated content
+
+### Context Integration
+```typescript
+// ✅ Good: Load generated content in context creation
+export async function createServerContext(req: ServerContextRequest): Promise<AgentContext> {
+  // ... other initialization
+  
+  // Load generated content dynamically
+  await promptAPI.loadPrompts();
+  
+  return {
+    // ... other context properties
+    prompts: () => promptAPI.prompts,
+  };
+}
+```
+
+### Type Safety
+- Generate TypeScript definitions for generated content
+- Use proper type annotations for dynamic imports
+- Maintain type safety throughout the loading process
+
+## Common Patterns
+
+### Generated Content API Class
+```typescript
+export default class GeneratedContentAPI {
+  public content: typeof defaultContent;
+
+  constructor() {
+    this.content = defaultContent;
+  }
+
+  public async loadContent(): Promise<void> {
+    // Dynamic loading logic here
+  }
+}
+```
+
+### Error Handling
+```typescript
+try {
+  // Try to load generated content
+  const generatedModule = require(possiblePath);
+  this.content = generatedModule.content || defaultContent;
+} catch (error) {
+  // Fallback to default content
+  this.content = defaultContent;
+  console.warn('No generated content found');
+}
+```
+
+## Common Pitfalls to Avoid
+
+### ❌ Don't Do This
+```typescript
+// Hardcoding generated content in source files
+export const prompts = {
+  copyWriter: { /* hardcoded content */ }
+};
+
+// Using relative imports that don't work in bundles
+const generatedModule = require('./generated/_index.js');
+
+// Not providing fallbacks
+const generatedModule = require(possiblePath); // Will crash if file doesn't exist
+```
+
+### ✅ Do This Instead
+```typescript
+// Dynamic loading with absolute paths
+const possiblePaths = [
+  path.join(process.cwd(), 'node_modules', '@agentuity', 'sdk', 'dist', 'generated', '_index.js')
+];
+
+// With proper error handling
+try {
+  const generatedModule = require(possiblePath);
+  this.content = generatedModule.content || defaultContent;
+} catch (error) {
+  this.content = defaultContent;
+}
+```
+
+## Build Considerations
+
+- Generated content is loaded at runtime, not build time
+- Use `require()` for CommonJS compatibility in bundled environments
+- Avoid `import()` statements for generated content
+- Ensure fallbacks work when generated content is missing
+
+## Development Workflow
+
+### When Making Changes to Generated Content Structure:
+1. **Update CLI code generation** in `cli/internal/bundler/prompts/code_generator.go`
+2. **Update SDK to handle new structure** in `src/apis/prompt/index.ts`
+3. **Bump SDK version** in `package.json`
+4. **Build SDK**: `npm run build`
+5. **Install in test project**: `npm install /path/to/sdk-js`
+6. **Run bundle command**: `agentuity-cli bundle` to regenerate content
+7. **Copy dist to node_modules**: `cp -r dist/* node_modules/@agentuity/sdk/dist/` (if needed)
+
+**Note**: After the first setup, you only need to run step 7 (`cp -r dist/* node_modules/@agentuity/sdk/dist/`) for subsequent changes to avoid reinstalling the entire package.
+
+### Required Exports
+- ✅ Always export `interpolateTemplate` from main SDK index
+- ✅ Generated content must import from `@agentuity/sdk` (not relative paths)
+- ✅ Ensure all dependencies are properly exported
+
+Remember: The SDK's job is to load generated content dynamically, not contain hardcoded generated content.
