@@ -4,17 +4,17 @@
 
 ### Patch Changes
 
-- added experimental support for prompts
+- added experimental support for prompts ([#184](https://github.com/agentuity/sdk-js/pull/184))
 
 ## 0.0.147
 
 ### Patch Changes
 
-- 96f5561: - Added support for automatic stream compression
+- 96f5561: - Added support for automatic stream compression ([#186](https://github.com/agentuity/sdk-js/pull/186))
   - Added support for direct write to Stream in addition to getWriter()
   - Added property `bytesWritten` to the Stream interface which represents the number of bytes written to the stream
   - Added property `compressed` to the Stream interface which represents if the stream has compression enabled
-- 9928a32: Remove the explicit Content-Type header for application/json in send (internal) to allow each service caller to properly set
+- 9928a32: Remove the explicit Content-Type header for application/json in send (internal) to allow each service caller to properly set ([#185](https://github.com/agentuity/sdk-js/pull/185))
 
 ## 0.0.146
 
@@ -769,3 +769,7 @@ All notable changes to this project will be documented in this file.
 ### Patch Changes
 
 - Refactor the JS SDK to better support new workflow
+
+[0.0.148]: https://github.com/agentuity/sdk-js/compare/v0.0.147...v0.0.148
+[0.0.147]: https://github.com/agentuity/sdk-js/compare/v0.0.146...v0.0.147
+[0.0.146]: https://github.com/agentuity/sdk-js/compare/v0.0.145...v0.0.146
