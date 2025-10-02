@@ -1,0 +1,11 @@
+export type PromptConfig = any;
+export type PromptName = any;
+
+// This will be replaced by the CLI with the actual generated types
+export interface PromptsCollection {
+	[promptSlug: string]: {
+		slug: string;
+		system: (variables?: Record<string, any>) => string;
+		prompt: (variables?: Record<string, any>) => string;
+	};
+}

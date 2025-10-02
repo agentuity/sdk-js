@@ -203,6 +203,21 @@ export function createServerContext(req: ServerContextRequest): AgentContext {
 		vector,
 		stream,
 		email,
+<<<<<<< Updated upstream
+=======
+		_experimental_prompts: () => promptAPI.prompts,
+		prompts: {
+			compile: <T extends keyof typeof promptAPI.prompts>(
+				name: T,
+				variables: {
+					system?: Parameters<(typeof promptAPI.prompts)[T]['system']>[0];
+					prompt?: Parameters<(typeof promptAPI.prompts)[T]['prompt']>[0];
+				}
+			) => promptAPI.compile(name, variables),
+			getPrompt: <T extends keyof typeof promptAPI.prompts>(name: T) =>
+				promptAPI.getPrompt(name),
+		},
+>>>>>>> Stashed changes
 		discord,
 		objectstore,
 		sdkVersion: req.sdkVersion,
