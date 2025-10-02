@@ -1,3 +1,5 @@
+// this is copied from https://github.com/agentuity/go-common/blob/main/string/interpolate_test.go
+// but adapted to javascript
 /**
  * Interpolates a template string with variables using go-common syntax
  * Supports:
@@ -8,7 +10,7 @@
  */
 export function interpolateTemplate(
 	template: string,
-	variables: Record<string, any> = {}
+	variables: Record<string, unknown> = {}
 ): string {
 	// Convert {{variable}} to {variable} for go-common compatibility
 	const goCommonTemplate = template.replace(/\{\{([^}]+)\}\}/g, '{$1}');
@@ -17,12 +19,13 @@ export function interpolateTemplate(
 	// Support both {variable:default} and {variable:-default} syntax
 	return goCommonTemplate.replace(
 		/\{([!]?[^}:]+)(?::([^}]*))?\}/g,
-		(match, varName, defaultValue) => {
+		(_match, varName, defaultValue) => {
 			const isRequired = varName.startsWith('!');
 			const cleanVarName = isRequired ? varName.substring(1) : varName;
 			const value = variables[cleanVarName];
 
-			if (value !== undefined && value !== '') {
+			// Check if value exists and is not empty/null
+			if (value !== undefined && value !== null && value !== '') {
 				return String(value);
 			}
 
@@ -30,6 +33,7 @@ export function interpolateTemplate(
 				throw new Error(`Required variable '${cleanVarName}' not provided`);
 			}
 
+			// Return default value if provided, otherwise empty string
 			return defaultValue !== undefined ? defaultValue : '';
 		}
 	);
