@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.149
+
+### Patch Changes
+
+- Changed up the function signature and add a couple features
+
 ## [0.0.148]
 
 ### Patch Changes

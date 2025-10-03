@@ -1,6 +1,6 @@
 {
 	"name": "@agentuity/sdk",
-	"version": "0.0.148",
+	"version": "0.0.149",
 	"description": "The Agentuity SDK for NodeJS and Bun",
 	"license": "Apache-2.0",
 	"public": true,
@@ -42,6 +42,7 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist && tsup && npm run types",
+		"build-clean-copy": "./scripts/build-clean-copy.sh",
 		"types": "tsc --emitDeclarationOnly --declaration",
 		"bun:start": "npm run build && bun run ./dist/index.js",
 		"node:start": "npm run build && node ./dist/index.js",
