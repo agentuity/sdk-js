@@ -27,13 +27,20 @@ fi
 
 echo "✅ Build completed successfully"
 
+# Clean target project's dist directory
+echo "🧹 Cleaning target project's dist directory..."
+if [ -d "$TARGET_DIR" ]; then
+    rm -rf "$TARGET_DIR"
+    echo "  Removed existing dist directory"
+fi
+
 # Create target directory if it doesn't exist
 echo "📁 Creating target directory: $TARGET_DIR"
 mkdir -p "$TARGET_DIR"
 
-# Copy dist contents to target directory
-echo "📦 Copying dist/* to $TARGET_DIR"
-cp -r dist/* "$TARGET_DIR/"
+# Copy our newly built dist contents to target directory
+echo "📦 Copying newly built dist contents to $TARGET_DIR"
+cp -r dist/. "$TARGET_DIR/"
 
 # Copy package.json and LICENSE.md
 echo "📄 Copying package.json and LICENSE.md"

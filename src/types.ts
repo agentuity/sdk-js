@@ -811,6 +811,30 @@ export type WaitUntilCallback = (
 	promise: Promise<void> | (() => void | Promise<void>)
 ) => void;
 
+/**
+ * Available prompt names
+ */
+export type PromptName =
+	keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
+
+/**
+ * A prompt object with system and prompt functions
+ */
+export type PromptObject<T extends PromptName> = {
+	system: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['system'];
+	prompt: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['prompt'];
+};
+
+/**
+ * The prompts API interface
+ */
+export interface PromptsAPI {
+	/**
+	 * Get system or prompt functions by slug
+	 */
+	getPrompt: <T extends PromptName>(name: T) => PromptObject<T>;
+}
+
 export interface AgentContext {
 	/**
 	 * the version of the Agentuity SDK
@@ -926,21 +950,9 @@ export interface AgentContext {
 	slack: SlackService;
 
 	/**
-	 * get the prompts collection for compiling dynamic prompts
+	 * EXPERIMENTAL: prompts API for accessing and compiling prompts
 	 */
-	_experimental_prompts(): import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
-
-	/**
-	 * prompts API for accessing and compiling prompts
-	 */
-	prompts: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection & {
-		getPrompt<
-			T extends
-				keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection,
-		>(
-			slug: T
-		): import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T];
-	};
+	prompts: PromptsAPI;
 }
 
 /**
