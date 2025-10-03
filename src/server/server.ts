@@ -218,17 +218,7 @@ export async function createServerContext(
 		stream,
 		email,
 		_experimental_prompts: () => promptAPI.prompts,
-		prompts: {
-			getPrompt: <T extends keyof typeof promptAPI.prompts>(slug: T) => {
-				const prompt = promptAPI.prompts[slug];
-				if (!prompt) {
-					throw new Error(`Prompt '${slug}' not found`);
-				}
-				return prompt;
-			},
-			// Use the generated compile function with proper type safety
-			compile: promptAPI.prompts.compile,
-		},
+		prompts: promptAPI.prompts,
 		discord,
 		objectstore,
 		patchportal,

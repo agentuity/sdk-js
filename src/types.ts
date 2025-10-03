@@ -933,15 +933,13 @@ export interface AgentContext {
 	/**
 	 * prompts API for accessing and compiling prompts
 	 */
-	prompts: {
+	prompts: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection & {
 		getPrompt<
 			T extends
 				keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection,
 		>(
 			slug: T
 		): import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T];
-		// Use the generated compile function with proper type safety
-		compile: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection['compile'];
 	};
 }
 

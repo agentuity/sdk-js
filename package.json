@@ -42,6 +42,7 @@
 	},
 	"scripts": {
 		"build": "rm -rf dist && tsup && npm run types",
+		"build-and-copy": "./scripts/build-and-copy.sh",
 		"types": "tsc --emitDeclarationOnly --declaration",
 		"bun:start": "npm run build && bun run ./dist/index.js",
 		"node:start": "npm run build && node ./dist/index.js",
