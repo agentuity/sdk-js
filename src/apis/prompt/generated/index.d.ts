@@ -8,11 +8,5 @@ export interface GeneratedPromptsCollection {
 	[promptSlug: string]: any;
 }
 
-// Placeholder signature collection that will be replaced
-export type SignaturesCollection = {
-	[promptSlug: string]: (params: any) => string;
-};
-
 // Placeholder exports that will be replaced
 export const prompts: GeneratedPromptsCollection = {} as any;
-export const signatures: SignaturesCollection = {} as any;
