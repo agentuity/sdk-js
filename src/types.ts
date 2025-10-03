@@ -940,10 +940,8 @@ export interface AgentContext {
 		>(
 			slug: T
 		): import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T];
-		compile<
-			T extends
-				keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection,
-		>(slug: T, params: any): string;
+		// Use the generated compile function with proper type safety
+		compile: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection['compile'];
 	};
 }
 

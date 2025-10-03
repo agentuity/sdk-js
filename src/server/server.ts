@@ -226,32 +226,8 @@ export async function createServerContext(
 				}
 				return prompt;
 			},
-			compile: <T extends keyof typeof promptAPI.prompts>(
-				slug: T,
-				params: any
-			) => {
-				const prompt = promptAPI.prompts[slug];
-				if (!prompt) {
-					throw new Error(`Prompt '${slug}' not found`);
-				}
-
-				// Use the signature function if available
-				const signature = promptAPI.signatures[slug];
-				if (signature) {
-					return signature(params);
-				}
-
-				// Fallback to manual compilation
-				let result = '';
-				if (prompt.system && params.system) {
-					result += prompt.system(params);
-				}
-				if (prompt.prompt && params.prompt) {
-					if (result) result += '\n';
-					result += prompt.prompt(params);
-				}
-				return result;
-			},
+			// Use the generated compile function with proper type safety
+			compile: promptAPI.prompts.compile,
 		},
 		discord,
 		objectstore,
