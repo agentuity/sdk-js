@@ -155,11 +155,21 @@ try {
 2. **Update SDK to handle new structure** in `src/apis/prompt/index.ts`
 3. **Bump SDK version** in `package.json`
 4. **Build SDK**: `npm run build`
-5. **Install in test project**: `npm install /path/to/sdk-js`
-6. **Run bundle command**: `agentuity-cli bundle` to regenerate content
-7. **Copy dist to node_modules**: `cp -r dist/* node_modules/@agentuity/sdk/dist/` (if needed)
+6. **Run bundle command**: `go run . bundle` to regenerate content
+8. never run `go run . dev` for me 
+7. **Copy dist to node_modules**: Use `./build-and-copy.sh <target-directory>` or `cp -r dist/* node_modules/@agentuity/sdk/dist/` (if needed)
 
-**Note**: After the first setup, you only need to run step 7 (`cp -r dist/* node_modules/@agentuity/sdk/dist/`) for subsequent changes to avoid reinstalling the entire package.
+**Note**: After the first setup, you only need to run step 7 for subsequent changes to avoid reinstalling the entire package.
+
+### Quick SDK Update Workflow:
+For faster iteration when testing SDK changes:
+```bash
+# In sdk-js directory
+npm run build
+./build-and-copy.sh /path/to/test-project/node_modules/@agentuity/sdk/dist
+```
+
+This copies the built SDK directly to your test project without reinstalling the package.
 
 ### Required Exports
 - ✅ Always export `interpolateTemplate` from main SDK index

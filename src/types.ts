@@ -928,7 +928,23 @@ export interface AgentContext {
 	/**
 	 * get the prompts collection for compiling dynamic prompts
 	 */
-	_experimental_prompts(): import('./apis/prompt/generated/index.js').PromptsCollection;
+	_experimental_prompts(): import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
+
+	/**
+	 * prompts API for accessing and compiling prompts
+	 */
+	prompts: {
+		getPrompt<
+			T extends
+				keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection,
+		>(
+			slug: T
+		): import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T];
+		compile<
+			T extends
+				keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection,
+		>(slug: T, params: any): string;
+	};
 }
 
 /**

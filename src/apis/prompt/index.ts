@@ -4,7 +4,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { PromptConfig, PromptName } from './generated/_index.js';
-import type { PromptsCollection } from './generated/index.js';
+import type { PromptsCollection } from './generic_types.js';
+import {
+	createPromptSignatures,
+	type GetPromptSignatures,
+} from './signature.js';
 
 // Default empty prompts object
 const defaultPrompts = {};
@@ -16,10 +20,12 @@ interface GeneratedModule {
 
 export default class PromptAPI {
 	public prompts: PromptsCollection;
+	public signatures: GetPromptSignatures<PromptsCollection>;
 
 	constructor() {
 		// Initialize with empty prompts by default
 		this.prompts = defaultPrompts;
+		this.signatures = createPromptSignatures(this.prompts);
 	}
 
 	/**
@@ -128,6 +134,8 @@ export default class PromptAPI {
 			// );
 			this.prompts =
 				generatedModule.prompts || (defaultPrompts as PromptsCollection);
+			// Update signatures when prompts are loaded
+			this.signatures = createPromptSignatures(this.prompts);
 			// console.log('Final prompts:', Object.keys(this.prompts));
 		} catch (error) {
 			// Fallback to empty prompts if generated file doesn't exist
@@ -136,6 +144,8 @@ export default class PromptAPI {
 				error instanceof Error ? error.message : String(error)
 			);
 			this.prompts = defaultPrompts;
+			// Update signatures with empty prompts
+			this.signatures = createPromptSignatures(this.prompts);
 			console.warn(
 				'⚠️  No generated prompts found. Run `agentuity bundle` to generate prompts from src/prompts.yaml'
 			);
@@ -144,5 +154,12 @@ export default class PromptAPI {
 }
 
 // Re-export generated types and prompts (following POC pattern)
-export { defaultPrompts as prompts, PromptConfig, PromptName };
-export * from './generated/index.js';
+export { defaultPrompts, PromptConfig, PromptName };
+export {
+	GeneratedPromptsCollection,
+	prompts,
+	SignaturesCollection,
+	signatures,
+} from './generated/index.js';
+export * from './generic_types.js';
+export { createPromptSignature, createPromptSignatures } from './signature.js';
