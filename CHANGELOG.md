@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- Changed up the function signature and add a couple features
+- Changed up the function signature and add a couple features ([#190](https://github.com/agentuity/sdk-js/pull/190))
 
 ## [0.0.148]
 
