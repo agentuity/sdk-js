@@ -2,6 +2,11 @@ export * from './logger';
 export * from './server';
 export * from './types';
 export * from './utils/interpolate';
+export {
+	type PromptAttributes,
+	type PromptAttributesParams,
+	processPromptMetadata,
+} from './utils/promptMetadata';
 
 import DiscordAPI from './apis/discord';
 // Export APIs
