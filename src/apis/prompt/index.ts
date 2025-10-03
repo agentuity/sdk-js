@@ -3,7 +3,6 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
-import { PromptConfig, PromptName } from './generated/_index.js';
 import type { PromptsCollection } from './generic_types.js';
 
 // Default empty prompts object
@@ -144,9 +143,27 @@ export default class PromptAPI {
 }
 
 // Re-export generated types and prompts (following POC pattern)
-export { defaultPrompts, PromptConfig, PromptName };
-export {
-	GeneratedPromptsCollection,
-	prompts,
-} from './generated/index.js';
+export { defaultPrompts };
+
+// Conditional exports for generated content
+let PromptConfig: any;
+let PromptName: any;
+let GeneratedPromptsCollection: any;
+let prompts: any;
+
+try {
+	const generatedModule = require('./generated/_index.js');
+	PromptConfig = generatedModule.PromptConfig;
+	PromptName = generatedModule.PromptName;
+	GeneratedPromptsCollection = generatedModule.GeneratedPromptsCollection;
+	prompts = generatedModule.prompts;
+} catch {
+	// Fallback to placeholder values when generated content doesn't exist
+	PromptConfig = {};
+	PromptName = {};
+	GeneratedPromptsCollection = {};
+	prompts = {};
+}
+
+export { PromptConfig, PromptName, GeneratedPromptsCollection, prompts };
 export * from './generic_types.js';
