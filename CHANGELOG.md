@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.150
+
+### Patch Changes
+
+- Fix issue where DataType can't support arbitrary valid custom objects as Json
+
 ## 0.0.149
 
 ### Patch Changes
