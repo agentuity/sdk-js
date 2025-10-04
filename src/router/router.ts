@@ -11,6 +11,7 @@ import {
 	ValueType,
 } from '@opentelemetry/api';
 import type { Logger } from '../logger';
+import { internal } from '../logger/internal';
 import AgentResolver from '../server/agents';
 import { HandlerParameterProvider } from '../server/handlerParameterProvider';
 import type { ServerRequest, ServerRoute } from '../server/types';
@@ -25,9 +26,9 @@ import type {
 	RemoteAgent,
 	Stream,
 } from '../types';
+import AgentContextWaitUntilHandler from './context';
 import AgentRequestHandler from './request';
 import AgentResponseHandler from './response';
-import AgentContextWaitUntilHandler from './context';
 
 interface RouterConfig {
 	handler: AgentHandler;
@@ -115,7 +116,7 @@ export function recordException(span: Span, ex: unknown, skipLog = false) {
 		if (store?.logger) {
 			store.logger.error('%s', ex);
 		} else {
-			console.error(ex);
+			internal.error(ex);
 		}
 	}
 	__exception.__exception_recorded = true;

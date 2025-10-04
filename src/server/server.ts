@@ -10,6 +10,7 @@ import PromptAPI from '../apis/prompt/index.js';
 import StreamAPIImpl from '../apis/stream';
 import VectorAPI from '../apis/vector';
 import type { Logger } from '../logger';
+import { internal } from '../logger/internal';
 import { createRouter } from '../router';
 import type {
 	AgentConfig,
@@ -58,7 +59,7 @@ async function createRoute(
 	try {
 		mod = await import(filename);
 	} catch (error) {
-		console.error('Error importing module', error);
+		internal.error('Error importing module', error);
 		throw new Error(`Error importing module ${filename}: ${error}`);
 	}
 

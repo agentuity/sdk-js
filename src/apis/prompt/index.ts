@@ -3,6 +3,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import { internal } from '../../logger/internal';
 import type { PromptsCollection } from './generic_types.js';
 
 // Default empty prompts object
@@ -84,7 +85,7 @@ export default class PromptAPI {
 
 	// Method to load prompts dynamically (called by context)
 	public async loadPrompts(): Promise<void> {
-		// console.log('loadPrompts() called');
+		internal.debug('loadPrompts() called');
 		try {
 			// Try multiple possible paths for the generated prompts
 			let generatedModule: unknown;
@@ -92,9 +93,9 @@ export default class PromptAPI {
 			// Dynamic module resolution strategy
 			const possiblePaths = await this.resolveGeneratedPaths();
 
-			// console.log('Trying absolute paths:');
+			internal.debug('Trying absolute paths:', possiblePaths);
 			for (const possiblePath of possiblePaths) {
-				// console.log('  Checking:', possiblePath);
+				internal.debug('  Checking:', possiblePath);
 				try {
 					await fs.access(possiblePath);
 					// Get file stats for cache-busting
@@ -106,7 +107,7 @@ export default class PromptAPI {
 
 					// Use ESM dynamic import instead of require
 					generatedModule = await import(fileUrl);
-					// console.log('  Successfully loaded from:', possiblePath);
+					internal.debug('  Successfully loaded from:', possiblePath);
 					break;
 				} catch {}
 			}
@@ -120,22 +121,22 @@ export default class PromptAPI {
 				throw new Error('Generated module has invalid shape');
 			}
 
-			// console.log('Generated module:', generatedModule);
-			// console.log(
-			// 	'Prompts in module:',
-			// 	Object.keys(generatedModule.prompts || {})
-			// );
+			internal.debug('Generated module:', generatedModule);
+			internal.debug(
+				'Prompts in module:',
+				Object.keys(generatedModule.prompts || {})
+			);
 			this.prompts =
 				generatedModule.prompts || (defaultPrompts as PromptsCollection);
-			// console.log('Final prompts:', Object.keys(this.prompts));
+			internal.debug('Final prompts:', Object.keys(this.prompts));
 		} catch (error) {
 			// Fallback to empty prompts if generated file doesn't exist
-			console.log(
+			internal.error(
 				'Error loading prompts:',
 				error instanceof Error ? error.message : String(error)
 			);
 			this.prompts = defaultPrompts;
-			console.warn(
+			internal.warn(
 				'⚠️  No generated prompts found. Run `agentuity bundle` to generate prompts from src/prompts.yaml'
 			);
 		}
