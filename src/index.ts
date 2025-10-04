@@ -1,19 +1,22 @@
 export * from './logger';
 export * from './server';
 export * from './types';
+export * from './utils/interpolate';
 
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
+import PatchPortal from './apis/patchportal';
+import PromptAPI from './apis/prompt';
 import StreamAPIImpl from './apis/stream';
-export { EmailAPI, DiscordAPI, StreamAPIImpl };
+export { EmailAPI, DiscordAPI, PatchPortal, PromptAPI, StreamAPIImpl };
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';
+import { UnsupportedSlackPayload } from './io/slack';
 import { AgentuityTeamsActivityHandler } from './io/teams/AgentuityTeamsActivityHandler';
 import { AgentuityTeamsAdapter } from './io/teams/AgentuityTeamsAdapter';
 import type { AgentConfig } from './types';
-import { UnsupportedSlackPayload } from './io/slack';
 
 export {
 	AgentuityTeamsAdapter,

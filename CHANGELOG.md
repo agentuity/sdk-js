@@ -1,5 +1,17 @@
 # @agentuity/sdk Changelog
 
+## 0.0.149
+
+### Added
+
+- Changed up the function signature and add a couple features ([#190](https://github.com/agentuity/sdk-js/pull/190))
+
+## [0.0.148]
+
+### Patch Changes
+
+- added experimental support for prompts ([#184](https://github.com/agentuity/sdk-js/pull/184))
+
 ## [0.0.147] - 2025-10-01
 
 ### Added
@@ -13,7 +25,7 @@
 
 - Remove explicit Content-Type header for application/json in GET requests to prevent HTTP servers from rejecting requests ([#185](https://github.com/agentuity/sdk-js/pull/185))
 
-## 0.0.146
+## [0.0.146]
 
 ### Patch Changes
 
@@ -767,6 +779,8 @@ All notable changes to this project will be documented in this file.
 
 - Refactor the JS SDK to better support new workflow
 
+[0.0.149]: https://github.com/agentuity/sdk-js/compare/v0.0.148...v0.0.149
+[0.0.148]: https://github.com/agentuity/sdk-js/compare/v0.0.147...v0.0.148
 [0.0.147]: https://github.com/agentuity/sdk-js/compare/v0.0.146...v0.0.147
 [0.0.146]: https://github.com/agentuity/sdk-js/compare/v0.0.145...v0.0.146
 [0.0.145]: https://github.com/agentuity/sdk-js/compare/v0.0.144...v0.0.145

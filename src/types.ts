@@ -2,6 +2,7 @@ import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
+
 import type {
 	Slack,
 	SlackAttachmentsMessage,
@@ -810,6 +811,30 @@ export type WaitUntilCallback = (
 	promise: Promise<void> | (() => void | Promise<void>)
 ) => void;
 
+/**
+ * Available prompt names
+ */
+export type PromptName =
+	keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
+
+/**
+ * A prompt object with system and prompt functions
+ */
+export type PromptObject<T extends PromptName> = {
+	system: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['system'];
+	prompt: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['prompt'];
+};
+
+/**
+ * The prompts API interface
+ */
+export interface PromptsAPI {
+	/**
+	 * Get system or prompt functions by slug
+	 */
+	getPrompt: <T extends PromptName>(name: T) => PromptObject<T>;
+}
+
 export interface AgentContext {
 	/**
 	 * the version of the Agentuity SDK
@@ -923,6 +948,11 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
+
+	/**
+	 * EXPERIMENTAL: prompts API for accessing and compiling prompts
+	 */
+	prompts: PromptsAPI;
 }
 
 /**

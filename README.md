@@ -104,6 +104,28 @@ bun test
 npm test
 ```
 
+## Making Changes
+
+To make changes for this repo, do the following in your PR:
+
+```bash
+npm run changeset
+```
+
+And if you plan to release in the same PR, run:
+
+```bash
+npm run version
+```
+
+Also run (only if you ran `npm run version`):
+
+```bash
+npm install
+```
+
+Then commit all files in the PR. When you merge the PR it will release the SDK.
+
 ## License
 
 See the [LICENSE](LICENSE.md) file for details.
