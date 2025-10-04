@@ -199,7 +199,8 @@ export type JsonPrimitive =
 	| boolean
 	| null
 	| JsonArray
-	| JsonObject;
+	| JsonObject
+	| { [key: string]: JsonPrimitive };
 
 /**
  * JSON array type
