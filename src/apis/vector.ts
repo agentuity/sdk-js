@@ -137,7 +137,7 @@ export default class VectorAPI implements VectorStorage {
 				);
 				if (resp.status === 200) {
 					if (resp.json?.success) {
-						const json = resp.json as unknown as { data: { id: string }[] };
+						const json = resp.json as unknown as { data: { id: string; }[]; };
 						span.setStatus({ code: SpanStatusCode.OK });
 						return json.data.map((o) => o.id);
 					}
@@ -181,6 +181,7 @@ export default class VectorAPI implements VectorStorage {
 			return await context.with(spanContext, async () => {
 				const resp = await GET<VectorGetResponse>(
 					`/vector/2025-03-17/${encodeURIComponent(name)}/${encodeURIComponent(key)}`,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
