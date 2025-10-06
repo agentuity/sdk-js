@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.151
+
+### Patch Changes
+
+- fix issue with vector.get
+
 ## [0.0.150]
 
 ### Patch Changes
