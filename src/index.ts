@@ -8,13 +8,24 @@ export {
 	processPromptMetadata,
 } from './utils/promptMetadata';
 
+// Export eval types
+export type {
+	EvalRequest,
+	EvalResponse,
+	EvalContext,
+	EvalFunction,
+	EvalResult,
+	EvalRunnerConfig,
+} from './apis/eval';
+
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
+import EvalAPI from './apis/eval';
 import PatchPortal from './apis/patchportal';
 import PromptAPI from './apis/prompt';
 import StreamAPIImpl from './apis/stream';
-export { EmailAPI, DiscordAPI, PatchPortal, PromptAPI, StreamAPIImpl };
+export { EmailAPI, DiscordAPI, EvalAPI, PatchPortal, PromptAPI, StreamAPIImpl };
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';

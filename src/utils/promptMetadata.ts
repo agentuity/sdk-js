@@ -3,6 +3,7 @@ import PatchPortal from '../apis/patchportal.js';
 import { internal } from '../logger/internal';
 
 export interface PromptAttributesParams {
+	promptId?: string;
 	slug: string;
 	compiled: string;
 	template: string;
@@ -10,7 +11,7 @@ export interface PromptAttributesParams {
 }
 
 export interface PromptAttributes extends PromptAttributesParams {
-	hash: string;
+	tempalteHash: string;
 	compiledHash: string;
 }
 
