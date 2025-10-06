@@ -2,6 +2,7 @@ import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
+
 import type {
 	Slack,
 	SlackAttachmentsMessage,
@@ -198,7 +199,8 @@ export type JsonPrimitive =
 	| boolean
 	| null
 	| JsonArray
-	| JsonObject;
+	| JsonObject
+	| { [key: string]: JsonPrimitive };
 
 /**
  * JSON array type
@@ -342,6 +344,13 @@ export interface CreateStreamProps {
 	 * optional contentType for the stream data. If not set, defaults to application/octet-stream
 	 */
 	contentType?: string;
+
+	/**
+	 * optional flag to enable gzip compression of stream data during upload. if true, will also add
+	 * add Content-Encoding: gzip header to responses. The client MUST be able to accept gzip
+	 * compression for this to work or must be able to uncompress the raw data it receives.
+	 */
+	compress?: true;
 }
 
 /**
@@ -363,6 +372,20 @@ export interface Stream extends WritableStream {
 	 * the unique stream url to consume the stream
 	 */
 	url: string;
+	/**
+	 * the total number of bytes written to the stream
+	 */
+	readonly bytesWritten: number;
+	/**
+	 * whether the stream is using compression
+	 */
+	readonly compressed: boolean;
+	/**
+	 * write data to the stream
+	 */
+	write(
+		chunk: string | Uint8Array | ArrayBuffer | Buffer | object
+	): Promise<void>;
 	/**
 	 * close the stream gracefully, handling already closed streams without error
 	 */
@@ -789,6 +812,30 @@ export type WaitUntilCallback = (
 	promise: Promise<void> | (() => void | Promise<void>)
 ) => void;
 
+/**
+ * Available prompt names
+ */
+export type PromptName =
+	keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
+
+/**
+ * A prompt object with system and prompt functions
+ */
+export type PromptObject<T extends PromptName> = {
+	system: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['system'];
+	prompt: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['prompt'];
+};
+
+/**
+ * The prompts API interface
+ */
+export interface PromptsAPI {
+	/**
+	 * Get system or prompt functions by slug
+	 */
+	getPrompt: <T extends PromptName>(name: T) => PromptObject<T>;
+}
+
 export interface AgentContext {
 	/**
 	 * the version of the Agentuity SDK
@@ -902,6 +949,11 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
+
+	/**
+	 * EXPERIMENTAL: prompts API for accessing and compiling prompts
+	 */
+	prompts: PromptsAPI;
 }
 
 /**

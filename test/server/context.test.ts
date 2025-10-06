@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { createServerContext } from '../../src/server/server';
 import type { Logger, Meter, Tracer } from '@opentelemetry/api';
+import { createServerContext } from '../../src/server/server';
 import type { AgentConfig } from '../../src/types';
 import '../setup'; // Import global test setup
 
@@ -11,7 +11,7 @@ describe('Server Context', () => {
 	const mockAgents: AgentConfig[] = [];
 
 	describe('createServerContext', () => {
-		it('should create context with sessionId and set runId equal to sessionId', () => {
+		it('should create context with sessionId and set runId equal to sessionId', async () => {
 			const req = {
 				tracer: mockTracer,
 				meter: mockMeter,
@@ -21,14 +21,14 @@ describe('Server Context', () => {
 				agents: mockAgents,
 			};
 
-			const context = createServerContext(req);
+			const context = await createServerContext(req);
 
 			expect(context.sessionId).toBe('sess_test-session-123');
 			expect(context.runId).toBe('sess_test-session-123');
 			expect(context.runId).toBe(context.sessionId);
 		});
 
-		it('should add sess_ prefix if sessionId does not start with it', () => {
+		it('should add sess_ prefix if sessionId does not start with it', async () => {
 			const req = {
 				tracer: mockTracer,
 				meter: mockMeter,
@@ -38,13 +38,13 @@ describe('Server Context', () => {
 				agents: mockAgents,
 			};
 
-			const context = createServerContext(req);
+			const context = await createServerContext(req);
 
 			expect(context.sessionId).toBe('sess_no-prefix-session');
 			expect(context.runId).toBe('sess_no-prefix-session');
 		});
 
-		it('should not add prefix if sessionId already starts with sess_', () => {
+		it('should not add prefix if sessionId already starts with sess_', async () => {
 			const req = {
 				tracer: mockTracer,
 				meter: mockMeter,
@@ -54,13 +54,13 @@ describe('Server Context', () => {
 				agents: mockAgents,
 			};
 
-			const context = createServerContext(req);
+			const context = await createServerContext(req);
 
 			expect(context.sessionId).toBe('sess_already-prefixed');
 			expect(context.runId).toBe('sess_already-prefixed');
 		});
 
-		it('should fallback to runId if sessionId is not provided', () => {
+		it('should fallback to runId if sessionId is not provided', async () => {
 			const req = {
 				tracer: mockTracer,
 				meter: mockMeter,
@@ -70,13 +70,13 @@ describe('Server Context', () => {
 				agents: mockAgents,
 			};
 
-			const context = createServerContext(req);
+			const context = await createServerContext(req);
 
 			expect(context.sessionId).toBe('sess_legacy-run-id');
 			expect(context.runId).toBe('sess_legacy-run-id');
 		});
 
-		it('should handle empty sessionId and runId', () => {
+		it('should handle empty sessionId and runId', async () => {
 			const req = {
 				tracer: mockTracer,
 				meter: mockMeter,
@@ -85,13 +85,13 @@ describe('Server Context', () => {
 				agents: mockAgents,
 			};
 
-			const context = createServerContext(req);
+			const context = await createServerContext(req);
 
 			expect(context.sessionId).toBe('sess_');
 			expect(context.runId).toBe('sess_');
 		});
 
-		it('should prefer sessionId over runId when both are provided', () => {
+		it('should prefer sessionId over runId when both are provided', async () => {
 			const req = {
 				tracer: mockTracer,
 				meter: mockMeter,
@@ -102,7 +102,7 @@ describe('Server Context', () => {
 				agents: mockAgents,
 			};
 
-			const context = createServerContext(req);
+			const context = await createServerContext(req);
 
 			expect(context.sessionId).toBe('sess_new-session');
 			expect(context.runId).toBe('sess_new-session');
