@@ -459,6 +459,76 @@ export class Email {
 		return '';
 	}
 
+	async send(
+		req: AgentRequest,
+		context: AgentContext,
+		to: string[],
+		reply: EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
+	): Promise<string> {
+		const authToken = req.metadata?.['email-auth-token'] as string;
+		if (!authToken) {
+			throw new Error(
+				'email authorization token is required but not found in metadata'
+			);
+		}
+		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: needed for complex async email operations
+		return new Promise<string>(async (resolve, reject) => {
+			try {
+				let attachments: Attachment[] = [];
+				if (reply.attachments) {
+					attachments = await Promise.all(
+						reply.attachments.map(async (attachment) => {
+							const resp = await fromDataType(attachment.data);
+							return {
+								filename: attachment.filename,
+								content: await resp.data.buffer(),
+								contentType: resp.data.contentType,
+								contentDisposition:
+									attachment.contentDisposition ?? ('attachment' as const),
+							};
+						})
+					);
+				}
+				const mail = new MailComposer({
+					date: new Date(),
+					from: {
+						name: from?.name ?? context.agent.name,
+						address: from?.email ?? this.toEmail() ?? '',
+					},
+					to: to.join(', '),
+					subject: reply.subject ?? '',
+					text: reply.text,
+					html: reply.html,
+					attachments,
+				});
+				const newemail = mail.compile();
+				newemail.build(async (err, message) => {
+					if (err) {
+						reject(err);
+					} else {
+						try {
+							await context.email.sendReply(
+								context.agent.id,
+								message.toString(),
+								authToken,
+								newemail.messageId()
+							);
+							resolve(newemail.messageId());
+						} catch (ex) {
+							reject(ex);
+						}
+					}
+				});
+			} catch (ex) {
+				reject(ex);
+			}
+		});
+	}
+
 	/**
 	 * send a reply to the email
 	 */
