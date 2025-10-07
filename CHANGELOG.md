@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.152
+
+### Patch Changes
+
+- Fixed issue with otel headers not propagating for outbound services
+
 ## 0.0.151
 
 ### Patch Changes
