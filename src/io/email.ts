@@ -493,13 +493,19 @@ export class Email {
 						})
 					);
 				}
+
+				const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
+				if (normalizedTo.length === 0) {
+					throw new Error('at least one recipient email is required');
+				}
+
 				const mail = new MailComposer({
 					date: new Date(),
 					from: {
 						name: from?.name ?? context.agent.name,
 						address: from?.email ?? this.toEmail() ?? '',
 					},
-					to: to.join(', '),
+					to: normalizedTo.join(', '),
 					subject: reply.subject ?? '',
 					text: reply.text,
 					html: reply.html,
