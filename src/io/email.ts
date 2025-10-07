@@ -475,48 +475,49 @@ export class Email {
 				'email authorization token is required but not found in metadata'
 			);
 		}
-		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: needed for complex async email operations
-		return new Promise<string>(async (resolve, reject) => {
-			try {
-				let attachments: Attachment[] = [];
-				if (reply.attachments) {
-					attachments = await Promise.all(
-						reply.attachments.map(async (attachment) => {
-							const resp = await fromDataType(attachment.data);
-							return {
-								filename: attachment.filename,
-								content: await resp.data.buffer(),
-								contentType: resp.data.contentType,
-								contentDisposition:
-									attachment.contentDisposition ?? ('attachment' as const),
-							};
-						})
-					);
-				}
 
-				const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
-				if (normalizedTo.length === 0) {
-					throw new Error('at least one recipient email is required');
-				}
+		return (async () => {
+			let attachments: Attachment[] = [];
+			if (reply.attachments) {
+				attachments = await Promise.all(
+					reply.attachments.map(async (attachment) => {
+						const resp = await fromDataType(attachment.data);
+						return {
+							filename: attachment.filename,
+							content: await resp.data.buffer(),
+							contentType: resp.data.contentType,
+							contentDisposition:
+								attachment.contentDisposition ?? ('attachment' as const),
+						};
+					})
+				);
+			}
 
-				const fromAddress = from?.email ?? this.toEmail();
-				if (!fromAddress) {
-					throw new Error('a valid from email address is required');
-				}
+			const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
+			if (normalizedTo.length === 0) {
+				throw new Error('at least one recipient email is required');
+			}
 
-				const mail = new MailComposer({
-					date: new Date(),
-					from: {
-						name: from?.name ?? context.agent.name,
-						address: fromAddress,
-					},
-					to: normalizedTo.join(', '),
-					subject: reply.subject ?? '',
-					text: reply.text,
-					html: reply.html,
-					attachments,
-				});
-				const newemail = mail.compile();
+			const fromAddress = from?.email ?? this.toEmail();
+			if (!fromAddress) {
+				throw new Error('a valid from email address is required');
+			}
+
+			const mail = new MailComposer({
+				date: new Date(),
+				from: {
+					name: from?.name ?? context.agent.name,
+					address: fromAddress,
+				},
+				to: normalizedTo.join(', '),
+				subject: reply.subject ?? '',
+				text: reply.text,
+				html: reply.html,
+				attachments,
+			});
+			const newemail = mail.compile();
+
+			return new Promise<string>((resolve, reject) => {
 				newemail.build(async (err, message) => {
 					if (err) {
 						reject(err);
@@ -534,10 +535,8 @@ export class Email {
 						}
 					}
 				});
-			} catch (ex) {
-				reject(ex);
-			}
-		});
+			});
+		})();
 	}
 
 	/**
