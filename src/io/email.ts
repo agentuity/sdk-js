@@ -499,11 +499,16 @@ export class Email {
 					throw new Error('at least one recipient email is required');
 				}
 
+				const fromAddress = from?.email ?? this.toEmail();
+				if (!fromAddress) {
+					throw new Error('a valid from email address is required');
+				}
+
 				const mail = new MailComposer({
 					date: new Date(),
 					from: {
 						name: from?.name ?? context.agent.name,
-						address: from?.email ?? this.toEmail() ?? '',
+						address: fromAddress,
 					},
 					to: normalizedTo.join(', '),
 					subject: reply.subject ?? '',
