@@ -4,18 +4,20 @@ import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { internal } from '../../logger/internal';
-import type { PromptsCollection } from './generic_types.js';
+import { processPromptMetadataConcat } from '../../utils/promptMetadata';
+import type { GeneratedPromptsCollection } from './generated/index';
+import { prompts as generatedPrompts } from './generated/index';
 
 // Default empty prompts object
 const defaultPrompts = {};
 
 // Expected shape of generated module
 interface GeneratedModule {
-	prompts?: PromptsCollection;
+	prompts?: GeneratedPromptsCollection;
 }
 
 export default class PromptAPI {
-	public prompts: PromptsCollection;
+	public prompts: GeneratedPromptsCollection;
 
 	constructor() {
 		// Initialize with empty prompts by default
@@ -127,7 +129,8 @@ export default class PromptAPI {
 				Object.keys(generatedModule.prompts || {})
 			);
 			this.prompts =
-				generatedModule.prompts || (defaultPrompts as PromptsCollection);
+				generatedModule.prompts ||
+				(defaultPrompts as GeneratedPromptsCollection);
 			internal.debug('Final prompts:', Object.keys(this.prompts));
 		} catch (error) {
 			// Fallback to empty prompts if generated file doesn't exist
@@ -141,30 +144,25 @@ export default class PromptAPI {
 			);
 		}
 	}
+
+	/**
+	 * Get a prompt by name
+	 * @param name The prompt slug/name
+	 * @returns The prompt object or undefined
+	 */
+	public getPrompt(name: string) {
+		return this.prompts[name];
+	}
+
+	/**
+	 * Concatenate metadata from multiple prompt slugs into an array
+	 * @param args Array of prompt slugs to concatenate
+	 * @returns Array of metadata objects for each found prompt
+	 */
+	public async concat(...args: string[]): Promise<string> {
+		return processPromptMetadataConcat(args);
+	}
 }
 
-// Re-export generated types and prompts (following POC pattern)
-export { defaultPrompts };
-
-// Conditional exports for generated content
-let PromptConfig: any;
-let PromptName: any;
-let GeneratedPromptsCollection: any;
-let prompts: any;
-
-try {
-	const generatedModule = require('./generated/_index.js');
-	PromptConfig = generatedModule.PromptConfig;
-	PromptName = generatedModule.PromptName;
-	GeneratedPromptsCollection = generatedModule.GeneratedPromptsCollection;
-	prompts = generatedModule.prompts;
-} catch {
-	// Fallback to placeholder values when generated content doesn't exist
-	PromptConfig = {};
-	PromptName = {};
-	GeneratedPromptsCollection = {};
-	prompts = {};
-}
-
-export { PromptConfig, PromptName, GeneratedPromptsCollection, prompts };
-export * from './generic_types.js';
+// Re-export prompts
+export { defaultPrompts, generatedPrompts as prompts };
