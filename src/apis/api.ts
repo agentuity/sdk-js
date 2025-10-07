@@ -1,3 +1,4 @@
+import { context, propagation } from '@opentelemetry/api';
 import { getSDKVersion } from '../router/router';
 import { isReadableStream } from '../types';
 
@@ -141,6 +142,15 @@ export async function send<K>(
 	for (const key in request.headers) {
 		headers[key] = request.headers[key];
 	}
+
+	// inject trace context headers if there's an active context
+	const currentContext = context.active();
+	propagation.inject(currentContext, headers, {
+		set: (carrier, key, value) => {
+			carrier[key] = value;
+		},
+	});
+
 	// this shouldn't be overridden
 	headers.Authorization = `Bearer ${apiKey}`;
 	const init: RequestInit & { duplex?: 'half' } = {
