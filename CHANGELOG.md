@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- enable customer otel logger
+- enable custom user otel logger
 
 ## 0.0.152
 
