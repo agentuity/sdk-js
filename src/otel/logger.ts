@@ -11,19 +11,23 @@ import type { Json } from '../types';
  */
 export const __originalConsole = Object.create(console); // save the original console before we patch it
 
-class OtelLogger implements Logger {
-	private readonly delegate: LogsAPI.Logger;
+export class OtelLogger implements Logger {
+	private readonly delegates: LogsAPI.Logger[];
 	private readonly context: Record<string, Json> | undefined;
 	private readonly logger: ConsoleLogger | undefined;
 
 	constructor(
 		useConsole: boolean,
-		delegate: LogsAPI.Logger,
+		delegates: LogsAPI.Logger | LogsAPI.Logger[],
 		context?: Record<string, Json> | undefined
 	) {
-		this.delegate = delegate;
+		this.delegates = Array.isArray(delegates) ? delegates : [delegates];
 		this.context = context;
 		this.logger = useConsole ? new ConsoleLogger() : undefined;
+	}
+
+	addDelegate(delegate: LogsAPI.Logger) {
+		this.delegates.push(delegate);
 	}
 
 	private formatMessage(message: unknown) {
@@ -54,6 +58,24 @@ class OtelLogger implements Logger {
 		return result;
 	}
 
+	private emitToAll(severityNumber: LogsAPI.SeverityNumber, severityText: string, body: string) {
+		const attributes = this.getAttributes();
+
+		this.delegates.forEach(delegate => {
+			try {
+				delegate.emit({
+					severityNumber,
+					severityText,
+					body,
+					attributes,
+				});
+			} catch (error) {
+				// Log error to console if available, but don't fail the entire operation
+				this.logger?.error('Failed to emit log to OTLP instance:', error);
+			}
+		});
+	}
+
 	debug(message: string, ...args: unknown[]) {
 		this.logger?.debug(message, ...args);
 		let body: string;
@@ -63,12 +85,7 @@ class OtelLogger implements Logger {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
-		this.delegate.emit({
-			severityNumber: LogsAPI.SeverityNumber.DEBUG,
-			severityText: 'DEBUG',
-			body,
-			attributes: this.getAttributes(),
-		});
+		this.emitToAll(LogsAPI.SeverityNumber.DEBUG, 'DEBUG', body);
 	}
 	info(message: string, ...args: unknown[]) {
 		this.logger?.info(message, ...args);
@@ -79,12 +96,7 @@ class OtelLogger implements Logger {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
-		this.delegate.emit({
-			severityNumber: LogsAPI.SeverityNumber.INFO,
-			severityText: 'INFO',
-			body,
-			attributes: this.getAttributes(),
-		});
+		this.emitToAll(LogsAPI.SeverityNumber.INFO, 'INFO', body);
 	}
 	warn(message: string, ...args: unknown[]) {
 		this.logger?.warn(message, ...args);
@@ -95,12 +107,7 @@ class OtelLogger implements Logger {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
-		this.delegate.emit({
-			severityNumber: LogsAPI.SeverityNumber.WARN,
-			severityText: 'WARN',
-			body,
-			attributes: this.getAttributes(),
-		});
+		this.emitToAll(LogsAPI.SeverityNumber.WARN, 'WARN', body);
 	}
 	error(message: string, ...args: unknown[]) {
 		this.logger?.error(message, ...args);
@@ -111,15 +118,10 @@ class OtelLogger implements Logger {
 			// Fallback if format causes recursion
 			body = `${this.formatMessage(message)} ${args.map((arg) => String(arg)).join(' ')}`;
 		}
-		this.delegate.emit({
-			severityNumber: LogsAPI.SeverityNumber.ERROR,
-			severityText: 'ERROR',
-			body,
-			attributes: this.getAttributes(),
-		});
+		this.emitToAll(LogsAPI.SeverityNumber.ERROR, 'ERROR', body);
 	}
 	child(opts: Record<string, Json>) {
-		return new OtelLogger(!!this.logger, this.delegate, {
+		return new OtelLogger(!!this.logger, this.delegates, {
 			...(this.context ?? {}),
 			...opts,
 		});
@@ -138,7 +140,7 @@ export function createLogger(
 	context?: Record<string, Json>
 ): Logger {
 	const delegate = LogsAPI.logs.getLogger('default');
-	return new OtelLogger(useConsole, delegate, context);
+	return new OtelLogger(useConsole, [delegate], context);
 }
 
 /**

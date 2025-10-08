@@ -3,10 +3,19 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
+
+<<<<<<< HEAD
+
 import { internal } from '../../logger/internal';
 import { processPromptMetadataConcat } from '../../utils/promptMetadata';
 import type { GeneratedPromptsCollection } from './generated/index';
 import { prompts as generatedPrompts } from './generated/index';
+
+=======
+
+import type { PromptsCollection } from './generic_types.js';
+
+>>>>>>> 33a7b267aa234612cd26793e2f28aa2bd0e27398
 
 // Default empty prompts object
 const defaultPrompts = {};
