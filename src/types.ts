@@ -815,24 +815,14 @@ export type WaitUntilCallback = (
 /**
  * Available prompt names
  */
-<<<<<<< HEAD
 export type PromptName = keyof GeneratedPromptsCollection;
-=======
-export type PromptName =
-	keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
->>>>>>> 33a7b267aa234612cd26793e2f28aa2bd0e27398
 
 /**
  * A prompt object with system and prompt functions
  */
 export type PromptObject<T extends PromptName> = {
-<<<<<<< HEAD
 	system: GeneratedPromptsCollection[T]['system'];
 	prompt: GeneratedPromptsCollection[T]['prompt'];
-=======
-	system: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['system'];
-	prompt: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['prompt'];
->>>>>>> 33a7b267aa234612cd26793e2f28aa2bd0e27398
 };
 
 /**
@@ -840,13 +830,10 @@ export type PromptObject<T extends PromptName> = {
  */
 export interface PromptsAPI {
 	/**
-<<<<<<< HEAD
 	 * Concatenate metadata from multiple prompt slugs into an array
 	 */
 	concat: (...args: string[]) => Promise<string>;
 	/**
-=======
->>>>>>> 33a7b267aa234612cd26793e2f28aa2bd0e27398
 	 * Get system or prompt functions by slug
 	 */
 	getPrompt: <T extends PromptName>(name: T) => PromptObject<T>;

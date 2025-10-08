@@ -1,12 +1,5 @@
 # @agentuity/sdk Changelog
 
-<<<<<<< HEAD
-## 0.0.149
-
-### Patch Changes
-
-- Changed up the function signature and add a couple features
-=======
 ## 0.0.153
 
 ### Patch Changes
@@ -36,7 +29,6 @@
 ### Patch Changes
 
 - Changed up the function signature and add a couple features ([#190](https://github.com/agentuity/sdk-js/pull/190))
->>>>>>> 33a7b267aa234612cd26793e2f28aa2bd0e27398
 
 ## [0.0.148]
 

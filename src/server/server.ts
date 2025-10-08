@@ -218,14 +218,7 @@ export async function createServerContext(
 		vector,
 		stream,
 		email,
-<<<<<<< HEAD
 		prompts,
-=======
-		_experimental_prompts: () => promptAPI.prompts,
-		prompts: {
-			getPrompt: (name: string) => promptAPI.prompts[name],
-		},
->>>>>>> 33a7b267aa234612cd26793e2f28aa2bd0e27398
 		discord,
 		objectstore,
 		patchportal,
