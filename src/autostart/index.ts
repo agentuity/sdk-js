@@ -128,10 +128,10 @@ export async function run(config: AutostartConfig) {
 	let userLoggerProvider: { provider: LoggerProvider; exporter: OTLPLogExporter; processor: LogRecordProcessor; } | undefined;
 	if (config.userOtelConf) {
 
-		config.userOtelConf.resourceAttributes[ATTR_SERVICE_NAME] = config.userOtelConf.serviceName;
 		const resource = new Resource({
 			...createResource(otelConfig).attributes,
 			...config.userOtelConf.resourceAttributes,
+			[ATTR_SERVICE_NAME]: config.userOtelConf.serviceName,
 		});
 		userLoggerProvider = createUserLoggerProvider({
 			url: config.userOtelConf.endpoint,
