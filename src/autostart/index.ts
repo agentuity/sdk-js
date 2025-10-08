@@ -16,9 +16,9 @@ import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
  */
 interface UserOpenTelemetryConfig {
 	endpoint: string;
-	protocol: 'grpc' | 'http/protobuf' | 'http/json';
+	// only supports http/json for now
+	// protocol: 'grpc' | 'http/protobuf' | 'http/json';
 	serviceName: string;
-	samplingRate: number;
 	resourceAttributes: Record<string, string>;
 	headers: Record<string, string>;
 }
@@ -142,7 +142,7 @@ export async function run(config: AutostartConfig) {
 			otel.logger.addDelegate(userLoggerProvider.provider.getLogger('default'));
 		} else {
 			console.warn('[WARN] user OTEL logger not attached: logger does not support addDelegate');
-		}	
+		}
 	}
 
 	const server = await createServer({

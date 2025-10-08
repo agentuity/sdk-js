@@ -105,7 +105,7 @@ export const createAgentuityLoggerProvider = ({
 	resource: Resource;
 }) => {
 
-	let processor: LogRecordProcessor | undefined;
+	let processor: LogRecordProcessor;
 	let exporter: OTLPLogExporter | undefined;
 
 	if (url) {
