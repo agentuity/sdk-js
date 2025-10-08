@@ -10,6 +10,7 @@ import PromptAPI from '../apis/prompt/index.js';
 import StreamAPIImpl from '../apis/stream';
 import VectorAPI from '../apis/vector';
 import type { Logger } from '../logger';
+import { internal } from '../logger/internal';
 import { createRouter } from '../router';
 import type {
 	AgentConfig,
@@ -58,7 +59,7 @@ async function createRoute(
 	try {
 		mod = await import(filename);
 	} catch (error) {
-		console.error('Error importing module', error);
+		internal.error('Error importing module', error);
 		throw new Error(`Error importing module ${filename}: ${error}`);
 	}
 
@@ -180,7 +181,7 @@ const stream = new StreamAPIImpl();
 const email = new EmailAPI();
 const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
-const promptAPI = new PromptAPI();
+const prompts = new PromptAPI();
 
 // PatchPortal will be initialized lazily since it's async
 let patchportal: PatchPortal | null = null;
@@ -201,7 +202,7 @@ export async function createServerContext(
 	if (!patchportal) {
 		patchportal = await PatchPortal.getInstance();
 	}
-	await promptAPI.loadPrompts();
+	await prompts.loadPrompts();
 
 	return {
 		devmode: req.devmode,
@@ -217,10 +218,7 @@ export async function createServerContext(
 		vector,
 		stream,
 		email,
-		_experimental_prompts: () => promptAPI.prompts,
-		prompts: {
-			getPrompt: (name: string) => promptAPI.prompts[name],
-		},
+		prompts,
 		discord,
 		objectstore,
 		patchportal,

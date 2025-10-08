@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.154
+
+### Patch Changes
+
+- Added prompt tracking data to aisdk
+
 ## 0.0.153
 
 ### Patch Changes

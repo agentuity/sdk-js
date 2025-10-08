@@ -3,18 +3,22 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { pathToFileURL } from 'url';
-import type { PromptsCollection } from './generic_types.js';
+
+import { internal } from '../../logger/internal';
+import { processPromptMetadataConcat } from '../../utils/promptMetadata';
+import type { GeneratedPromptsCollection } from './generated/index';
+import { prompts as generatedPrompts } from './generated/index';
 
 // Default empty prompts object
 const defaultPrompts = {};
 
 // Expected shape of generated module
 interface GeneratedModule {
-	prompts?: PromptsCollection;
+	prompts?: GeneratedPromptsCollection;
 }
 
 export default class PromptAPI {
-	public prompts: PromptsCollection;
+	public prompts: GeneratedPromptsCollection;
 
 	constructor() {
 		// Initialize with empty prompts by default
@@ -84,7 +88,7 @@ export default class PromptAPI {
 
 	// Method to load prompts dynamically (called by context)
 	public async loadPrompts(): Promise<void> {
-		// console.log('loadPrompts() called');
+		internal.debug('loadPrompts() called');
 		try {
 			// Try multiple possible paths for the generated prompts
 			let generatedModule: unknown;
@@ -92,9 +96,9 @@ export default class PromptAPI {
 			// Dynamic module resolution strategy
 			const possiblePaths = await this.resolveGeneratedPaths();
 
-			// console.log('Trying absolute paths:');
+			internal.debug('Trying absolute paths:', possiblePaths);
 			for (const possiblePath of possiblePaths) {
-				// console.log('  Checking:', possiblePath);
+				internal.debug('  Checking:', possiblePath);
 				try {
 					await fs.access(possiblePath);
 					// Get file stats for cache-busting
@@ -106,7 +110,7 @@ export default class PromptAPI {
 
 					// Use ESM dynamic import instead of require
 					generatedModule = await import(fileUrl);
-					// console.log('  Successfully loaded from:', possiblePath);
+					internal.debug('  Successfully loaded from:', possiblePath);
 					break;
 				} catch {}
 			}
@@ -120,50 +124,46 @@ export default class PromptAPI {
 				throw new Error('Generated module has invalid shape');
 			}
 
-			// console.log('Generated module:', generatedModule);
-			// console.log(
-			// 	'Prompts in module:',
-			// 	Object.keys(generatedModule.prompts || {})
-			// );
+			internal.debug('Generated module:', generatedModule);
+			internal.debug(
+				'Prompts in module:',
+				Object.keys(generatedModule.prompts || {})
+			);
 			this.prompts =
-				generatedModule.prompts || (defaultPrompts as PromptsCollection);
-			// console.log('Final prompts:', Object.keys(this.prompts));
+				generatedModule.prompts ||
+				(defaultPrompts as GeneratedPromptsCollection);
+			internal.debug('Final prompts:', Object.keys(this.prompts));
 		} catch (error) {
 			// Fallback to empty prompts if generated file doesn't exist
-			console.log(
+			internal.error(
 				'Error loading prompts:',
 				error instanceof Error ? error.message : String(error)
 			);
 			this.prompts = defaultPrompts;
-			console.warn(
+			internal.warn(
 				'⚠️  No generated prompts found. Run `agentuity bundle` to generate prompts from src/prompts.yaml'
 			);
 		}
 	}
+
+	/**
+	 * Get a prompt by name
+	 * @param name The prompt slug/name
+	 * @returns The prompt object or undefined
+	 */
+	public getPrompt(name: string) {
+		return this.prompts[name];
+	}
+
+	/**
+	 * Concatenate metadata from multiple prompt slugs into an array
+	 * @param args Array of prompt slugs to concatenate
+	 * @returns Array of metadata objects for each found prompt
+	 */
+	public async concat(...args: string[]): Promise<string> {
+		return processPromptMetadataConcat(args);
+	}
 }
 
-// Re-export generated types and prompts (following POC pattern)
-export { defaultPrompts };
-
-// Conditional exports for generated content
-let PromptConfig: any;
-let PromptName: any;
-let GeneratedPromptsCollection: any;
-let prompts: any;
-
-try {
-	const generatedModule = require('./generated/_index.js');
-	PromptConfig = generatedModule.PromptConfig;
-	PromptName = generatedModule.PromptName;
-	GeneratedPromptsCollection = generatedModule.GeneratedPromptsCollection;
-	prompts = generatedModule.prompts;
-} catch {
-	// Fallback to placeholder values when generated content doesn't exist
-	PromptConfig = {};
-	PromptName = {};
-	GeneratedPromptsCollection = {};
-	prompts = {};
-}
-
-export { PromptConfig, PromptName, GeneratedPromptsCollection, prompts };
-export * from './generic_types.js';
+// Re-export prompts
+export { defaultPrompts, generatedPrompts as prompts };
