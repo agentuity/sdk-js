@@ -534,7 +534,7 @@ export class Email {
 						reject(err);
 					} else {
 						try {
-							await context.email.sendReply(
+							await context.email.send(
 								context.agent.id,
 								message.toString(),
 								authToken,

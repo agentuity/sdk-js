@@ -574,6 +574,23 @@ export interface VectorStorage {
  */
 export interface EmailService {
 	/**
+	 * Send a new email to the specified recipients.
+	 *
+	 * @param req - The agent request containing metadata with email-auth-token
+	 * @param context - The agent context
+	 * @param to - Array of recipient email addresses
+	 * @param reply - The email content (subject, text, html, attachments)
+	 * @param from - Optional sender information (defaults to the recipient of the incoming email)
+	 * @returns Promise resolving to the message ID of the sent email
+	 * @throws Error if email-auth-token is missing, recipients list is empty, or from address is invalid
+	 */
+	send(
+		agentId: string,
+		email: string,
+		authToken: string,
+		messageId: string
+	): Promise<void>;
+	/**
 	 * send an email reply to an incoming email
 	 *
 	 * @param agentId - the id of the agent to send the reply to
