@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.153
+
+### Patch Changes
+
+- enable customer otel logger
+
 ## 0.0.152
 
 ### Patch Changes
