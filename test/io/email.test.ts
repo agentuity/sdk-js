@@ -27,7 +27,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('test.txt');
@@ -56,8 +56,8 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 
-		expect(() => email.attachments()).not.toThrow();
-		const attachments = email.attachments();
+		expect(email.attachments).toBeDefined();
+		const attachments = email.attachments;
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -82,8 +82,8 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 
-		expect(() => email.attachments()).not.toThrow();
-		const attachments = email.attachments();
+		expect(email.attachments).toBeDefined();
+		const attachments = email.attachments;
 		expect(attachments).toHaveLength(0);
 	});
 
@@ -112,7 +112,7 @@ Invalid attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('valid.txt');
@@ -164,7 +164,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('test-fallback.txt');
@@ -190,7 +190,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(0);
 	});
@@ -215,7 +215,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(0);
 	});
@@ -240,7 +240,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(0);
 	});
@@ -265,7 +265,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(0);
 	});
@@ -290,7 +290,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(0);
 	});
@@ -315,7 +315,7 @@ Test attachment content
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].contentDisposition).toBe('inline');
@@ -356,7 +356,7 @@ Malformed URL attachment
 `;
 
 		const email = await parseEmail(Buffer.from(emailContent));
-		const attachments = email.attachments();
+		const attachments = email.attachments;
 
 		expect(attachments).toHaveLength(1);
 		expect(attachments[0].filename).toBe('valid.txt');
@@ -393,7 +393,7 @@ Test attachment content
 `;
 
 			const email = await parseEmail(Buffer.from(emailContent));
-			const attachments = email.attachments();
+			const attachments = email.attachments;
 
 			expect(attachments).toHaveLength(0);
 		}
@@ -429,7 +429,7 @@ Test attachment content
 `;
 
 			const email = await parseEmail(Buffer.from(emailContent));
-			const attachments = email.attachments();
+			const attachments = email.attachments;
 
 			expect(attachments).toHaveLength(0);
 		}
@@ -458,7 +458,7 @@ Test attachment content
 `;
 
 			const email = await parseEmail(Buffer.from(emailContent));
-			const attachments = email.attachments();
+			const attachments = email.attachments;
 
 			expect(attachments).toHaveLength(1);
 			expect(attachments[0].filename).toBe('test.txt');
