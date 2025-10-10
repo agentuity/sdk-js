@@ -251,7 +251,6 @@ export class Email {
 	private readonly _message: ParsedMail;
 
 	constructor(data: ParsedMail) {
-		console.trace('Email data: ', data);
 		this._message = data;
 	}
 
@@ -642,7 +641,6 @@ export class Email {
  */
 export async function parseEmail(data: Buffer): Promise<Email> {
 	try {
-		console.trace('raw email data: ', data.toString());
 		const message = await simpleParser(data);
 		return new Email(message);
 	} catch (error) {
@@ -651,3 +649,4 @@ export async function parseEmail(data: Buffer): Promise<Email> {
 		);
 	}
 }
+
