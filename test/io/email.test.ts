@@ -139,7 +139,7 @@ Attachment without filename
 
 		const email = await parseEmail(Buffer.from(emailContent));
 
-		expect(() => email.attachments()).toThrow(
+		expect(() => email.attachments).toThrow(
 			'Invalid attachment headers: missing filename'
 		);
 	});
