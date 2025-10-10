@@ -259,38 +259,46 @@ export class Email {
 	}
 
 	toString() {
-		return `[Email id=${this.messageId()},from=${this.fromEmail()},subject=${this.subject()}]`;
+		return `[Email id=${this.messageId},from=${this.fromEmail},subject=${this.subject}]`;
+	}
+
+	get _raw(): unknown {
+		return this._message;
+	}
+
+	get payload(): ParsedMail {
+		return this._message;
 	}
 
 	/**
 	 * The date of the email.
 	 */
-	date(): Date | null {
-		return this._message.date ?? null;
+	get date(): Date | undefined {
+		return this._message.date;
 	}
 
 	/**
 	 * The message ID of the email.
 	 */
-	messageId(): string | null {
-		return this._message.messageId ?? null;
+	get messageId(): string | undefined {
+		return this._message.messageId;
 	}
 
 	/**
 	 * The headers of the email.
 	 */
-	headers(): Headers {
+	get headers(): Headers {
 		return this._message.headers;
 	}
 
 	/**
-	 * The email address of the recipient or null if there is no recipient.
+	 * The email address of the recipient or undefined if there is no recipient.
 	 *
 	 * If the email has multiple recipients, the email addresses are comma separated.
 	 */
-	to(): string | null {
+	get to(): string | undefined {
 		if (!this._message.to) {
-			return null;
+			return undefined;
 		}
 		if (Array.isArray(this._message.to)) {
 			return this._message.to.map((addr) => addr.text.trim()).join(', ');
@@ -298,80 +306,80 @@ export class Email {
 		if (typeof this._message.to === 'object' && 'text' in this._message.to) {
 			return this._message.to.text;
 		}
-		return null;
+		return undefined;
 	}
 
 	/**
-	 * The email address of the sender or null if there is no sender.
+	 * The email address of the sender or undefined if there is no sender.
 	 */
-	fromEmail(): string | null {
-		return this._message.from?.value[0]?.address ?? null;
+	get fromEmail(): string | undefined {
+		return this._message.from?.value[0]?.address;
 	}
 
 	/**
-	 * The name of the sender or null if there is no name.
+	 * The name of the sender or undefined if there is no name.
 	 */
-	fromName(): string | null {
-		return this._message.from?.value[0]?.name ?? null;
+	get fromName(): string | undefined {
+		return this._message.from?.value[0]?.name;
 	}
 
 	/**
-	 * The email address of the first recipient or null if there is no recipient.
+	 * The email address of the first recipient or undefined if there is no recipient.
 	 */
-	toEmail(): string | null {
+	get toEmail(): string | undefined {
 		if (!this._message.to) {
-			return null;
+			return undefined;
 		}
 		if (Array.isArray(this._message.to)) {
-			return this._message.to[0]?.value[0]?.address ?? null;
+			return this._message.to[0]?.value[0]?.address;
 		}
 		if (typeof this._message.to === 'object' && 'value' in this._message.to) {
-			return this._message.to.value[0]?.address ?? null;
+			return this._message.to.value[0]?.address;
 		}
-		return null;
+		return undefined;
 	}
 
 	/**
-	 * The name of the first recipient or null if there is no name.
+	 * The name of the first recipient or undefined if there is no name.
 	 */
-	toName(): string | null {
+	get toName(): string | undefined {
 		if (!this._message.to) {
-			return null;
+			return undefined;
 		}
 		if (Array.isArray(this._message.to)) {
-			return this._message.to[0]?.value[0]?.name ?? null;
+			return this._message.to[0]?.value[0]?.name;
 		}
 		if (typeof this._message.to === 'object' && 'value' in this._message.to) {
-			return this._message.to.value[0]?.name ?? null;
+			return this._message.to.value[0]?.name;
 		}
-		return null;
+		return undefined;
 	}
 
 	/**
-	 * The subject of the email or null if there is no subject.
+	 * The subject of the email or undefined if there is no subject.
 	 */
-	subject(): string | null {
-		return this._message.subject ?? null;
+	get subject(): string | undefined {
+		return this._message.subject;
 	}
 
 	/**
-	 * The plain text body of the email or null if there is no plain text body.
+	 * The plain text body of the email or undefined if there is no plain text body.
 	 */
-	text(): string | null {
-		return this._message.text ?? null;
+	get text(): string | undefined {
+		return this._message.text;
 	}
 
 	/**
-	 * The HTML body of the email or null if there is no HTML body.
+	 * The HTML body of the email or undefined if there is no HTML body.
 	 */
-	html(): string | null {
-		return this._message.html ? this._message.html : null;
+	get html(): string | undefined {
+		return this._message.html ? this._message.html : undefined;
 	}
 
 	/**
 	 * The attachments of the email or an empty array if there are no attachments.
 	 */
-	attachments(): IncomingEmailAttachment[] {
+	get attachments(): IncomingEmailAttachment[] {
 		if (!this._message.attachments || this._message.attachments.length === 0) {
 			return [];
 		}
@@ -449,7 +457,7 @@ export class Email {
 		if (subject) {
 			return subject;
 		}
-		const _subject = this.subject();
+		const _subject = this.subject;
 		if (_subject) {
 			if (_subject.toUpperCase().startsWith('RE:')) {
 				return _subject;
@@ -457,6 +465,97 @@ export class Email {
 			return `RE: ${_subject}`;
 		}
 		return '';
+	}
+
+	/**
+	 * Send a new email to the specified recipients.
+	 *
+	 * @param req - The agent request containing metadata with email-auth-token
+	 * @param context - The agent context
+	 * @param to - Array of recipient email addresses
+	 * @param reply - The email content (subject, text, html, attachments)
+	 * @param from - Optional sender information (defaults to the recipient of the incoming email)
+	 * @returns Promise resolving to the message ID of the sent email
+	 * @throws Error if email-auth-token is missing, recipients list is empty, or from address is invalid
+	 */
+	async send(
+		req: AgentRequest,
+		context: AgentContext,
+		to: string[],
+		reply: EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
+	): Promise<string> {
+		const authToken = req.metadata?.['email-auth-token'] as string;
+		if (!authToken) {
+			throw new Error(
+				'email authorization token is required but not found in metadata'
+			);
+		}
+
+		return (async () => {
+			let attachments: Attachment[] = [];
+			if (reply.attachments) {
+				attachments = await Promise.all(
+					reply.attachments.map(async (attachment) => {
+						const resp = await fromDataType(attachment.data);
+						return {
+							filename: attachment.filename,
+							content: await resp.data.buffer(),
+							contentType: resp.data.contentType,
+							contentDisposition:
+								attachment.contentDisposition ?? ('attachment' as const),
+						};
+					})
+				);
+			}
+
+			const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
+			if (normalizedTo.length === 0) {
+				throw new Error('at least one recipient email is required');
+			}
+
+			const fromAddress = from?.email ?? this.toEmail;
+			if (!fromAddress) {
+				throw new Error('a valid from email address is required');
+			}
+
+			const mail = new MailComposer({
+				date: new Date(),
+				from: {
+					name: from?.name ?? context.agent.name,
+					address: fromAddress,
+				},
+				to: normalizedTo.join(', '),
+				subject: reply.subject ?? '',
+				text: reply.text,
+				html: reply.html,
+				attachments,
+			});
+			const newemail = mail.compile();
+
+			return new Promise<string>((resolve, reject) => {
+				newemail.build(async (err, message) => {
+					if (err) {
+						reject(err);
+					} else {
+						try {
+							await context.email.send(
+								context.agent.id,
+								message.toString(),
+								authToken,
+								newemail.messageId()
+							);
+							resolve(newemail.messageId());
+						} catch (ex) {
+							reject(ex);
+						}
+					}
+				});
+			});
+		})();
 	}
 
 	/**
@@ -496,16 +595,16 @@ export class Email {
 					);
 				}
 				const mail = new MailComposer({
-					inReplyTo: this.messageId() ?? undefined,
-					references: this.messageId() ?? undefined,
+					inReplyTo: this.messageId ?? undefined,
+					references: this.messageId ?? undefined,
 					date: new Date(),
 					from: {
 						name: from?.name ?? context.agent.name,
-						address: from?.email ?? this.toEmail() ?? '',
+						address: from?.email ?? this.toEmail ?? '',
 					},
 					to: {
-						name: this.fromName() ?? undefined,
-						address: this.fromEmail() ?? undefined,
+						name: this.fromName ?? undefined,
+						address: this.fromEmail ?? undefined,
 					} as Address,
 					subject: this.makeReplySubject(reply.subject),
 					text: reply.text,
@@ -550,3 +649,4 @@ export async function parseEmail(data: Buffer): Promise<Email> {
 		);
 	}
 }
+
