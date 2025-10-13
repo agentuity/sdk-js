@@ -8,16 +8,6 @@ export {
 	processPromptMetadata,
 } from './utils/promptMetadata';
 
-// Export eval types
-export type {
-	EvalRequest,
-	EvalResponse,
-	EvalContext,
-	EvalFunction,
-	EvalResult,
-	EvalRunnerConfig,
-} from './apis/eval';
-
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
@@ -82,6 +72,9 @@ export async function runner(
 				url: process.env.AGENTUITY_OTLP_URL,
 				bearerToken: process.env.AGENTUITY_OTLP_BEARER_TOKEN,
 			},
+			userOtelConf: process.env.AGENTUITY_USER_OTEL_CONF
+				? JSON.parse(process.env.AGENTUITY_USER_OTEL_CONF)
+				: undefined,
 			agents,
 		});
 	}

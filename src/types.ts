@@ -1,8 +1,8 @@
 import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
+import type { GeneratedPromptsCollection } from './apis/prompt/generated/index';
 import type { DiscordMessage } from './io/discord';
 import type { Email } from './io/email';
-
 import type {
 	Slack,
 	SlackAttachmentsMessage,
@@ -199,7 +199,8 @@ export type JsonPrimitive =
 	| boolean
 	| null
 	| JsonArray
-	| JsonObject;
+	| JsonObject
+	| { [key: string]: JsonPrimitive };
 
 /**
  * JSON array type
@@ -814,21 +815,24 @@ export type WaitUntilCallback = (
 /**
  * Available prompt names
  */
-export type PromptName =
-	keyof import('./apis/prompt/generated/index.js').GeneratedPromptsCollection;
+export type PromptName = keyof GeneratedPromptsCollection;
 
 /**
  * A prompt object with system and prompt functions
  */
 export type PromptObject<T extends PromptName> = {
-	system: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['system'];
-	prompt: import('./apis/prompt/generated/index.js').GeneratedPromptsCollection[T]['prompt'];
+	system: GeneratedPromptsCollection[T]['system'];
+	prompt: GeneratedPromptsCollection[T]['prompt'];
 };
 
 /**
  * The prompts API interface
  */
 export interface PromptsAPI {
+	/**
+	 * Concatenate metadata from multiple prompt slugs into an array
+	 */
+	concat: (...args: string[]) => Promise<string>;
 	/**
 	 * Get system or prompt functions by slug
 	 */

@@ -1,10 +1,40 @@
 # @agentuity/sdk Changelog
 
-## 0.0.149
+## 0.0.154
 
 ### Patch Changes
 
-- Changed up the function signature and add a couple features
+- Added prompt tracking data to aisdk
+
+## 0.0.153
+
+### Patch Changes
+
+- enable custom user otel logger
+
+## 0.0.152
+
+### Patch Changes
+
+- Fixed issue with otel headers not propagating for outbound services
+
+## 0.0.151
+
+### Patch Changes
+
+- fix issue with vector.get
+
+## [0.0.150]
+
+### Patch Changes
+
+- Fix issue where DataType can't support arbitrary valid custom objects as Json ([#192](https://github.com/agentuity/sdk-js/pull/192))
+
+## [0.0.149]
+
+### Patch Changes
+
+- Changed up the function signature and add a couple features ([#190](https://github.com/agentuity/sdk-js/pull/190))
 
 ## [0.0.148]
 
@@ -12,15 +42,18 @@
 
 - added experimental support for prompts ([#184](https://github.com/agentuity/sdk-js/pull/184))
 
-## [0.0.147]
+## [0.0.147] - 2025-10-01
 
-### Patch Changes
+### Added
 
-- 96f5561: - Added support for automatic stream compression ([#186](https://github.com/agentuity/sdk-js/pull/186))
-  - Added support for direct write to Stream in addition to getWriter()
-  - Added property `bytesWritten` to the Stream interface which represents the number of bytes written to the stream
-  - Added property `compressed` to the Stream interface which represents if the stream has compression enabled
-- 9928a32: Remove the explicit Content-Type header for application/json in send (internal) to allow each service caller to properly set ([#185](https://github.com/agentuity/sdk-js/pull/185))
+- Support for automatic stream compression (defaults off) ([#186](https://github.com/agentuity/sdk-js/pull/186))
+- Support for direct write to Stream in addition to getWriter() ([#186](https://github.com/agentuity/sdk-js/pull/186))
+- Property `bytesWritten` to the Stream interface to track total bytes written ([#186](https://github.com/agentuity/sdk-js/pull/186))
+- Property `compressed` to the Stream interface to indicate if compression is enabled ([#186](https://github.com/agentuity/sdk-js/pull/186))
+
+### Fixed
+
+- Remove explicit Content-Type header for application/json in GET requests to prevent HTTP servers from rejecting requests ([#185](https://github.com/agentuity/sdk-js/pull/185))
 
 ## [0.0.146]
 
@@ -34,31 +67,31 @@
 - 0cd808f: Fix spelling errors in link and repository information ([#177](https://github.com/agentuity/sdk-js/pull/177))
 - 11c64cd: Update changelog formatting for v0.0.145 ([#175](https://github.com/agentuity/sdk-js/pull/175))
 
-## 0.0.145
+## [0.0.145]
 
 ### Patch Changes
 
 - 25bb67d: Fix malformed From headers in email replies that caused parsing errors in backend ([#174](https://github.com/agentuity/sdk-js/pull/174))
 
-## 0.0.144
+## [0.0.144]
 
 ### Patch Changes
 
 - Issues between streaming for node and bun and keep alive differences
 
-## 0.0.143
+## [0.0.143]
 
 ### Patch Changes
 
 - c9e094b: Use traceloop for otel for consistency across Python and TS SDK's
 
-## 0.0.142
+## [0.0.142]
 
 ### Patch Changes
 
 - Some APIs like object store were timing out after 20s with a large document upload. Remove the premature timeout
 
-## 0.0.141
+## [0.0.141]
 
 ### Patch Changes
 
@@ -66,25 +99,25 @@
 - 4654067: Fix email attachment parsing for Slack-formatted filenames
 - 654cfc1: Use sessionId instead of runId for AgentContext to better align with how we reference it.
 
-## 0.0.140
+## [0.0.140]
 
 ### Fixed
 
 - Fix cloud runs for teams agents with improved credential validation and metadata-driven configuration ([#162](https://github.com/agentuity/sdk-js/pull/162))
 
-## 0.0.139
+## [0.0.139]
 
 ### Patch Changes
 
 - Added teams support ([#161](https://github.com/agentuity/sdk-js/pull/161))
 
-## 0.0.138
+## [0.0.138]
 
 ### Patch Changes
 
 - Fix the sms error ([#158](https://github.com/agentuity/sdk-js/pull/158))
 
-## 0.0.137
+## [0.0.137]
 
 ### Patch Changes
 
@@ -776,6 +809,17 @@ All notable changes to this project will be documented in this file.
 
 - Refactor the JS SDK to better support new workflow
 
+[0.0.150]: https://github.com/agentuity/sdk-js/compare/v0.0.149...v0.0.150
+[0.0.149]: https://github.com/agentuity/sdk-js/compare/v0.0.148...v0.0.149
 [0.0.148]: https://github.com/agentuity/sdk-js/compare/v0.0.147...v0.0.148
 [0.0.147]: https://github.com/agentuity/sdk-js/compare/v0.0.146...v0.0.147
 [0.0.146]: https://github.com/agentuity/sdk-js/compare/v0.0.145...v0.0.146
+[0.0.145]: https://github.com/agentuity/sdk-js/compare/v0.0.144...v0.0.145
+[0.0.144]: https://github.com/agentuity/sdk-js/compare/v0.0.143...v0.0.144
+[0.0.143]: https://github.com/agentuity/sdk-js/compare/v0.0.142...v0.0.143
+[0.0.142]: https://github.com/agentuity/sdk-js/compare/v0.0.141...v0.0.142
+[0.0.141]: https://github.com/agentuity/sdk-js/compare/v0.0.140...v0.0.141
+[0.0.140]: https://github.com/agentuity/sdk-js/compare/v0.0.139...v0.0.140
+[0.0.139]: https://github.com/agentuity/sdk-js/compare/v0.0.138...v0.0.139
+[0.0.138]: https://github.com/agentuity/sdk-js/compare/v0.0.137...v0.0.138
+[0.0.137]: https://github.com/agentuity/sdk-js/compare/v0.0.136...v0.0.137
