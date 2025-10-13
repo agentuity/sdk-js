@@ -7,6 +7,7 @@ export interface PromptAttributesParams {
 	compiled: string;
 	template: string;
 	variables?: Record<string, string>;
+	evals?: string[];
 }
 
 export interface PromptAttributes extends PromptAttributesParams {
@@ -26,6 +27,7 @@ export async function processPromptMetadata(
 		template: attributes.template?.substring(0, 50) + '...',
 		compiled: attributes.compiled?.substring(0, 50) + '...',
 		variables: attributes.variables,
+		evals: attributes.evals,
 	});
 
 	const patchPortal = await PatchPortal.getInstance();
@@ -57,6 +59,7 @@ export async function processPromptMetadata(
 		slug: metadata.slug,
 		templateHash: metadata.templateHash,
 		compiledHash: metadata.compiledHash,
+		evals: metadata.evals,
 		timestamp: new Date().toISOString(),
 	});
 
