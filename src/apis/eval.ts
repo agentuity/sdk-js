@@ -1,11 +1,13 @@
-import { createClient } from '@clickhouse/client';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { internal } from '../logger/internal';
 
 // Eval SDK types
 export interface EvalRequest {
 	input: string;
 	output: string;
-	spanId: string;
+	sessionId: string;
 }
 
 export interface EvalResponse {
@@ -32,100 +34,46 @@ export type EvalFunction = (
 
 // Eval result types
 export interface EvalResult {
-	spanId: string;
+	sessionId: string;
 	resultType: 'pass' | 'fail' | 'score';
 	scoreValue?: number;
 	metadata?: { reasoning?: string; [key: string]: unknown };
 	timestamp: Date;
 }
 
-export interface EvalRunnerConfig {
-	clickhouseHost: string;
-	clickhouseUser: string;
-	clickhousePassword: string;
-	spansTable?: string;
-	resultsTable?: string;
-}
-
 export default class EvalAPI {
-	private config: EvalRunnerConfig;
-	private client: ReturnType<typeof createClient>;
+	private evalsDir: string;
+	private isBundled: boolean;
 
-	constructor(config: EvalRunnerConfig) {
-		this.config = {
-			spansTable: 'spans',
-			resultsTable: 'eval_results',
-			...config,
-		};
+	constructor(evalsDir?: string) {
+		// Check if we're running from bundled code (.agentuity directory)
+		const bundledDir = path.join(process.cwd(), '.agentuity', 'src', 'evals');
+		const sourceDir = path.join(process.cwd(), 'src', 'evals');
+		this.isBundled = fs.existsSync(bundledDir);
 
-		this.client = createClient({
-			host: this.config.clickhouseHost,
-			username: this.config.clickhouseUser,
-			password: this.config.clickhousePassword,
-		});
+		// Use .agentuity/src/evals for bundled code, src/evals for development
+		this.evalsDir = evalsDir || (this.isBundled ? bundledDir : sourceDir);
+
+		internal.debug(
+			`EvalAPI initialized with evalsDir: ${this.evalsDir}, isBundled: ${this.isBundled}`
+		);
 	}
 
 	/**
-	 * Fetch span data from ClickHouse and transform it for eval
+	 * Load eval function from eval name
 	 */
-	async fetchSpan(spanId: string): Promise<EvalRequest> {
-		internal.debug(`Fetching span ${spanId} from ClickHouse`);
+	async loadEval(evalName: string): Promise<EvalFunction> {
+		// For bundled code, eval files are .js in .agentuity/
+		// For dev code, eval files are .ts in src/evals/
+		const evalFile = this.isBundled ? `${evalName}.js` : evalName;
+		const evalPath = path.join(this.evalsDir, evalFile);
 
-		const query = `
-      SELECT input, output
-      FROM ${this.config.spansTable}
-      WHERE spanId = {spanId:String}
-      LIMIT 1
-    `;
-
-		const result = await this.client.query({
-			query,
-			query_params: { spanId },
-		});
-
-		const response = await result.json<{ input: string; output: string }>();
-		const row = response.data?.[0];
-
-		if (!row) {
-			throw new Error(`No span found for id ${spanId}`);
-		}
-
-		return {
-			input: row.input,
-			output: row.output,
-			spanId,
-		};
-	}
-
-	/**
-	 * Write eval result back to ClickHouse
-	 */
-	async writeResult(result: EvalResult): Promise<void> {
-		internal.debug(`Writing eval result for span ${result.spanId}:`, result);
-
-		await this.client.insert({
-			table: this.config.resultsTable || 'eval_results',
-			values: [
-				{
-					spanId: result.spanId,
-					resultType: result.resultType,
-					scoreValue: result.scoreValue ?? null,
-					metadata: result.metadata ? JSON.stringify(result.metadata) : null,
-					timestamp: result.timestamp.toISOString(),
-				},
-			],
-			format: 'JSONEachRow',
-		});
-	}
-
-	/**
-	 * Load eval function from file path
-	 */
-	async loadEval(evalPath: string): Promise<EvalFunction> {
 		internal.debug(`Loading eval function from ${evalPath}`);
 
 		try {
-			const module = await import(evalPath);
+			// Convert to file URL for proper ESM import
+			const fileUrl = pathToFileURL(evalPath).href;
+			const module = await import(fileUrl);
 			return module.default;
 		} catch (error) {
 			throw new Error(
@@ -135,13 +83,21 @@ export default class EvalAPI {
 	}
 
 	/**
-	 * Run eval on a span
+	 * Run eval with input/output/sessionId
 	 */
-	async runEval(spanId: string, evalPath: string): Promise<EvalResult> {
-		internal.debug(`Running eval for span ${spanId} with function ${evalPath}`);
+	async runEval(
+		evalName: string,
+		input: string,
+		output: string,
+		sessionId: string
+	): Promise<EvalResult> {
+		internal.debug(`Running eval ${evalName} for session ${sessionId}`);
 
-		// Load span data
-		const request = await this.fetchSpan(spanId);
+		const request: EvalRequest = {
+			input,
+			output,
+			sessionId,
+		};
 
 		// Prepare response object
 		let resultType: 'pass' | 'fail' | 'score' = 'fail';
@@ -169,47 +125,22 @@ export default class EvalAPI {
 		const context: EvalContext = {};
 
 		// Load and run eval function
-		const evaluate = await this.loadEval(evalPath);
+		const evaluate = await this.loadEval(evalName);
 		await evaluate(context, request, response);
 
 		// Create result
 		const result: EvalResult = {
-			spanId,
+			sessionId,
 			resultType,
 			scoreValue,
 			metadata,
 			timestamp: new Date(),
 		};
 
-		// Write result to database
-		await this.writeResult(result);
-
 		internal.debug(
-			`Eval complete for span ${spanId} -> ${resultType}${scoreValue !== undefined ? ` (${scoreValue})` : ''}`
+			`Eval complete for session ${sessionId} -> ${resultType}${scoreValue !== undefined ? ` (${scoreValue})` : ''}`
 		);
 
 		return result;
-	}
-
-	/**
-	 * Create the eval results table if it doesn't exist
-	 */
-	async createResultsTable(): Promise<void> {
-		const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS ${this.config.resultsTable} (
-        spanId String,
-        resultType String,
-        scoreValue Float64,
-        metadata String,
-        timestamp DateTime DEFAULT now()
-      ) ENGINE = MergeTree()
-      ORDER BY (spanId, timestamp)
-    `;
-
-		await this.client.command({
-			query: createTableQuery,
-		});
-
-		internal.debug(`Created eval results table: ${this.config.resultsTable}`);
 	}
 }

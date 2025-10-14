@@ -5,7 +5,9 @@ import {
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import EvalAPI from '../apis/eval';
 import type { Logger } from '../logger';
+import { isIdle } from '../router/context';
 import type { AgentResponseData, AgentWelcomeResult } from '../types';
 import {
 	extractTraceContextFromNodeRequest,
@@ -21,7 +23,6 @@ import {
 	shouldIgnoreStaticFile,
 	toWelcomePrompt,
 } from './util';
-import { isIdle } from '../router/context';
 
 export const MAX_REQUEST_TIMEOUT = 60_000 * 10;
 
@@ -104,6 +105,7 @@ export class NodeServer implements Server {
 	async start(): Promise<void> {
 		const sdkVersion = this.sdkVersion;
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
+		const evalAPI = new EvalAPI();
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
 				res.writeHead(200, {
@@ -130,6 +132,41 @@ export class NodeServer implements Server {
 					'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 				});
 				res.end();
+				return;
+			}
+
+			// Handle eval routes
+			if (req.method === 'POST' && req.url?.startsWith('/eval/')) {
+				const evalName = req.url.slice(6); // Remove '/eval/'
+				try {
+					let body = '';
+					for await (const chunk of req) {
+						body += chunk;
+					}
+					const parsedBody = JSON.parse(body) as {
+						input: string;
+						output: string;
+						sessionId: string;
+					};
+					const result = await evalAPI.runEval(
+						evalName,
+						parsedBody.input,
+						parsedBody.output,
+						parsedBody.sessionId
+					);
+					res.writeHead(200, {
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*',
+					});
+					res.end(JSON.stringify(result));
+				} catch (error) {
+					this.logger.error('eval error:', error);
+					res.writeHead(500, {
+						'Content-Type': 'application/json',
+						'Access-Control-Allow-Origin': '*',
+					});
+					res.end(JSON.stringify({ error: (error as Error).message }));
+				}
 				return;
 			}
 

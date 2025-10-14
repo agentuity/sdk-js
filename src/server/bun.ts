@@ -1,5 +1,7 @@
 import type { ReadableStream } from 'node:stream/web';
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import EvalAPI from '../apis/eval';
+import { isIdle } from '../router/context';
 import type {
 	AgentResponseData,
 	AgentWelcomeResult,
@@ -17,7 +19,6 @@ import {
 	shouldIgnoreStaticFile,
 	toWelcomePrompt,
 } from './util';
-import { isIdle } from '../router/context';
 
 const idleTimeout = 255; // expressed in seconds
 
@@ -59,6 +60,7 @@ export class BunServer implements Server {
 
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		const { sdkVersion, logger } = this.config;
+		const evalAPI = new EvalAPI();
 		const hostname =
 			process.env.AGENTUITY_ENV === 'development' ? '127.0.0.1' : '0.0.0.0';
 
@@ -164,6 +166,43 @@ export class BunServer implements Server {
 				theserver?.timeout(req, 0);
 
 				const url = new URL(req.url);
+
+				// Handle eval routes
+				if (method === 'POST' && url.pathname.startsWith('/eval/')) {
+					const evalName = url.pathname.slice(6); // Remove '/eval/'
+					try {
+						const body = (await req.json()) as {
+							input: string;
+							output: string;
+							sessionId: string;
+						};
+						const result = await evalAPI.runEval(
+							evalName,
+							body.input,
+							body.output,
+							body.sessionId
+						);
+						return new Response(JSON.stringify(result), {
+							status: 200,
+							headers: {
+								'Content-Type': 'application/json',
+								'Access-Control-Allow-Origin': '*',
+							},
+						});
+					} catch (error) {
+						logger.error('eval error:', error);
+						return new Response(
+							JSON.stringify({ error: (error as Error).message }),
+							{
+								status: 500,
+								headers: {
+									'Content-Type': 'application/json',
+									'Access-Control-Allow-Origin': '*',
+								},
+							}
+						);
+					}
+				}
 
 				// Extract trace context from headers
 				const extractedContext = extractTraceContextFromBunRequest(req);
