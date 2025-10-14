@@ -2,6 +2,11 @@ export * from './logger';
 export * from './server';
 export * from './types';
 export * from './utils/interpolate';
+export {
+	type PromptAttributes,
+	type PromptAttributesParams,
+	processPromptMetadata,
+} from './utils/promptMetadata';
 
 import DiscordAPI from './apis/discord';
 // Export APIs
@@ -66,6 +71,7 @@ export async function runner(
 				url: process.env.AGENTUITY_OTLP_URL,
 				bearerToken: process.env.AGENTUITY_OTLP_BEARER_TOKEN,
 			},
+			userOtelConf: process.env.AGENTUITY_USER_OTEL_CONF ? JSON.parse(process.env.AGENTUITY_USER_OTEL_CONF) : undefined,
 			agents,
 		});
 	}

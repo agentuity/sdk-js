@@ -11,6 +11,7 @@ import {
 } from '../../src/apis/api';
 import { createMockFetch } from '../setup';
 import { ReadableStream } from 'node:stream/web';
+import { context, ROOT_CONTEXT } from '@opentelemetry/api';
 
 describe('API Client', () => {
 	let originalEnv: NodeJS.ProcessEnv;
@@ -644,6 +645,89 @@ describe('API Client', () => {
 			// Reset to default
 			setFetch(globalThis.fetch);
 			expect(getFetch()).toBe(globalThis.fetch);
+		});
+	});
+
+	describe('OpenTelemetry trace context propagation', () => {
+		it('should pass through traceparent header when provided', async () => {
+			const traceparent =
+				'00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+			await send({
+				method: 'GET',
+				path: '/test',
+				body: undefined as never,
+				headers: {
+					traceparent,
+				},
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			const headers = options?.headers as Record<string, string>;
+
+			expect(headers?.traceparent).toBe(traceparent);
+		});
+
+		it('should not inject traceparent header when there is no active context', async () => {
+			await context.with(ROOT_CONTEXT, async () => {
+				await send({
+					method: 'GET',
+					path: '/test',
+					body: undefined as never,
+				});
+
+				expect(fetchCalls.length).toBeGreaterThan(0);
+				const [, options] = fetchCalls[0];
+				const headers = options?.headers as Record<string, string>;
+
+				expect(headers?.traceparent).toBeUndefined();
+			});
+		});
+
+		it('should preserve existing trace headers passed in request', async () => {
+			const existingTraceparent =
+				'00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+			await send({
+				method: 'POST',
+				path: '/test',
+				body: JSON.stringify({ test: 'data' }),
+				headers: {
+					traceparent: existingTraceparent,
+				},
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			const headers = options?.headers as Record<string, string>;
+
+			expect(headers?.traceparent).toBe(existingTraceparent);
+		});
+
+		it('should preserve custom headers when traceparent is included', async () => {
+			const traceparent =
+				'00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
+
+			await send({
+				method: 'GET',
+				path: '/test',
+				body: undefined as never,
+				headers: {
+					traceparent,
+					'X-Custom-Header': 'custom-value',
+					'X-Another-Header': 'another-value',
+				},
+			});
+
+			expect(fetchCalls.length).toBeGreaterThan(0);
+			const [, options] = fetchCalls[0];
+			const headers = options?.headers as Record<string, string>;
+
+			expect(headers?.traceparent).toBe(traceparent);
+			expect(headers?.['X-Custom-Header']).toBe('custom-value');
+			expect(headers?.['X-Another-Header']).toBe('another-value');
+			expect(headers?.Authorization).toBe('Bearer test-api-key');
 		});
 	});
 });

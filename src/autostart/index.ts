@@ -1,9 +1,27 @@
+import yml from 'js-yaml';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import yml from 'js-yaml';
-import { registerOtel } from '../otel';
+import { createResource, createUserLoggerProvider, registerOtel } from '../otel';
+import { OtelLogger } from '../otel/logger';
 import { createServer, createServerContext } from '../server';
 import type { AgentConfig } from '../types';
+import { Resource } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+import { LoggerProvider } from '@opentelemetry/sdk-logs';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
+import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
+
+/**
+ * Configuration for user provided OpenTelemetry
+ */
+interface UserOpenTelemetryConfig {
+	endpoint: string;
+	// only supports http/json for now
+	// protocol: 'grpc' | 'http/protobuf' | 'http/json';
+	serviceName: string;
+	resourceAttributes: Record<string, string>;
+	headers: Record<string, string>;
+}
 
 /**
  * Configuration for auto-starting the Agentuity SDK
@@ -22,6 +40,7 @@ interface AutostartConfig {
 		url?: string;
 		bearerToken?: string;
 	};
+	userOtelConf?: UserOpenTelemetryConfig;
 	agents: AgentConfig[];
 }
 
@@ -70,7 +89,7 @@ export async function run(config: AutostartConfig) {
 				const agentdir = data?.bundler?.agents?.dir;
 				if (agentdir && existsSync(agentdir)) {
 					config.agents = data.agents
-						.map((agent: { id: string; name: string }) => {
+						.map((agent: { id: string; name: string; }) => {
 							const filename = join(agentdir, agent.name, 'index.ts');
 							if (existsSync(filename)) {
 								return {
@@ -92,7 +111,7 @@ export async function run(config: AutostartConfig) {
 	const name = process.env.AGENTUITY_SDK_APP_NAME ?? 'unknown';
 	const version = process.env.AGENTUITY_SDK_APP_VERSION ?? 'unknown';
 	const sdkVersion = process.env.AGENTUITY_SDK_VERSION ?? 'unknown';
-	const otel = registerOtel({
+	const otelConfig = {
 		name,
 		version,
 		sdkVersion,
@@ -104,7 +123,28 @@ export async function run(config: AutostartConfig) {
 		bearerToken: config?.otlp?.bearerToken,
 		url: config?.otlp?.url,
 		environment: config.devmode ? 'development' : config.environment,
-	});
+	};
+	const otel = registerOtel(otelConfig);
+	let userLoggerProvider: { provider: LoggerProvider; exporter: OTLPLogExporter; processor: LogRecordProcessor; } | undefined;
+	if (config.userOtelConf) {
+
+		const resource = new Resource({
+			...createResource(otelConfig).attributes,
+			...config.userOtelConf.resourceAttributes,
+			[ATTR_SERVICE_NAME]: config.userOtelConf.serviceName,
+		});
+		userLoggerProvider = createUserLoggerProvider({
+			url: config.userOtelConf.endpoint,
+			headers: config.userOtelConf.headers,
+			resource,
+		});
+		if (otel.logger instanceof OtelLogger) {
+			otel.logger.addDelegate(userLoggerProvider.provider.getLogger('default'));
+		} else {
+			console.warn('[WARN] user OTEL logger not attached: logger does not support addDelegate');
+		}
+	}
+
 	const server = await createServer({
 		context: await createServerContext({
 			devmode: config.devmode,
@@ -128,6 +168,18 @@ export async function run(config: AutostartConfig) {
 	await server.start();
 	const shutdown = async () => {
 		await server.stop();
+		if (userLoggerProvider) {
+			await userLoggerProvider.exporter
+				?.forceFlush()
+				.catch((e: unknown) =>
+					console.warn('error in forceFlush of user otel exporter. %s', e)
+				);
+			await userLoggerProvider.exporter
+				?.shutdown()
+				.catch((e: unknown) =>
+					console.warn('error in shutdown of user otel exporter. %s', e)
+				);
+		}
 		await otel.shutdown();
 	};
 

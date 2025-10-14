@@ -1,5 +1,29 @@
 # @agentuity/sdk Changelog
 
+## 0.0.154
+
+### Patch Changes
+
+- Added prompt tracking data to aisdk
+
+## 0.0.153
+
+### Patch Changes
+
+- enable custom user otel logger
+
+## 0.0.152
+
+### Patch Changes
+
+- Fixed issue with otel headers not propagating for outbound services
+
+## 0.0.151
+
+### Patch Changes
+
+- fix issue with vector.get
+
 ## [0.0.150]
 
 ### Patch Changes
