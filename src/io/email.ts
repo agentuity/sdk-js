@@ -465,7 +465,7 @@ export class Email {
 	 * @param req - The agent request containing metadata with email-auth-token
 	 * @param context - The agent context
 	 * @param to - Array of recipient email addresses
-	 * @param reply - The email content (subject, text, html, attachments)
+	 * @param email - The email content (subject, text, html, attachments)
 	 * @param from - Optional sender information (defaults to the recipient of the incoming email)
 	 * @returns Promise resolving to the message ID of the sent email
 	 * @throws Error if email-auth-token is missing, recipients list is empty, or from address is invalid
@@ -474,7 +474,7 @@ export class Email {
 		req: AgentRequest,
 		context: AgentContext,
 		to: string[],
-		reply: EmailReply,
+		email: EmailReply,
 		from?: {
 			name?: string;
 			email?: string;
@@ -489,9 +489,9 @@ export class Email {
 
 		return (async () => {
 			let attachments: Attachment[] = [];
-			if (reply.attachments) {
+			if (email.attachments) {
 				attachments = await Promise.all(
-					reply.attachments.map(async (attachment) => {
+					email.attachments.map(async (attachment) => {
 						const resp = await fromDataType(attachment.data);
 						return {
 							filename: attachment.filename,
@@ -521,9 +521,9 @@ export class Email {
 					address: fromAddress,
 				},
 				to: normalizedTo.join(', '),
-				subject: reply.subject ?? '',
-				text: reply.text,
-				html: reply.html,
+				subject: email.subject ?? '',
+				text: email.text,
+				html: email.html,
 				attachments,
 			});
 			const newemail = mail.compile();
