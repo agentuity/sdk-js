@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.155
+
+### Patch Changes
+
+- Added functionality to send email.
+
 ## 0.0.154
 
 ### Patch Changes
