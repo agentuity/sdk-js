@@ -167,7 +167,7 @@ export class BunServer implements Server {
 
 				const url = new URL(req.url);
 
-				// Handle eval routes
+				// Handle eval endpoints
 				if (method === 'POST' && url.pathname.startsWith('/eval/')) {
 					const evalName = url.pathname.slice(6); // Remove '/eval/'
 					try {

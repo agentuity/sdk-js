@@ -135,7 +135,7 @@ export class NodeServer implements Server {
 				return;
 			}
 
-			// Handle eval routes
+			// Handle eval endpoints
 			if (req.method === 'POST' && req.url?.startsWith('/eval/')) {
 				const evalName = req.url.slice(6); // Remove '/eval/'
 				try {

@@ -1,3 +1,4 @@
+export * from './apis/eval';
 export * from './logger';
 export * from './server';
 export * from './types';
@@ -16,15 +17,6 @@ import PatchPortal from './apis/patchportal';
 import PromptAPI from './apis/prompt';
 import StreamAPIImpl from './apis/stream';
 export { EmailAPI, DiscordAPI, EvalAPI, PatchPortal, PromptAPI, StreamAPIImpl };
-
-// Export eval types
-export type {
-	EvalContext,
-	EvalFunction,
-	EvalRequest,
-	EvalResponse,
-	EvalResult,
-} from './apis/eval';
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';

@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { context, trace } from '@opentelemetry/api';
 import { internal } from '../logger/internal';
+import { POST } from './api';
 
 // Eval SDK types
 export interface EvalRequest {
@@ -41,6 +43,25 @@ export interface EvalResult {
 	timestamp: Date;
 }
 
+// Request for storing eval run in DB
+interface StoreEvalRunRequest {
+	projectId: string;
+	sessionId: string;
+	spanId: string;
+	result: EvalResult;
+	evalId?: string | null;
+	promptHash?: string | null;
+}
+
+// Response from storing eval run
+interface StoreEvalRunResponse {
+	success: boolean;
+	data?: {
+		id: string;
+	};
+	message?: string;
+}
+
 export default class EvalAPI {
 	private evalsDir: string;
 	private isBundled: boolean;
@@ -57,6 +78,50 @@ export default class EvalAPI {
 		internal.debug(
 			`EvalAPI initialized with evalsDir: ${this.evalsDir}, isBundled: ${this.isBundled}`
 		);
+	}
+
+	/**
+	 * Store eval run result in database
+	 */
+	private async storeEvalRun(
+		evalName: string,
+		projectId: string,
+		sessionId: string,
+		spanId: string,
+		result: EvalResult
+	): Promise<void> {
+		try {
+			const payload: StoreEvalRunRequest = {
+				projectId,
+				sessionId,
+				spanId,
+				result,
+				evalId: evalName,
+				promptHash: null, // TODO: Add prompt hash when available
+			};
+
+			internal.debug(`Storing eval run for ${evalName} to /sdk/eval/run`);
+
+			const resp = await POST<StoreEvalRunResponse>(
+				'/sdk/eval/run',
+				JSON.stringify(payload),
+				{
+					'Content-Type': 'application/json',
+					Accept: 'application/json',
+				}
+			);
+
+			if (resp.status === 200 || resp.status === 201) {
+				internal.debug(`Eval run stored successfully: ${resp.json?.data?.id}`);
+			} else {
+				internal.error(
+					`Failed to store eval run: ${resp.status} ${resp.json?.message}`
+				);
+			}
+		} catch (error) {
+			internal.error(`Error storing eval run: ${error}`);
+			// Don't throw - we don't want to fail the eval if storage fails
+		}
 	}
 
 	/**
@@ -93,6 +158,13 @@ export default class EvalAPI {
 	): Promise<EvalResult> {
 		internal.debug(`Running eval ${evalName} for session ${sessionId}`);
 
+		// Get project ID from environment
+		const projectId = process.env.AGENTUITY_CLOUD_PROJECT_ID || '';
+
+		// Get current span ID from OpenTelemetry context
+		const currentSpan = trace.getSpan(context.active());
+		const spanId = currentSpan?.spanContext().spanId || '';
+
 		const request: EvalRequest = {
 			input,
 			output,
@@ -122,11 +194,11 @@ export default class EvalAPI {
 			},
 		};
 
-		const context: EvalContext = {};
+		const evalContext: EvalContext = {};
 
 		// Load and run eval function
 		const evaluate = await this.loadEval(evalName);
-		await evaluate(context, request, response);
+		await evaluate(evalContext, request, response);
 
 		// Create result
 		const result: EvalResult = {
@@ -140,6 +212,18 @@ export default class EvalAPI {
 		internal.debug(
 			`Eval complete for session ${sessionId} -> ${resultType}${scoreValue !== undefined ? ` (${scoreValue})` : ''}`
 		);
+
+		// Store result in database (non-blocking)
+		if (projectId && spanId) {
+			// Don't await - fire and forget
+			this.storeEvalRun(evalName, projectId, sessionId, spanId, result).catch(
+				(error) => {
+					internal.error(`Failed to store eval run: ${error}`);
+				}
+			);
+		} else {
+			internal.warn('Skipping eval storage - missing projectId or spanId');
+		}
 
 		return result;
 	}
