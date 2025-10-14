@@ -460,6 +460,97 @@ export class Email {
 	}
 
 	/**
+	 * Send a new email to the specified recipients.
+	 *
+	 * @param req - The agent request containing metadata with email-auth-token
+	 * @param context - The agent context
+	 * @param to - Array of recipient email addresses
+	 * @param email - The email content (subject, text, html, attachments)
+	 * @param from - Optional sender information (defaults to the recipient of the incoming email)
+	 * @returns Promise resolving to the message ID of the sent email
+	 * @throws Error if email-auth-token is missing, recipients list is empty, or from address is invalid
+	 */
+	async send(
+		req: AgentRequest,
+		context: AgentContext,
+		to: string[],
+		email: EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
+	): Promise<string> {
+		const authToken = req.metadata?.['email-auth-token'] as string;
+		if (!authToken) {
+			throw new Error(
+				'email authorization token is required but not found in metadata'
+			);
+		}
+
+		return (async () => {
+			let attachments: Attachment[] = [];
+			if (email.attachments) {
+				attachments = await Promise.all(
+					email.attachments.map(async (attachment) => {
+						const resp = await fromDataType(attachment.data);
+						return {
+							filename: attachment.filename,
+							content: await resp.data.buffer(),
+							contentType: resp.data.contentType,
+							contentDisposition:
+								attachment.contentDisposition ?? ('attachment' as const),
+						};
+					})
+				);
+			}
+
+			const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
+			if (normalizedTo.length === 0) {
+				throw new Error('at least one recipient email is required');
+			}
+
+			const fromAddress = from?.email ?? this.toEmail();
+			if (!fromAddress) {
+				throw new Error('a valid from email address is required');
+			}
+
+			const mail = new MailComposer({
+				date: new Date(),
+				from: {
+					name: from?.name ?? context.agent.name,
+					address: fromAddress,
+				},
+				to: normalizedTo.join(', '),
+				subject: email.subject ?? '',
+				text: email.text,
+				html: email.html,
+				attachments,
+			});
+			const newemail = mail.compile();
+
+			return new Promise<string>((resolve, reject) => {
+				newemail.build(async (err, message) => {
+					if (err) {
+						reject(err);
+					} else {
+						try {
+							await context.email.send(
+								context.agent.id,
+								message.toString(),
+								authToken,
+								newemail.messageId()
+							);
+							resolve(newemail.messageId());
+						} catch (ex) {
+							reject(ex);
+						}
+					}
+				});
+			});
+		})();
+	}
+
+	/**
 	 * send a reply to the email
 	 */
 	async sendReply(
