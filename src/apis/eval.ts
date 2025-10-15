@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { context, trace } from '@opentelemetry/api';
 import { internal } from '../logger/internal';
 import { POST } from './api';
 
@@ -100,15 +99,19 @@ export default class EvalAPI {
 				promptHash: null, // TODO: Add prompt hash when available
 			};
 
-			internal.debug(`Storing eval run for ${evalName} to /sdk/eval/run`);
+			const url = '/evalrun/2025-03-17';
+			internal.debug(`Storing eval run for ${evalName}`);
 
 			const resp = await POST<StoreEvalRunResponse>(
-				'/sdk/eval/run',
+				url,
 				JSON.stringify(payload),
 				{
 					'Content-Type': 'application/json',
 					Accept: 'application/json',
-				}
+				},
+				undefined,
+				undefined,
+				'eval'
 			);
 
 			if (resp.status === 200 || resp.status === 201) {
@@ -148,22 +151,19 @@ export default class EvalAPI {
 	}
 
 	/**
-	 * Run eval with input/output/sessionId
+	 * Run eval with input/output/sessionId/spanId
 	 */
 	async runEval(
 		evalName: string,
 		input: string,
 		output: string,
-		sessionId: string
+		sessionId: string,
+		spanId: string
 	): Promise<EvalResult> {
-		internal.debug(`Running eval ${evalName} for session ${sessionId}`);
+		console.log(`Running eval ${evalName} for session ${sessionId}`);
 
 		// Get project ID from environment
 		const projectId = process.env.AGENTUITY_CLOUD_PROJECT_ID || '';
-
-		// Get current span ID from OpenTelemetry context
-		const currentSpan = trace.getSpan(context.active());
-		const spanId = currentSpan?.spanContext().spanId || '';
 
 		const request: EvalRequest = {
 			input,
@@ -197,6 +197,8 @@ export default class EvalAPI {
 		const evalContext: EvalContext = {};
 
 		// Load and run eval function
+		console.log('loading eval function');
+
 		const evaluate = await this.loadEval(evalName);
 		await evaluate(evalContext, request, response);
 
@@ -209,12 +211,15 @@ export default class EvalAPI {
 			timestamp: new Date(),
 		};
 
-		internal.debug(
+		console.log('BOBBY!! Eval result:', result);
+
+		console.log(
 			`Eval complete for session ${sessionId} -> ${resultType}${scoreValue !== undefined ? ` (${scoreValue})` : ''}`
 		);
 
 		// Store result in database (non-blocking)
 		if (projectId && spanId) {
+			console.log('writing eval result to database');
 			// Don't await - fire and forget
 			this.storeEvalRun(evalName, projectId, sessionId, spanId, result).catch(
 				(error) => {
