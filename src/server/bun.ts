@@ -176,13 +176,15 @@ export class BunServer implements Server {
 							output: string;
 							sessionId: string;
 							spanId: string;
+							evalId: string;
 						};
 						const result = await evalAPI.runEval(
 							evalName,
 							body.input,
 							body.output,
 							body.sessionId,
-							body.spanId
+							body.spanId,
+							body.evalId
 						);
 						return new Response(JSON.stringify(result), {
 							status: 200,

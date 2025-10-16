@@ -34,13 +34,39 @@ export type EvalFunction = (
 ) => Promise<void>;
 
 // Eval result types
-export interface EvalResult {
+interface BaseEvalRunResult {
+	evalId: string;
 	sessionId: string;
-	resultType: 'pass' | 'fail' | 'score';
-	scoreValue?: number;
-	metadata?: { reasoning?: string; [key: string]: unknown };
 	timestamp: Date;
 }
+
+export type EvalRunResultBinary = BaseEvalRunResult & {
+	success: true;
+	passed: boolean;
+	metadata: {
+		reason: string;
+		[key: string]: any;
+	};
+};
+
+export type EvalRunResultScore = BaseEvalRunResult & {
+	success: true;
+	score: number; // 0-1 range
+	metadata: {
+		reason: string;
+		[key: string]: any;
+	};
+};
+
+export type EvalRunResultError = BaseEvalRunResult & {
+	success: false;
+	error: string;
+};
+
+export type EvalResult =
+	| EvalRunResultBinary
+	| EvalRunResultScore
+	| EvalRunResultError;
 
 // Request for storing eval run in DB
 interface StoreEvalRunRequest {
@@ -83,7 +109,7 @@ export default class EvalAPI {
 	 * Store eval run result in database
 	 */
 	private async storeEvalRun(
-		evalName: string,
+		evalId: string,
 		projectId: string,
 		sessionId: string,
 		spanId: string,
@@ -95,12 +121,14 @@ export default class EvalAPI {
 				sessionId,
 				spanId,
 				result,
-				evalId: evalName,
+				evalId: evalId,
 				promptHash: null, // TODO: Add prompt hash when available
 			};
 
 			const url = '/evalrun/2025-03-17';
-			internal.debug(`Storing eval run for ${evalName}`);
+			console.log('BOBBY!! Storing eval run with evalId:', evalId);
+			console.log('BOBBY!! Full payload:', JSON.stringify(payload, null, 2));
+			internal.debug(`Storing eval run for eval ID: ${evalId}`);
 
 			const resp = await POST<StoreEvalRunResponse>(
 				url,
@@ -128,9 +156,11 @@ export default class EvalAPI {
 	}
 
 	/**
-	 * Load eval function from eval name
+	 * Load eval function and metadata from eval name
 	 */
-	async loadEval(evalName: string): Promise<EvalFunction> {
+	async loadEval(
+		evalName: string
+	): Promise<{ evalFn: EvalFunction; metadata?: { id: string } }> {
 		// For bundled code, eval files are .js in .agentuity/
 		// For dev code, eval files are .ts in src/evals/
 		const evalFile = this.isBundled ? `${evalName}.js` : evalName;
@@ -142,7 +172,10 @@ export default class EvalAPI {
 			// Convert to file URL for proper ESM import
 			const fileUrl = pathToFileURL(evalPath).href;
 			const module = await import(fileUrl);
-			return module.default;
+			return {
+				evalFn: module.default,
+				metadata: module.metadata,
+			};
 		} catch (error) {
 			throw new Error(
 				`Failed to load eval function from ${evalPath}: ${error}`
@@ -158,7 +191,8 @@ export default class EvalAPI {
 		input: string,
 		output: string,
 		sessionId: string,
-		spanId: string
+		spanId: string,
+		evalId?: string
 	): Promise<EvalResult> {
 		console.log(`Running eval ${evalName} for session ${sessionId}`);
 
@@ -171,65 +205,101 @@ export default class EvalAPI {
 			sessionId,
 		};
 
-		// Prepare response object
-		let resultType: 'pass' | 'fail' | 'score' = 'fail';
-		let scoreValue: number | undefined;
-		let metadata: { reasoning?: string; [key: string]: unknown } | undefined;
-
-		const response: EvalResponse = {
-			pass: (
-				value: boolean,
-				meta?: { reasoning?: string; [key: string]: unknown }
-			) => {
-				resultType = value ? 'pass' : 'fail';
-				metadata = meta;
-			},
-			score: (
-				val: number,
-				meta?: { reasoning?: string; [key: string]: unknown }
-			) => {
-				resultType = 'score';
-				scoreValue = val;
-				metadata = meta;
-			},
-		};
+		// Prepare response tracking
+		let result: EvalResult | null = null;
+		const timestamp = new Date();
 
 		const evalContext: EvalContext = {};
 
 		// Load and run eval function
 		console.log('loading eval function');
 
-		const evaluate = await this.loadEval(evalName);
-		await evaluate(evalContext, request, response);
+		try {
+			const { evalFn, metadata: evalMetadata } = await this.loadEval(evalName);
+			const finalEvalId = evalId || evalMetadata?.id || evalName;
 
-		// Create result
-		const result: EvalResult = {
-			sessionId,
-			resultType,
-			scoreValue,
-			metadata,
-			timestamp: new Date(),
-		};
+			const response: EvalResponse = {
+				pass: (
+					value: boolean,
+					meta?: { reasoning?: string; [key: string]: unknown }
+				) => {
+					result = {
+						success: true,
+						passed: value,
+						metadata: {
+							reason: meta?.reasoning || '',
+							...meta,
+						},
+						evalId: finalEvalId,
+						sessionId,
+						timestamp,
+					};
+				},
+				score: (
+					val: number,
+					meta?: { reasoning?: string; [key: string]: unknown }
+				) => {
+					result = {
+						success: true,
+						score: val,
+						metadata: {
+							reason: meta?.reasoning || '',
+							...meta,
+						},
+						evalId: finalEvalId,
+						sessionId,
+						timestamp,
+					};
+				},
+			};
 
-		console.log('BOBBY!! Eval result:', result);
+			await evalFn(evalContext, request, response);
 
-		console.log(
-			`Eval complete for session ${sessionId} -> ${resultType}${scoreValue !== undefined ? ` (${scoreValue})` : ''}`
-		);
+			// If no result was set, create an error result
+			if (!result) {
+				result = {
+					success: false,
+					error: 'Eval function did not call res.pass() or res.score()',
+					evalId: finalEvalId,
+					sessionId,
+					timestamp,
+				};
+			}
 
-		// Store result in database (non-blocking)
-		if (projectId && spanId) {
-			console.log('writing eval result to database');
-			// Don't await - fire and forget
-			this.storeEvalRun(evalName, projectId, sessionId, spanId, result).catch(
-				(error) => {
+			console.log('BOBBY!! Eval result:', result);
+
+			// Store result in database (non-blocking)
+			if (projectId && spanId) {
+				console.log(
+					'writing eval result to database with evalId:',
+					finalEvalId
+				);
+				this.storeEvalRun(
+					finalEvalId,
+					projectId,
+					sessionId,
+					spanId,
+					result
+				).catch((error) => {
 					internal.error(`Failed to store eval run: ${error}`);
-				}
-			);
-		} else {
-			internal.warn('Skipping eval storage - missing projectId or spanId');
-		}
+				});
+			} else {
+				internal.warn('Skipping eval storage - missing projectId or spanId');
+			}
 
-		return result;
+			return result;
+		} catch (error) {
+			// Return error result if eval function throws
+			result = {
+				success: false,
+				error: error instanceof Error ? error.message : String(error),
+				evalId: evalName,
+				sessionId,
+				timestamp,
+			};
+
+			console.log('BOBBY!! Eval error:', result);
+			return result;
+		}
 	}
 }

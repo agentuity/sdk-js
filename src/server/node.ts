@@ -148,13 +148,15 @@ export class NodeServer implements Server {
 						output: string;
 						sessionId: string;
 						spanId: string;
+						evalId: string;
 					};
 					const result = await evalAPI.runEval(
 						evalName,
 						parsedBody.input,
 						parsedBody.output,
 						parsedBody.sessionId,
-						parsedBody.spanId
+						parsedBody.spanId,
+						parsedBody.evalId
 					);
 					res.writeHead(200, {
 						'Content-Type': 'application/json',
