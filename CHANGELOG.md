@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.157
+
+### Patch Changes
+
+- Removed send from email (unavailable at the moment)
+
 ## [0.0.156] - 2025-10-15
 
 ### Added

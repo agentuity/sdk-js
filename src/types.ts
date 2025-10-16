@@ -670,16 +670,6 @@ export interface VectorStorage {
  */
 export interface EmailService {
 	/**
-	 * Send a new email to the specified recipients.
-	 */
-	send(
-		agentId: string,
-		email: string,
-		authToken: string,
-		messageId: string
-	): Promise<void>;
-
-	/**
 	 * send an email reply to an incoming email
 	 *
 	 * @param agentId - the id of the agent to send the reply to
