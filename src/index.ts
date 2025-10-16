@@ -17,7 +17,7 @@ import StreamAPIImpl from './apis/stream';
 export { EmailAPI, DiscordAPI, PatchPortal, PromptAPI, StreamAPIImpl };
 
 import { TeamsActivityHandler } from 'botbuilder';
-import { run } from './autostart';
+import { run, type UserOpenTelemetryConfig } from './autostart';
 import { UnsupportedSlackPayload } from './io/slack';
 import { AgentuityTeamsActivityHandler } from './io/teams/AgentuityTeamsActivityHandler';
 import { AgentuityTeamsAdapter } from './io/teams/AgentuityTeamsAdapter';
@@ -51,6 +51,16 @@ export async function runner(
 				'[WARN] expected AGENTUITY_CLOUD_AGENTS_JSON to be set but it was not. will attempt to load manually.'
 			);
 		}
+		let userOtelConf: UserOpenTelemetryConfig | undefined;
+		if (process.env.AGENTUITY_USER_OTEL_CONF) {
+			try {
+				userOtelConf = JSON.parse(process.env.AGENTUITY_USER_OTEL_CONF);
+			} catch (error) {
+				console.warn(
+					`[WARN] Failed to parse AGENTUITY_USER_OTEL_CONF: ${error instanceof Error ? error.message : String(error)}`
+				);
+			}
+		}
 		await run({
 			basedir: dir,
 			orgId: process.env.AGENTUITY_CLOUD_ORG_ID,
@@ -71,9 +81,7 @@ export async function runner(
 				url: process.env.AGENTUITY_OTLP_URL,
 				bearerToken: process.env.AGENTUITY_OTLP_BEARER_TOKEN,
 			},
-			userOtelConf: process.env.AGENTUITY_USER_OTEL_CONF
-				? JSON.parse(process.env.AGENTUITY_USER_OTEL_CONF)
-				: undefined,
+			userOtelConf,
 			agents,
 		});
 	}

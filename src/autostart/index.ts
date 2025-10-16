@@ -18,7 +18,7 @@ import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 /**
  * Configuration for user provided OpenTelemetry
  */
-interface UserOpenTelemetryConfig {
+export interface UserOpenTelemetryConfig {
 	endpoint: string;
 	// only supports http/json for now
 	// protocol: 'grpc' | 'http/protobuf' | 'http/json';

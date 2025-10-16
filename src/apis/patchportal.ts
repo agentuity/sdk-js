@@ -65,7 +65,7 @@ export default class PatchPortal {
 		internal.debug('🔍 State after set:', Object.keys(this.state));
 		internal.debug(
 			'🔍 Data stored:',
-			typeof data === 'object'
+			data && typeof data === 'object'
 				? Object.keys(data as Record<string, unknown>)
 				: typeof data
 		);
