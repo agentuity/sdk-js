@@ -307,11 +307,11 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 				tracingEnabled: false, // Disable traceloop's own tracing (equivalent to Python's telemetryEnabled: false)
 				// Note: JavaScript SDK doesn't support resourceAttributes like Python
 			});
-			logger.debug(`Traceloop initialized with app_name: ${appName}`);
-			logger.info('Traceloop configured successfully');
+			logger.debug(`Telemetry initialized with app_name: ${appName}`);
+			logger.info('Telemetry configured successfully');
 		} catch (error) {
 			logger.warn(
-				'Traceloop not available, skipping automatic instrumentation',
+				'Telemetry not available, skipping automatic instrumentation',
 				{ error: error instanceof Error ? error.message : String(error) }
 			);
 		}
