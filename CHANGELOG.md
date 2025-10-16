@@ -1,141 +1,15 @@
 # @agentuity/sdk Changelog
 
-## 0.0.156
+## [0.0.156] - 2025-10-15
 
-### Patch Changes
+### Added
 
-- b7c6499: Make the logging around Telemetry more generic
+- Support for listing streams with flexible filtering and pagination options ([#200](https://github.com/agentuity/sdk-js/pull/200))
+- Support for deleting streams by ID ([#200](https://github.com/agentuity/sdk-js/pull/200))
 
-- You can now list and search through your streams with flexible filtering and pagination options.
+### Changed
 
-  ```typescript
-  import { streams } from "@agentuity/sdk";
-
-  // List all streams
-  const result = await streams.list();
-  console.log(`Found ${result.total} streams`);
-  result.streams.forEach((stream) => {
-    console.log(`${stream.name}: ${stream.url} (${stream.sizeBytes} bytes)`);
-  });
-
-  // Filter by name
-  const namedStreams = await streams.list({
-    name: "my-report",
-  });
-
-  // Filter by metadata
-  const customerStreams = await streams.list({
-    metadata: { customerId: "customer-123", type: "invoice" },
-  });
-
-  // Paginate results
-  const page1 = await streams.list({ limit: 10, offset: 0 });
-  const page2 = await streams.list({ limit: 10, offset: 10 });
-
-  // Combine filters
-  const filtered = await streams.list({
-    name: "analytics",
-    metadata: { department: "sales" },
-    limit: 50,
-    offset: 0,
-  });
-  ```
-
-  **Response Format:**
-
-  - `success`: Boolean indicating if the request succeeded
-  - `streams`: Array of stream objects with `id`, `name`, `metadata`, `url`, and `sizeBytes`
-  - `total`: Total count of streams matching your filters (useful for pagination)
-  - `message`: Optional error message if request failed
-
-  **Pagination:**
-
-  - Default limit: 100 streams
-  - Maximum limit: 1000 streams
-  - Use `offset` to skip streams for pagination
-
-  You can now delete streams by their ID when they're no longer needed.
-
-  ```typescript
-  import { streams } from "@agentuity/sdk";
-
-  // Delete a stream
-  await streams.delete("stream-id-123");
-
-  // Handle deletion with error checking
-  try {
-    await streams.delete(streamId);
-    console.log("Stream deleted successfully");
-  } catch (error) {
-    if (error.message.includes("not found")) {
-      console.log("Stream does not exist");
-    } else {
-      console.error("Failed to delete stream:", error);
-    }
-  }
-  ```
-
-  **Notes:**
-
-  - Returns nothing on success
-  - Throws error if stream ID is invalid or empty
-  - Throws "Stream not found" error if stream doesn't exist
-  - Stream IDs must be non-empty strings
-
-  ```typescript
-  import { streams } from "@agentuity/sdk";
-
-  // Create a stream
-  const stream = await streams.create("user-export", {
-    metadata: { userId: "user-123", format: "csv" },
-  });
-
-  await stream.write("Name,Email\n");
-  await stream.write("John,john@example.com\n");
-  await stream.close();
-
-  console.log(`Stream created: ${stream.url}`);
-
-  // List streams by metadata
-  const userStreams = await streams.list({
-    metadata: { userId: "user-123" },
-  });
-
-  console.log(`Found ${userStreams.total} streams for user`);
-
-  // Clean up old streams
-  for (const oldStream of userStreams.streams) {
-    await streams.delete(oldStream.id);
-    console.log(`Deleted: ${oldStream.name}`);
-  }
-  ```
-
-  If you're currently managing streams, you can now:
-
-  - **Search and organize**: Use the list API to find streams by name or metadata instead of tracking IDs manually
-  - **Paginate large lists**: Process streams in batches using limit/offset
-  - **Clean up**: Delete streams that are no longer needed to manage storage
-  - **Audit**: Use metadata filters to find streams by customer, project, or any custom tags
-
-  **Parameters:**
-
-  - `name` (optional): Filter streams by name
-  - `metadata` (optional): Object with key-value pairs to filter by metadata
-  - `limit` (optional): Maximum streams to return (1-1000, default: 100)
-  - `offset` (optional): Number of streams to skip for pagination
-
-  **Returns:** `Promise<ListStreamsResponse>`
-
-  **Parameters:**
-
-  - `id` (required): The stream ID to delete
-
-  **Returns:** `Promise<void>`
-
-  **Throws:**
-
-  - Error if ID is invalid, empty, or only whitespace
-  - "Stream not found" if stream doesn't exist
+- Updated telemetry logging to be more generic ([#199](https://github.com/agentuity/sdk-js/pull/199))
 
 ## 0.0.155
 
@@ -952,6 +826,7 @@ All notable changes to this project will be documented in this file.
 
 - Refactor the JS SDK to better support new workflow
 
+[0.0.156]: https://github.com/agentuity/sdk-js/compare/v0.0.155...v0.0.156
 [0.0.150]: https://github.com/agentuity/sdk-js/compare/v0.0.149...v0.0.150
 [0.0.149]: https://github.com/agentuity/sdk-js/compare/v0.0.148...v0.0.149
 [0.0.148]: https://github.com/agentuity/sdk-js/compare/v0.0.147...v0.0.148
