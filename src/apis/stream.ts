@@ -544,6 +544,7 @@ export default class StreamAPIImpl implements StreamAPI {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 					'stream'
 				);
 
