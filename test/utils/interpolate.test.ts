@@ -63,12 +63,12 @@ describe('interpolateTemplate', () => {
 			expectedErr: "Required variable 'test' not provided",
 		},
 		{
-			input: 'this is a ${test}',
+			input: 'this is a $' + '{test}',
 			variables: { test: null },
 			expectedVal: 'this is a $',
 		},
 		{
-			input: 'this is a ${test:-foo}',
+			input: 'this is a $' + '{test:-foo}',
 			variables: { test: 'foo' },
 			expectedVal: 'this is a $foo',
 		},

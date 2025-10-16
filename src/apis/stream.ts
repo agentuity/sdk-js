@@ -437,11 +437,7 @@ export default class StreamAPIImpl implements StreamAPI {
 		const tracer = getTracer();
 		const currentContext = context.active();
 
-		const span = tracer.startSpan(
-			'agentuity.stream.list',
-			{},
-			currentContext
-		);
+		const span = tracer.startSpan('agentuity.stream.list', {}, currentContext);
 
 		try {
 			if (params?.limit !== undefined) {

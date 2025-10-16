@@ -1678,7 +1678,6 @@ describe('StreamAPI', () => {
 									headers: new Headers({ 'content-type': 'application/json' }),
 									json: () => Promise.resolve(errorJson),
 								},
-								json: errorJson,
 								headers: new Headers({ 'content-type': 'application/json' }),
 								json: () => Promise.resolve(errorJson),
 							};
@@ -1720,7 +1719,6 @@ describe('StreamAPI', () => {
 								headers: new Headers({ 'content-type': 'application/json' }),
 								json: () => Promise.resolve(successJson),
 							},
-							json: successJson,
 							headers: new Headers({ 'content-type': 'application/json' }),
 							json: () => Promise.resolve(successJson),
 						};
@@ -1835,7 +1833,7 @@ describe('StreamAPI', () => {
 				async (url: URL | RequestInfo, options?: RequestInit) => {
 					if (options?.method === 'DELETE') {
 						const urlStr = url.toString();
-						
+
 						// Check for valid stream ID
 						if (urlStr.includes('/stream-123')) {
 							return {
@@ -1848,7 +1846,7 @@ describe('StreamAPI', () => {
 								headers: new Headers(),
 							};
 						}
-						
+
 						// Handle not found
 						if (urlStr.includes('/nonexistent')) {
 							return {
@@ -1895,17 +1893,13 @@ describe('StreamAPI', () => {
 		});
 
 		it('should validate stream id is a string', async () => {
-			await expect(
-				streamAPI.delete(null as unknown as string)
-			).rejects.toThrow(
+			await expect(streamAPI.delete(null as unknown as string)).rejects.toThrow(
 				'Stream id is required and must be a non-empty string'
 			);
 
 			await expect(
 				streamAPI.delete(undefined as unknown as string)
-			).rejects.toThrow(
-				'Stream id is required and must be a non-empty string'
-			);
+			).rejects.toThrow('Stream id is required and must be a non-empty string');
 		});
 
 		it('should handle whitespace-only id', async () => {

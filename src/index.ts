@@ -71,7 +71,9 @@ export async function runner(
 				url: process.env.AGENTUITY_OTLP_URL,
 				bearerToken: process.env.AGENTUITY_OTLP_BEARER_TOKEN,
 			},
-			userOtelConf: process.env.AGENTUITY_USER_OTEL_CONF ? JSON.parse(process.env.AGENTUITY_USER_OTEL_CONF) : undefined,
+			userOtelConf: process.env.AGENTUITY_USER_OTEL_CONF
+				? JSON.parse(process.env.AGENTUITY_USER_OTEL_CONF)
+				: undefined,
 			agents,
 		});
 	}

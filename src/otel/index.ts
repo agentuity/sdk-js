@@ -68,7 +68,6 @@ interface OtelResponse {
 const devmodeExportInterval = 1_000; // 1 second
 const productionExportInterval = 10_000; // 10 seconds
 
-
 export const createResource = (config: OtelConfig): Resource => {
 	const {
 		name,
@@ -100,11 +99,10 @@ export const createAgentuityLoggerProvider = ({
 	headers,
 	resource,
 }: {
-	url?: string,
-	headers?: Record<string, string>,
+	url?: string;
+	headers?: Record<string, string>;
 	resource: Resource;
 }) => {
-
 	let processor: LogRecordProcessor;
 	let exporter: OTLPLogExporter | undefined;
 
@@ -117,9 +115,7 @@ export const createAgentuityLoggerProvider = ({
 		});
 		processor = new BatchLogRecordProcessor(exporter);
 	} else {
-		processor = new SimpleLogRecordProcessor(
-			new ConsoleLogRecordExporter()
-		);
+		processor = new SimpleLogRecordProcessor(new ConsoleLogRecordExporter());
 	}
 	const provider = new LoggerProvider({
 		resource,
@@ -139,11 +135,11 @@ export const createUserLoggerProvider = ({
 	headers,
 	resource,
 }: {
-	url: string,
-	headers?: Record<string, string>,
+	url: string;
+	headers?: Record<string, string>;
 	resource: Resource;
 }) => {
-	let exporter = new OTLPLogExporter({
+	const exporter = new OTLPLogExporter({
 		url: `${url}/v1/logs`,
 		headers,
 		compression: CompressionAlgorithm.GZIP,
@@ -207,54 +203,53 @@ export function registerOtel(config: OtelConfig): OtelResponse {
 
 	const traceExporter = url
 		? new OTLPTraceExporter({
-			url: `${url}/v1/traces`,
-			headers,
-			keepAlive: true,
-		})
+				url: `${url}/v1/traces`,
+				headers,
+				keepAlive: true,
+			})
 		: undefined;
 
 	const metricExporter = url
 		? new OTLPMetricExporter({
-			url: `${url}/v1/metrics`,
-			headers,
-			keepAlive: true,
-		})
+				url: `${url}/v1/metrics`,
+				headers,
+				keepAlive: true,
+			})
 		: undefined;
-
 
 	// Create a separate metric reader for the NodeSDK
 	const sdkMetricReader =
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
-				exporter: metricExporter,
-				exportTimeoutMillis: devmode
-					? devmodeExportInterval
-					: productionExportInterval,
-				exportIntervalMillis: devmode
-					? devmodeExportInterval
-					: productionExportInterval,
-			})
+					exporter: metricExporter,
+					exportTimeoutMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
+					exportIntervalMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
+				})
 			: undefined;
 
 	// Create a separate metric reader for the MeterProvider
 	const hostMetricReader =
 		url && metricExporter
 			? new PeriodicExportingMetricReader({
-				exporter: metricExporter,
-				exportTimeoutMillis: devmode
-					? devmodeExportInterval
-					: productionExportInterval,
-				exportIntervalMillis: devmode
-					? devmodeExportInterval
-					: productionExportInterval,
-			})
+					exporter: metricExporter,
+					exportTimeoutMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
+					exportIntervalMillis: devmode
+						? devmodeExportInterval
+						: productionExportInterval,
+				})
 			: undefined;
 
 	const meterProvider = hostMetricReader
 		? new MeterProvider({
-			resource,
-			readers: [hostMetricReader],
-		})
+				resource,
+				readers: [hostMetricReader],
+			})
 		: undefined;
 
 	if (meterProvider) {
