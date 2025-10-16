@@ -44,6 +44,8 @@ export type PromptSignature<
 
 // Simple collection types
 export type PromptsCollection = Record<string, unknown>;
-export type GetPromptSignatures<T extends Record<string, unknown>> = {
+export type GetPromptSignatures<
+	T extends Record<string, Prompt<boolean, boolean, boolean, unknown, unknown>>,
+> = {
 	[K in keyof T]: PromptSignature<T[K]>;
 };
