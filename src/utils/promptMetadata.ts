@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import PatchPortal from '../apis/patchportal.js';
 import { internal } from '../logger/internal';
 
@@ -23,8 +23,8 @@ export async function processPromptMetadata(
 ): Promise<void> {
 	internal.debug('🔧 processPromptMetadata called with:', {
 		slug: attributes.slug,
-		template: attributes.template?.substring(0, 50) + '...',
-		compiled: attributes.compiled?.substring(0, 50) + '...',
+		template: `${attributes.template?.substring(0, 50)}...`,
+		compiled: `${attributes.compiled?.substring(0, 50)}...`,
 		variables: attributes.variables,
 	});
 

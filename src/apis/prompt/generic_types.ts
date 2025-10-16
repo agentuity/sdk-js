@@ -38,12 +38,14 @@ export type Prompt<
 		: Record<string, never>);
 
 // Simple signature function type
-export type PromptSignature<T extends Prompt<any, any, any, any, any>> = (
-	params: any
-) => string;
+export type PromptSignature<
+	_T extends Prompt<boolean, boolean, boolean, unknown, unknown>,
+> = (params: Record<string, unknown>) => string;
 
 // Simple collection types
-export type PromptsCollection = Record<string, any>;
-export type GetPromptSignatures<T extends Record<string, any>> = {
+export type PromptsCollection = Record<string, unknown>;
+export type GetPromptSignatures<
+	T extends Record<string, Prompt<boolean, boolean, boolean, unknown, unknown>>,
+> = {
 	[K in keyof T]: PromptSignature<T[K]>;
 };

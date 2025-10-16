@@ -65,7 +65,9 @@ export default class PatchPortal {
 		internal.debug('🔍 State after set:', Object.keys(this.state));
 		internal.debug(
 			'🔍 Data stored:',
-			typeof data === 'object' ? Object.keys(data as any) : typeof data
+			data && typeof data === 'object'
+				? Object.keys(data as Record<string, unknown>)
+				: typeof data
 		);
 	}
 
@@ -79,7 +81,7 @@ export default class PatchPortal {
 			'🔍 Retrieved data:',
 			result
 				? typeof result === 'object'
-					? Object.keys(result as any)
+					? Object.keys(result as Record<string, unknown>)
 					: typeof result
 				: 'undefined'
 		);
