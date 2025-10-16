@@ -11,31 +11,31 @@
 
 - Updated telemetry logging to be more generic ([#199](https://github.com/agentuity/sdk-js/pull/199))
 
-## 0.0.155
+## [0.0.155] - 2025-10-14
 
 ### Patch Changes
 
 - Added functionality to send email.
 
-## 0.0.154
+## [0.0.154] - 2025-10-08
 
 ### Patch Changes
 
 - Added prompt tracking data to aisdk
 
-## 0.0.153
+## [0.0.153] - 2025-10-08
 
 ### Patch Changes
 
 - enable custom user otel logger
 
-## 0.0.152
+## [0.0.152] - 2025-10-06
 
 ### Patch Changes
 
 - Fixed issue with otel headers not propagating for outbound services
 
-## 0.0.151
+## [0.0.151] - 2025-10-06
 
 ### Patch Changes
 
