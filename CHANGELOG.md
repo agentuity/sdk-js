@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- b7c6499: Make the logging around Telemetry more generic
+
 - You can now list and search through your streams with flexible filtering and pagination options.
 
   ```typescript
