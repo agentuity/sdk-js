@@ -827,6 +827,11 @@ All notable changes to this project will be documented in this file.
 - Refactor the JS SDK to better support new workflow
 
 [0.0.156]: https://github.com/agentuity/sdk-js/compare/v0.0.155...v0.0.156
+[0.0.155]: https://github.com/agentuity/sdk-js/compare/v0.0.154...v0.0.155
+[0.0.154]: https://github.com/agentuity/sdk-js/compare/v0.0.153...v0.0.154
+[0.0.153]: https://github.com/agentuity/sdk-js/compare/v0.0.152...v0.0.153
+[0.0.152]: https://github.com/agentuity/sdk-js/compare/v0.0.151...v0.0.152
+[0.0.151]: https://github.com/agentuity/sdk-js/compare/v0.0.150...v0.0.151
 [0.0.150]: https://github.com/agentuity/sdk-js/compare/v0.0.149...v0.0.150
 [0.0.149]: https://github.com/agentuity/sdk-js/compare/v0.0.148...v0.0.149
 [0.0.148]: https://github.com/agentuity/sdk-js/compare/v0.0.147...v0.0.148
