@@ -1,6 +1,12 @@
-import { getBaseUrlForService, POST, getFetch } from './api';
+import { getBaseUrlForService, POST, DELETE, getFetch } from './api';
 import { getSDKVersion, getTracer, recordException } from '../router/router';
-import type { CreateStreamProps, Stream, StreamAPI } from '../types';
+import type {
+	CreateStreamProps,
+	Stream,
+	StreamAPI,
+	ListStreamsParams,
+	ListStreamsResponse,
+} from '../types';
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { safeStringify } from '../utils/stringify';
 import { ReadableStream } from 'node:stream/web';
@@ -410,6 +416,152 @@ export default class StreamAPIImpl implements StreamAPI {
 
 				throw new Error(
 					`error creating stream: ${resp.response.statusText} (${resp.response.status})`
+				);
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			span.setStatus({ code: SpanStatusCode.ERROR });
+			throw ex;
+		} finally {
+			span.end();
+		}
+	}
+
+	/**
+	 * list streams with optional filtering and pagination
+	 *
+	 * @param params - optional parameters for filtering and pagination
+	 * @returns a Promise that resolves to the list of streams
+	 */
+	async list(params?: ListStreamsParams): Promise<ListStreamsResponse> {
+		const tracer = getTracer();
+		const currentContext = context.active();
+
+		const span = tracer.startSpan(
+			'agentuity.stream.list',
+			{},
+			currentContext
+		);
+
+		try {
+			if (params?.limit !== undefined) {
+				if (params.limit <= 0 || params.limit > 1000) {
+					throw new Error('limit must be greater than 0 and less than 1000');
+				}
+				span.setAttribute('limit', params.limit);
+			}
+			if (params?.offset !== undefined) {
+				span.setAttribute('offset', params.offset);
+			}
+			if (params?.name) {
+				span.setAttribute('name', params.name);
+			}
+			if (params?.metadata) {
+				span.setAttribute('metadata', JSON.stringify(params.metadata));
+			}
+
+			const spanContext = trace.setSpan(currentContext, span);
+
+			return await context.with(spanContext, async () => {
+				const requestBody: Record<string, unknown> = {};
+
+				if (params?.name) {
+					requestBody.name = params.name;
+				}
+				if (params?.metadata) {
+					requestBody.metadata = params.metadata;
+				}
+				if (params?.limit) {
+					requestBody.limit = params.limit;
+				}
+				if (params?.offset) {
+					requestBody.offset = params.offset;
+				}
+
+				const resp = await POST(
+					'/list',
+					JSON.stringify(requestBody),
+					{
+						'Content-Type': 'application/json',
+					},
+					undefined,
+					undefined,
+					'stream'
+				);
+
+				if (resp.status === 200) {
+					const result = resp.json as ListStreamsResponse;
+					span.setAttribute('stream.count', result.streams.length);
+					span.setAttribute('stream.total', result.total);
+					span.setStatus({ code: SpanStatusCode.OK });
+					return result;
+				}
+
+				if (resp.status === 400) {
+					const result = resp.json as ListStreamsResponse;
+					throw new Error(
+						result.message || `Bad request: ${resp.response.statusText}`
+					);
+				}
+
+				throw new Error(
+					`error listing streams: ${resp.response.statusText} (${resp.response.status})`
+				);
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			span.setStatus({ code: SpanStatusCode.ERROR });
+			throw ex;
+		} finally {
+			span.end();
+		}
+	}
+
+	/**
+	 * delete a stream by id
+	 *
+	 * @param id - the stream id to delete
+	 * @returns a Promise that resolves when the stream is deleted
+	 */
+	async delete(id: string): Promise<void> {
+		if (!id || typeof id !== 'string' || id.trim().length === 0) {
+			throw new Error('Stream id is required and must be a non-empty string');
+		}
+
+		const tracer = getTracer();
+		const currentContext = context.active();
+
+		const span = tracer.startSpan(
+			'agentuity.stream.delete',
+			{},
+			currentContext
+		);
+
+		try {
+			span.setAttribute('stream.id', id);
+
+			const spanContext = trace.setSpan(currentContext, span);
+
+			return await context.with(spanContext, async () => {
+				const resp = await DELETE(
+					`/${id}`,
+					undefined,
+					undefined,
+					undefined,
+					'stream'
+				);
+
+				if (resp.status === 200 || resp.status === 204) {
+					span.setStatus({ code: SpanStatusCode.OK });
+					return;
+				}
+
+				if (resp.status === 404) {
+					throw new Error(`Stream not found: ${id}`);
+				}
+
+				throw new Error(
+					`error deleting stream: ${resp.response.statusText} (${resp.response.status})`
 				);
 			});
 		} catch (ex) {
