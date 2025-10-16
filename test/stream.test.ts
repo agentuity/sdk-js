@@ -1785,11 +1785,11 @@ describe('StreamAPI', () => {
 
 		it('should validate limit range', async () => {
 			await expect(streamAPI.list({ limit: 0 })).rejects.toThrow(
-				'limit must be greater than 0 and less than 1000'
+				'limit must be greater than 0 and less than or equal to 1000'
 			);
 
 			await expect(streamAPI.list({ limit: 1001 })).rejects.toThrow(
-				'limit must be greater than 0 and less than 1000'
+				'limit must be greater than 0 and less than or equal to 1000'
 			);
 		});
 

@@ -442,7 +442,9 @@ export default class StreamAPIImpl implements StreamAPI {
 		try {
 			if (params?.limit !== undefined) {
 				if (params.limit <= 0 || params.limit > 1000) {
-					throw new Error('limit must be greater than 0 and less than 1000');
+					throw new Error(
+						'limit must be greater than 0 and less than or equal to 1000'
+					);
 				}
 				span.setAttribute('limit', params.limit);
 			}
