@@ -88,7 +88,6 @@ export default class PromptAPI {
 
 	// Method to load prompts dynamically (called by context)
 	public async loadPrompts(): Promise<void> {
-		console.log('loadPrompts() called');
 		try {
 			// Try multiple possible paths for the generated prompts
 			let generatedModule: unknown;

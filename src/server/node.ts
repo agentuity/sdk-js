@@ -5,10 +5,10 @@ import {
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
-import EvalAPI from '../apis/eval';
 import type { Logger } from '../logger';
 import { isIdle } from '../router/context';
 import type { AgentResponseData, AgentWelcomeResult } from '../types';
+import { InternalRoutesHandler } from './internal-routes';
 import {
 	extractTraceContextFromNodeRequest,
 	injectTraceContextToHeaders,
@@ -105,7 +105,7 @@ export class NodeServer implements Server {
 	async start(): Promise<void> {
 		const sdkVersion = this.sdkVersion;
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
-		const evalAPI = new EvalAPI();
+		const internalRoutes = new InternalRoutesHandler(this.logger);
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
 				res.writeHead(200, {
@@ -135,43 +135,26 @@ export class NodeServer implements Server {
 				return;
 			}
 
-			// Handle eval endpoints
-			if (req.method === 'POST' && req.url?.startsWith('/eval/')) {
-				const evalName = req.url.slice(6); // Remove '/eval/'
-				try {
-					let body = '';
-					for await (const chunk of req) {
-						body += chunk;
-					}
-					const parsedBody = JSON.parse(body) as {
-						input: string;
-						output: string;
-						sessionId: string;
-						spanId: string;
-						evalId: string;
-					};
-					const result = await evalAPI.runEval(
-						evalName,
-						parsedBody.input,
-						parsedBody.output,
-						parsedBody.sessionId,
-						parsedBody.spanId,
-						parsedBody.evalId
-					);
-					res.writeHead(200, {
+			// Handle internal routes first
+			if (req.url?.startsWith('/_agentuity/')) {
+				const body = await this.getBufferAsStream(req);
+				const internalResponse = await internalRoutes.handleInternalRoute({
+					method: req.method || 'GET',
+					url: req.url,
+					headers: this.getHeaders(req),
+					body,
+					request: getRequestFromHeaders(this.getHeaders(req), ''),
+					setTimeout: (_val: number) => void 0,
+				});
+				if (internalResponse) {
+					const responseBody = await internalResponse.text();
+					res.writeHead(internalResponse.status, {
 						'Content-Type': 'application/json',
 						'Access-Control-Allow-Origin': '*',
 					});
-					res.end(JSON.stringify(result));
-				} catch (error) {
-					this.logger.error('eval error:', error);
-					res.writeHead(500, {
-						'Content-Type': 'application/json',
-						'Access-Control-Allow-Origin': '*',
-					});
-					res.end(JSON.stringify({ error: (error as Error).message }));
+					res.end(responseBody);
+					return;
 				}
-				return;
 			}
 
 			if (req.method === 'GET' && req.url === '/welcome') {
