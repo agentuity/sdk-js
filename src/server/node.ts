@@ -265,10 +265,13 @@ export class NodeServer implements Server {
 							try {
 								const agentReq = {
 									body: await this.getBufferAsStream(req),
-									request: getRequestFromHeaders(
-										req.headers as Record<string, string>,
-										runId
-									),
+									request: {
+										...getRequestFromHeaders(
+											req.headers as Record<string, string>,
+											runId
+										),
+										http: { request: req, response: res },
+									},
 									url: req.url ?? '',
 									method: req.method ?? '',
 									headers: this.getHeaders(req),

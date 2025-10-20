@@ -1,6 +1,7 @@
 import type { ReadableStream } from 'node:stream/web';
 import type {
 	AgentRequest,
+	RawNodeHTTP,
 	Json,
 	JsonObject,
 	ReadableDataType,
@@ -15,6 +16,7 @@ export default class AgentRequestHandler implements AgentRequest {
 	private readonly _trigger: TriggerType;
 	private readonly _datahandler: DataHandler;
 	private readonly _metadata: JsonObject;
+	private readonly _rawHttp?: RawNodeHTTP;
 
 	/**
 	 * constructor
@@ -23,16 +25,19 @@ export default class AgentRequestHandler implements AgentRequest {
 	 * @param stream - The stream of the request
 	 * @param contentType - The content type of the request
 	 * @param metadata - The metadata of the request
+	 * @param rawHttp - Optional raw HTTP objects (NodeServer only)
 	 */
 	constructor(
 		trigger: TriggerType,
 		stream: ReadableStream<ReadableDataType> | AsyncIterable<ReadableDataType>,
 		contentType: string,
-		metadata: JsonObject
+		metadata: JsonObject,
+		rawHttp?: RawNodeHTTP
 	) {
 		this._trigger = trigger;
 		this._datahandler = new DataHandler(stream, contentType, metadata);
 		this._metadata = metadata;
+		this._rawHttp = rawHttp;
 	}
 
 	/**
@@ -65,5 +70,17 @@ export default class AgentRequestHandler implements AgentRequest {
 			return metadata[key];
 		}
 		return defaultValue ?? null;
+	}
+
+	/**
+	 * Get raw HTTP request/response objects
+	 */
+	getRawHTTP(): RawNodeHTTP {
+		if (!this._rawHttp) {
+			throw new Error(
+				`Raw HTTP context not available for trigger type '${this._trigger}'`
+			);
+		}
+		return this._rawHttp;
 	}
 }

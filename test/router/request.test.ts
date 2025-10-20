@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import AgentRequestHandler from '../../src/router/request';
 import { ReadableStream } from 'node:stream/web';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { JsonObject } from '../../src/types';
 import '../setup'; // Import global test setup
 
@@ -104,6 +105,38 @@ describe('AgentRequestHandler', () => {
 
 			expect(handler.get('missing-key', 'default-value')).toEqual(
 				'default-value'
+			);
+		});
+	});
+
+	describe('getRawHTTP method', () => {
+		it('should return raw HTTP context when available', () => {
+			const mockReq = {} as IncomingMessage;
+			const mockRes = {} as ServerResponse;
+
+			const handler = new AgentRequestHandler(
+				'webhook',
+				new ReadableStream(),
+				'application/json',
+				{},
+				{ request: mockReq, response: mockRes }
+			);
+
+			const rawHttp = handler.getRawHTTP();
+			expect(rawHttp.request).toBe(mockReq);
+			expect(rawHttp.response).toBe(mockRes);
+		});
+
+		it('should throw error when raw HTTP context not available', () => {
+			const handler = new AgentRequestHandler(
+				'cron',
+				new ReadableStream(),
+				'application/json',
+				{}
+			);
+
+			expect(() => handler.getRawHTTP()).toThrow(
+				"Raw HTTP context not available for trigger type 'cron'"
 			);
 		});
 	});

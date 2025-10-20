@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ReadableStream, WritableStream } from 'node:stream/web';
 import type { Meter, Tracer } from '@opentelemetry/api';
 import type { GeneratedPromptsCollection } from './apis/prompt/generated/index';
@@ -14,6 +15,22 @@ import type { Teams, TeamsCustomBot } from './io/teams';
 import type { AgentuityTeamsActivityHandlerConstructor } from './io/teams/AgentuityTeamsActivityHandler';
 import type { Telegram } from './io/telegram';
 import type { Logger } from './logger';
+
+/**
+ * Raw HTTP objects for Node.js request and response.
+ * Only available with HTTP triggers in NodeServer.
+ */
+export interface RawNodeHTTP {
+	/**
+	 * Node.js IncomingMessage object
+	 */
+	request: IncomingMessage;
+
+	/**
+	 * Node.js ServerResponse object
+	 */
+	response: ServerResponse;
+}
 
 /**
  * Types of triggers that can initiate an agent request
@@ -992,6 +1009,24 @@ export interface AgentRequest {
 	 * get the metadata value of the request
 	 */
 	get(key: string, defaultValue?: Json): Json;
+
+	/**
+	 * Get raw HTTP request/response objects for advanced HTTP integrations.
+	 *
+	 * This provides direct access to Node.js HTTP primitives for specialized
+	 * integrations like Microsoft Teams Bot Framework CloudAdapter.
+	 *
+	 * Only available with HTTP-based triggers in NodeServer.
+	 *
+	 * @throws Error if HTTP context is not available
+	 * @returns RawNodeHTTP with Node.js IncomingMessage and ServerResponse
+	 *
+	 * @example
+	 * // Microsoft Teams CloudAdapter integration
+	 * const { request, response } = req.getRawHTTP();
+	 * await adapter.process(request, response, (context) => bot.run(context));
+	 */
+	getRawHTTP(): RawNodeHTTP;
 }
 
 export interface AgentResponseData {
