@@ -28,7 +28,7 @@ export interface EvalContext {
 }
 export type EvalRunResultMetadata = {
 	reason: string;
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	// biome-ignore lint/suspicious/noExplicitAny: metadata can contain any type of data
 	[key: string]: any;
 };
 
@@ -105,30 +105,55 @@ export default class EvalAPI {
 	}
 
 	/**
-	 * Load eval function and metadata from eval name
+	 * Load eval function and metadata by ID
+	 * Scans through all eval files to find the one with matching ID
 	 */
-	async loadEval(
-		evalName: string
-	): Promise<{ evalFn: EvalFunction; metadata?: { id: string } }> {
-		// For bundled code, eval files are .js in .agentuity/
-		// For dev code, eval files are .ts in src/evals/
-		const evalFile = this.isBundled ? `${evalName}.js` : evalName;
-		const evalPath = path.join(this.evalsDir, evalFile);
-
-		internal.debug(`Loading eval function from ${evalPath}`);
+	async loadEvalById(evalId: string): Promise<{
+		evalFn: EvalFunction;
+		metadata?: { id: string; slug: string; name: string; description: string };
+	}> {
+		internal.debug(`Loading eval by ID: ${evalId}`);
 
 		try {
-			// Convert to file URL for proper ESM import
-			const fileUrl = pathToFileURL(evalPath).href;
-			const module = await import(fileUrl);
-			return {
-				evalFn: module.default,
-				metadata: module.metadata,
-			};
+			// Get all files in the evals directory
+			const files = fs.readdirSync(this.evalsDir);
+
+			for (const file of files) {
+				// Skip index files and non-eval files
+				if (file === 'index.ts' || file === 'index.js') {
+					continue;
+				}
+
+				// Check file extension based on bundled state
+				const expectedExt = this.isBundled ? '.js' : '.ts';
+				if (!file.endsWith(expectedExt)) {
+					continue;
+				}
+
+				const filePath = path.join(this.evalsDir, file);
+
+				try {
+					// Convert to file URL for proper ESM import
+					const fileUrl = pathToFileURL(filePath).href;
+					const module = await import(fileUrl);
+
+					// Check if this module has the matching ID
+					if (module.metadata && module.metadata.id === evalId) {
+						internal.debug(`Found eval with ID ${evalId} in file ${file}`);
+						return {
+							evalFn: module.default,
+							metadata: module.metadata,
+						};
+					}
+				} catch (error) {
+					// Skip files that can't be imported (might not be eval files)
+					internal.debug(`Skipping file ${file} due to import error: ${error}`);
+				}
+			}
+
+			throw new Error(`No eval found with ID: ${evalId}`);
 		} catch (error) {
-			throw new Error(
-				`Failed to load eval function from ${evalPath}: ${error}`
-			);
+			throw new Error(`Failed to load eval by ID ${evalId}: ${error}`);
 		}
 	}
 
@@ -161,7 +186,8 @@ export default class EvalAPI {
 		internal.debug('loading eval function');
 
 		try {
-			const { evalFn } = await this.loadEval(evalName);
+			// Try to load by ID first, fallback to name
+			const { evalFn } = await this.loadEvalById(evalId);
 
 			const response: EvalResponse = {
 				pass: (

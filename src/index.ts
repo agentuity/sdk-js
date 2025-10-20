@@ -13,10 +13,19 @@ import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
 import EvalAPI from './apis/eval';
+import EvalJobScheduler from './apis/evaljobscheduler';
 import PatchPortal from './apis/patchportal';
 import PromptAPI from './apis/prompt';
 import StreamAPIImpl from './apis/stream';
-export { EmailAPI, DiscordAPI, EvalAPI, PatchPortal, PromptAPI, StreamAPIImpl };
+export {
+	EmailAPI,
+	DiscordAPI,
+	EvalAPI,
+	EvalJobScheduler,
+	PatchPortal,
+	PromptAPI,
+	StreamAPIImpl,
+};
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run } from './autostart';
