@@ -5,6 +5,7 @@ import {
 import { Readable } from 'node:stream';
 import type { ReadableStream } from 'node:stream/web';
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import EvalJobScheduler from '../apis/evaljobscheduler';
 import type { Logger } from '../logger';
 import { isIdle } from '../router/context';
 import type { AgentResponseData, AgentWelcomeResult } from '../types';
@@ -105,6 +106,10 @@ export class NodeServer implements Server {
 	async start(): Promise<void> {
 		const sdkVersion = this.sdkVersion;
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
+
+		// Initialize EvalJobScheduler globally for patches
+		await EvalJobScheduler.getInstance();
+
 		const internalRoutes = new InternalRoutesHandler(this.logger);
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {

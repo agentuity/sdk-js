@@ -260,4 +260,124 @@ export default class EvalAPI {
 			};
 		}
 	}
+
+	/**
+	 * Load eval metadata map from eval files (slug -> ID mapping)
+	 * Scans through all eval files to find metadata and build mapping
+	 */
+	async loadEvalMetadataMap(): Promise<Map<string, string>> {
+		internal.info(`🔍 Loading eval metadata map from: ${this.evalsDir}`);
+
+		// Check if evals directory exists
+		if (!fs.existsSync(this.evalsDir)) {
+			internal.info(`📁 Evals directory not found: ${this.evalsDir}`);
+			return new Map();
+		}
+
+		const files = fs.readdirSync(this.evalsDir);
+		const slugToIDMap = new Map<string, string>();
+		let processedFiles = 0;
+
+		internal.info(`📂 Scanning ${files.length} files in evals directory`);
+
+		for (const file of files) {
+			const ext = path.extname(file);
+			if (
+				file === 'index.ts' ||
+				file === 'index.js' ||
+				(ext !== '.ts' && ext !== '.js')
+			) {
+				internal.debug(`⏭️  Skipping file: ${file}`);
+				continue;
+			}
+
+			const filePath = path.join(this.evalsDir, file);
+			processedFiles++;
+
+			try {
+				const content = fs.readFileSync(filePath, 'utf-8');
+				const metadata = this.parseEvalMetadata(content);
+
+				if (metadata && metadata.slug && metadata.id) {
+					slugToIDMap.set(metadata.slug, metadata.id);
+					internal.info(
+						`✅ Mapped eval slug '${metadata.slug}' to ID '${metadata.id}' from ${file}`
+					);
+				} else {
+					internal.debug(`⚠️  No valid metadata found in ${file}`);
+				}
+			} catch (error) {
+				internal.warn(`❌ Failed to parse metadata from ${file}: ${error}`);
+			}
+		}
+
+		internal.info(
+			`📚 Loaded ${slugToIDMap.size} eval mappings from ${processedFiles} files`
+		);
+		return slugToIDMap;
+	}
+
+	/**
+	 * Parse eval metadata from file content
+	 * Similar to CLI's ParseEvalMetadata but in TypeScript
+	 */
+	private parseEvalMetadata(
+		content: string
+	): { id: string; slug: string; name: string; description: string } | null {
+		// Find the metadata export pattern
+		const metadataRegex = /export\s+const\s+metadata\s*=\s*\{/;
+		const metadataMatch = content.match(metadataRegex);
+		if (!metadataMatch) {
+			return null;
+		}
+
+		// Find the opening brace position
+		const braceStart = metadataMatch.index! + metadataMatch[0].length - 1;
+		if (braceStart >= content.length || content[braceStart] !== '{') {
+			return null;
+		}
+
+		// Count braces to find the matching closing brace
+		let braceCount = 0;
+		let braceEnd = -1;
+		for (let i = braceStart; i < content.length; i++) {
+			if (content[i] === '{') {
+				braceCount++;
+			} else if (content[i] === '}') {
+				braceCount--;
+				if (braceCount === 0) {
+					braceEnd = i;
+					break;
+				}
+			}
+		}
+
+		if (braceEnd === -1) {
+			return null;
+		}
+
+		// Extract the object content
+		const objectContent = content.slice(braceStart, braceEnd + 1);
+
+		// Replace single quotes with double quotes for valid JSON
+		let jsonStr = objectContent.replace(/'([^']*)'/g, '"$1"');
+
+		// Clean up the JSON string
+		jsonStr = jsonStr.replace(/\s+/g, ' ');
+		jsonStr = jsonStr.replace(/\s*{\s*/g, '{');
+		jsonStr = jsonStr.replace(/\s*}\s*/g, '}');
+		jsonStr = jsonStr.replace(/\s*:\s*/g, ':');
+		jsonStr = jsonStr.replace(/\s*,\s*/g, ',');
+		jsonStr = jsonStr.replace(/,\s*}/g, '}');
+
+		// Quote the object keys
+		jsonStr = jsonStr.replace(/(\w+):/g, '"$1":');
+
+		try {
+			return JSON.parse(jsonStr);
+		} catch (error) {
+			internal.debug(`Failed to parse metadata JSON: ${error}`);
+			return null;
+		}
+	}
 }

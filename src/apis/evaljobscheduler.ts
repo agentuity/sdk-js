@@ -80,6 +80,15 @@ export default class EvalJobScheduler {
 			internal.debug('⚠️ Job already exists, overwriting:', spanId);
 		}
 
+		// Count total evals across all prompt metadata
+		const totalEvals = promptMetadata.reduce(
+			(count, meta) => count + (meta.evals?.length || 0),
+			0
+		);
+		internal.info(
+			`📦 Creating eval job ${spanId} for session ${sessionId} with ${totalEvals} evals`
+		);
+
 		const job: PendingEvalJob = {
 			spanId,
 			sessionId,
@@ -108,15 +117,31 @@ export default class EvalJobScheduler {
 	 * Get jobs with optional filtering
 	 */
 	public getJobs(filter?: JobFilter): PendingEvalJob[] {
-		internal.debug('🔍 EvalJobScheduler.getJobs() called with filter:', filter);
+		internal.info('🔍 EvalJobScheduler.getJobs() called with filter:', filter);
+		internal.info('📊 Total pending jobs in scheduler:', this.pendingJobs.size);
 
 		let jobs = Array.from(this.pendingJobs.values());
 
 		if (filter?.sessionId) {
 			jobs = jobs.filter((job) => job.sessionId === filter.sessionId);
+			internal.info(
+				`🔍 Filtered jobs for session ${filter.sessionId}:`,
+				jobs.length
+			);
 		}
 
-		internal.debug('🔍 Found jobs:', jobs.length);
+		internal.info('📋 Returning jobs:', jobs.length);
+		if (jobs.length > 0) {
+			jobs.forEach((job, index) => {
+				internal.info(`📦 Job ${index + 1}:`, {
+					spanId: job.spanId,
+					sessionId: job.sessionId,
+					promptMetadataCount: job.promptMetadata?.length || 0,
+					hasOutput: !!job.output,
+					createdAt: job.createdAt,
+				});
+			});
+		}
 		return jobs;
 	}
 
