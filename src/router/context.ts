@@ -203,9 +203,8 @@ export default class AgentContextWaitUntilHandler {
 
 			for (const evalSlug of promptMeta.evals) {
 				try {
-					const evalId = evalMetadataMap.get(evalSlug) || evalSlug;
 					logger.info(
-						`🚀 Running eval '${evalSlug}' (ID: ${evalId}) for session ${job.sessionId}`
+						`🚀 Running eval '${evalSlug}' for session ${job.sessionId}`
 					);
 
 					const result = await evalAPI.runEval(
@@ -213,8 +212,7 @@ export default class AgentContextWaitUntilHandler {
 						job.input || '',
 						job.output || '',
 						job.sessionId,
-						job.spanId,
-						evalId
+						job.spanId
 					);
 
 					if (result.success) {

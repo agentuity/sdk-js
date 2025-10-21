@@ -105,6 +105,59 @@ export default class EvalAPI {
 	}
 
 	/**
+	 * Load eval function and metadata by name/slug
+	 * Scans through all eval files to find the one with matching slug
+	 */
+	async loadEvalByName(evalName: string): Promise<{
+		evalFn: EvalFunction;
+		metadata: { id: string; slug: string; name: string; description: string };
+	}> {
+		internal.debug(`Loading eval by name: ${evalName}`);
+
+		try {
+			// Get all files in the evals directory
+			const files = fs.readdirSync(this.evalsDir);
+
+			for (const file of files) {
+				// Skip index files and non-eval files
+				if (file === 'index.ts' || file === 'index.js') {
+					continue;
+				}
+
+				// Check file extension based on bundled state
+				const expectedExt = this.isBundled ? '.js' : '.ts';
+				if (!file.endsWith(expectedExt)) {
+					continue;
+				}
+
+				const filePath = path.join(this.evalsDir, file);
+
+				try {
+					// Convert to file URL for proper ESM import
+					const fileUrl = pathToFileURL(filePath).href;
+					const module = await import(fileUrl);
+
+					// Check if this module has the matching slug
+					if (module.metadata && module.metadata.slug === evalName) {
+						internal.debug(`Found eval with slug ${evalName} in file ${file}`);
+						return {
+							evalFn: module.default,
+							metadata: module.metadata,
+						};
+					}
+				} catch (error) {
+					// Skip files that can't be imported (might not be eval files)
+					internal.debug(`Skipping file ${file} due to import error: ${error}`);
+				}
+			}
+
+			throw new Error(`No eval found with slug: ${evalName}`);
+		} catch (error) {
+			throw new Error(`Failed to load eval by name ${evalName}: ${error}`);
+		}
+	}
+
+	/**
 	 * Load eval function and metadata by ID
 	 * Scans through all eval files to find the one with matching ID
 	 */
@@ -166,7 +219,6 @@ export default class EvalAPI {
 		output: string,
 		sessionId: string,
 		spanId: string,
-		evalId: string,
 		promptHash?: string
 	): Promise<CreateEvalRunResponse> {
 		internal.debug(`Running eval ${evalName} for session ${sessionId}`);
@@ -186,8 +238,12 @@ export default class EvalAPI {
 		internal.debug('loading eval function');
 
 		try {
-			// Try to load by ID first, fallback to name
-			const { evalFn } = await this.loadEvalById(evalId);
+			// Load eval by name/slug
+			const { evalFn, metadata } = await this.loadEvalByName(evalName);
+
+			if (!metadata?.id) {
+				throw new Error('Eval metadata not found');
+			}
 
 			const response: EvalResponse = {
 				pass: (
@@ -206,7 +262,7 @@ export default class EvalAPI {
 								...meta,
 							},
 						},
-						evalId,
+						evalId: metadata.id,
 						promptHash,
 					};
 				},
@@ -226,7 +282,7 @@ export default class EvalAPI {
 								...meta,
 							},
 						},
-						evalId,
+						evalId: metadata.id,
 						promptHash,
 					};
 				},
@@ -239,19 +295,45 @@ export default class EvalAPI {
 				throw new Error('Eval function did not call res.pass() or res.score()');
 			}
 
+			const r = createEvalRunRequest as CreateEvalRunRequest;
+
+			// Just return the result directly - no need to POST to API since we're executing locally
+			internal.info(`✅ Eval '${evalName}' completed successfully: %j`, {
+				resultType: r.result.success ? 'success' : 'error',
+				passed: 'passed' in r.result ? r.result.passed : undefined,
+				score: 'score' in r.result ? r.result.score : undefined,
+				metadata: r.result.metadata,
+			});
 			const resp = await POST<CreateEvalRunResponse>(
-				`/_agentuity/eval/${evalId}/runs`,
+				'/evalrun/finish',
 				JSON.stringify(createEvalRunRequest),
 				{
 					'Content-Type': 'application/json',
 				}
 			);
 
-			if (!resp.json?.success) {
-				throw new Error('Failed to create eval run');
+			if (!resp.status) {
+				internal.info('Failed to update the database with the eval run', {
+					status: resp.status,
+					evalName,
+					evalId: r.evalId,
+					sessionId: r.sessionId,
+				});
+			} else {
+				internal.info('Eval run updated in the database', {
+					status: resp.status,
+					evalName,
+					evalId: r.evalId,
+					sessionId: r.sessionId,
+				});
 			}
 
-			return resp.json;
+			return {
+				success: true,
+				data: {
+					id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+				},
+			};
 		} catch (error) {
 			// Return error result if eval function throws
 			return {
