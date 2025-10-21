@@ -58,10 +58,14 @@ export class OtelLogger implements Logger {
 		return result;
 	}
 
-	private emitToAll(severityNumber: LogsAPI.SeverityNumber, severityText: string, body: string) {
+	private emitToAll(
+		severityNumber: LogsAPI.SeverityNumber,
+		severityText: string,
+		body: string
+	) {
 		const attributes = this.getAttributes();
 
-		this.delegates.forEach(delegate => {
+		this.delegates.forEach((delegate) => {
 			try {
 				delegate.emit({
 					severityNumber,

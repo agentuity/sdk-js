@@ -56,7 +56,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 
-		expect(() => email.attachments()).not.toThrow();
+		expect(email.attachments).toBeDefined();
 		const attachments = email.attachments();
 		expect(attachments).toHaveLength(0);
 	});
@@ -82,7 +82,7 @@ Test attachment content
 
 		const email = await parseEmail(Buffer.from(emailContent));
 
-		expect(() => email.attachments()).not.toThrow();
+		expect(email.attachments).toBeDefined();
 		const attachments = email.attachments();
 		expect(attachments).toHaveLength(0);
 	});

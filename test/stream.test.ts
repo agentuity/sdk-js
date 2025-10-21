@@ -1654,4 +1654,258 @@ describe('StreamAPI', () => {
 			expect(errorThrown).toBe(true);
 		});
 	});
+
+	describe('list', () => {
+		beforeEach(() => {
+			const mockFetch = mock(
+				async (url: URL | RequestInfo, options?: RequestInit) => {
+					if (options?.method === 'POST' && url.toString().includes('/list')) {
+						const body = JSON.parse(options.body as string);
+
+						// Simulate different responses based on filters
+						if (body.limit && (body.limit <= 0 || body.limit > 1000)) {
+							const errorJson = {
+								success: false,
+								message: 'limit must be greater than 0 and less than 1000',
+								streams: [],
+								total: 0,
+							};
+							return {
+								status: 400,
+								response: {
+									status: 400,
+									statusText: 'Bad Request',
+									headers: new Headers({ 'content-type': 'application/json' }),
+									json: () => Promise.resolve(errorJson),
+								},
+								headers: new Headers({ 'content-type': 'application/json' }),
+								json: () => Promise.resolve(errorJson),
+							};
+						}
+
+						// Mock successful response
+						const streams = [
+							{
+								id: 'stream-1',
+								name: body.name || 'test-stream',
+								metadata: body.metadata || { type: 'test' },
+								url: 'https://stream.test.com/stream-1',
+								sizeBytes: 1024,
+							},
+							{
+								id: 'stream-2',
+								name: body.name || 'another-stream',
+								metadata: body.metadata || { type: 'test' },
+								url: 'https://stream.test.com/stream-2',
+								sizeBytes: 2048,
+							},
+						];
+
+						const offset = body.offset || 0;
+						const limit = body.limit || 100;
+						const paginatedStreams = streams.slice(offset, offset + limit);
+
+						const successJson = {
+							success: true,
+							streams: paginatedStreams,
+							total: streams.length,
+						};
+
+						return {
+							status: 200,
+							response: {
+								status: 200,
+								statusText: 'OK',
+								headers: new Headers({ 'content-type': 'application/json' }),
+								json: () => Promise.resolve(successJson),
+							},
+							headers: new Headers({ 'content-type': 'application/json' }),
+							json: () => Promise.resolve(successJson),
+						};
+					}
+
+					return {
+						status: 404,
+						response: {
+							status: 404,
+							statusText: 'Not Found',
+							headers: new Headers(),
+						},
+						headers: new Headers(),
+					};
+				}
+			);
+
+			setFetch(mockFetch as unknown as typeof fetch);
+		});
+
+		it('should list streams with no filters', async () => {
+			const result = await streamAPI.list();
+
+			expect(result.success).toBe(true);
+			expect(result.streams).toHaveLength(2);
+			expect(result.total).toBe(2);
+			expect(result.streams[0].id).toBe('stream-1');
+			expect(result.streams[1].id).toBe('stream-2');
+		});
+
+		it('should list streams with name filter', async () => {
+			const result = await streamAPI.list({ name: 'test-stream' });
+
+			expect(result.success).toBe(true);
+			expect(result.streams).toHaveLength(2);
+			expect(result.total).toBe(2);
+		});
+
+		it('should list streams with metadata filter', async () => {
+			const result = await streamAPI.list({
+				metadata: { customerId: 'customer-123' },
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.streams).toHaveLength(2);
+			expect(result.total).toBe(2);
+		});
+
+		it('should list streams with limit', async () => {
+			const result = await streamAPI.list({ limit: 1 });
+
+			expect(result.success).toBe(true);
+			expect(result.streams).toHaveLength(1);
+			expect(result.streams[0].id).toBe('stream-1');
+		});
+
+		it('should list streams with offset', async () => {
+			const result = await streamAPI.list({ offset: 1 });
+
+			expect(result.success).toBe(true);
+			expect(result.streams).toHaveLength(1);
+			expect(result.streams[0].id).toBe('stream-2');
+		});
+
+		it('should validate limit range', async () => {
+			await expect(streamAPI.list({ limit: 0 })).rejects.toThrow(
+				'limit must be greater than 0 and less than or equal to 1000'
+			);
+
+			await expect(streamAPI.list({ limit: 1001 })).rejects.toThrow(
+				'limit must be greater than 0 and less than or equal to 1000'
+			);
+		});
+
+		it('should accept valid limit values', async () => {
+			const result1 = await streamAPI.list({ limit: 1 });
+			expect(result1.success).toBe(true);
+
+			const result2 = await streamAPI.list({ limit: 1000 });
+			expect(result2.success).toBe(true);
+		});
+
+		it('should return stream info with all required fields', async () => {
+			const result = await streamAPI.list();
+
+			expect(result.streams[0]).toMatchObject({
+				id: expect.any(String),
+				name: expect.any(String),
+				metadata: expect.any(Object),
+				url: expect.any(String),
+				sizeBytes: expect.any(Number),
+			});
+		});
+
+		it('should list streams with combined filters', async () => {
+			const result = await streamAPI.list({
+				name: 'test-stream',
+				metadata: { type: 'test' },
+				limit: 10,
+				offset: 0,
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.streams).toBeDefined();
+			expect(result.total).toBeDefined();
+		});
+	});
+
+	describe('delete', () => {
+		beforeEach(() => {
+			const mockFetch = mock(
+				async (url: URL | RequestInfo, options?: RequestInit) => {
+					if (options?.method === 'DELETE') {
+						const urlStr = url.toString();
+
+						// Check for valid stream ID
+						if (urlStr.includes('/stream-123')) {
+							return {
+								status: 200,
+								response: {
+									status: 200,
+									statusText: 'OK',
+									headers: new Headers(),
+								},
+								headers: new Headers(),
+							};
+						}
+
+						// Handle not found
+						if (urlStr.includes('/nonexistent')) {
+							return {
+								status: 404,
+								response: {
+									status: 404,
+									statusText: 'Not Found',
+									headers: new Headers(),
+								},
+								headers: new Headers(),
+							};
+						}
+					}
+
+					return {
+						status: 404,
+						response: {
+							status: 404,
+							statusText: 'Not Found',
+							headers: new Headers(),
+						},
+						headers: new Headers(),
+					};
+				}
+			);
+
+			setFetch(mockFetch as unknown as typeof fetch);
+		});
+
+		it('should delete a stream successfully', async () => {
+			await expect(streamAPI.delete('stream-123')).resolves.toBeUndefined();
+		});
+
+		it('should throw error for non-existent stream', async () => {
+			await expect(streamAPI.delete('nonexistent')).rejects.toThrow(
+				'Stream not found: nonexistent'
+			);
+		});
+
+		it('should validate stream id is required', async () => {
+			await expect(streamAPI.delete('')).rejects.toThrow(
+				'Stream id is required and must be a non-empty string'
+			);
+		});
+
+		it('should validate stream id is a string', async () => {
+			await expect(streamAPI.delete(null as unknown as string)).rejects.toThrow(
+				'Stream id is required and must be a non-empty string'
+			);
+
+			await expect(
+				streamAPI.delete(undefined as unknown as string)
+			).rejects.toThrow('Stream id is required and must be a non-empty string');
+		});
+
+		it('should handle whitespace-only id', async () => {
+			await expect(streamAPI.delete('   ')).rejects.toThrow(
+				'Stream id is required and must be a non-empty string'
+			);
+		});
+	});
 });

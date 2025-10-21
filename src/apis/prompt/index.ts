@@ -1,8 +1,8 @@
 // Main entry point for prompts - following POC pattern exactly
 
-import fs from 'fs/promises';
-import path from 'path';
-import { pathToFileURL } from 'url';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { internal } from '../../logger/internal';
 import { processPromptMetadataConcat } from '../../utils/promptMetadata';
@@ -108,8 +108,7 @@ export default class PromptAPI {
 					const mtime = stats.mtime.getTime();
 
 					// Convert to file URL with cache-busting query param
-					const fileUrl = pathToFileURL(possiblePath).href + `?t=${mtime}`;
-					internal.debug('  Importing from:', fileUrl);
+					const fileUrl = `${pathToFileURL(possiblePath).href}?t=${mtime}`;
 
 					// Use ESM dynamic import instead of require
 					generatedModule = await import(fileUrl);

@@ -354,6 +354,86 @@ export interface CreateStreamProps {
 }
 
 /**
+ * Parameters for listing streams
+ */
+export interface ListStreamsParams {
+	/**
+	 * optional name filter to search for streams
+	 */
+	name?: string;
+
+	/**
+	 * optional metadata filters to match streams
+	 */
+	metadata?: Record<string, string>;
+
+	/**
+	 * maximum number of streams to return (default: 100, max: 1000)
+	 */
+	limit?: number;
+
+	/**
+	 * number of streams to skip for pagination
+	 */
+	offset?: number;
+}
+
+/**
+ * Stream information returned by list operation
+ */
+export interface StreamInfo {
+	/**
+	 * unique stream identifier
+	 */
+	id: string;
+
+	/**
+	 * the name of the stream
+	 */
+	name: string;
+
+	/**
+	 * the stream metadata
+	 */
+	metadata: Record<string, string>;
+
+	/**
+	 * the public URL to access the stream
+	 */
+	url: string;
+
+	/**
+	 * the size of the stream in bytes
+	 */
+	sizeBytes: number;
+}
+
+/**
+ * Response from listing streams
+ */
+export interface ListStreamsResponse {
+	/**
+	 * whether the request was successful
+	 */
+	success: boolean;
+
+	/**
+	 * optional error message if not successful
+	 */
+	message?: string;
+
+	/**
+	 * array of streams matching the filter criteria
+	 */
+	streams: StreamInfo[];
+
+	/**
+	 * total count of streams matching the filter (useful for pagination)
+	 */
+	total: number;
+}
+
+/**
  * A durable and resumable stream that can be written to and read many times.
  * The underlying stream is backed by a durable storage system and the URL
  * returned is public and guaranteed to return the same data every time it is accessed.
@@ -413,6 +493,22 @@ export interface StreamAPI {
 	 * @returns a Promise that resolves to the created Stream
 	 */
 	create(name: string, props?: CreateStreamProps): Promise<Stream>;
+
+	/**
+	 * list streams with optional filtering and pagination
+	 *
+	 * @param params - optional parameters for filtering and pagination
+	 * @returns a Promise that resolves to the list of streams
+	 */
+	list(params?: ListStreamsParams): Promise<ListStreamsResponse>;
+
+	/**
+	 * delete a stream by id
+	 *
+	 * @param id - the stream id to delete
+	 * @returns a Promise that resolves when the stream is deleted
+	 */
+	delete(id: string): Promise<void>;
 }
 
 type VectorUpsertEmbeddings = {
@@ -573,6 +669,16 @@ export interface VectorStorage {
  * EmailService provides a way to send email replies to incoming emails
  */
 export interface EmailService {
+	/**
+	 * Send a new email to the specified recipients.
+	 */
+	send(
+		agentId: string,
+		email: string,
+		authToken: string,
+		messageId: string
+	): Promise<void>;
+
 	/**
 	 * send an email reply to an incoming email
 	 *

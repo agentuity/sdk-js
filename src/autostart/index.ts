@@ -1,20 +1,24 @@
 import yml from 'js-yaml';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createResource, createUserLoggerProvider, registerOtel } from '../otel';
+import {
+	createResource,
+	createUserLoggerProvider,
+	registerOtel,
+} from '../otel';
 import { OtelLogger } from '../otel/logger';
 import { createServer, createServerContext } from '../server';
 import type { AgentConfig } from '../types';
 import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-import { LoggerProvider } from '@opentelemetry/sdk-logs';
-import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
+import type { LoggerProvider } from '@opentelemetry/sdk-logs';
+import type { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import type { LogRecordProcessor } from '@opentelemetry/sdk-logs';
 
 /**
  * Configuration for user provided OpenTelemetry
  */
-interface UserOpenTelemetryConfig {
+export interface UserOpenTelemetryConfig {
 	endpoint: string;
 	// only supports http/json for now
 	// protocol: 'grpc' | 'http/protobuf' | 'http/json';
@@ -89,7 +93,7 @@ export async function run(config: AutostartConfig) {
 				const agentdir = data?.bundler?.agents?.dir;
 				if (agentdir && existsSync(agentdir)) {
 					config.agents = data.agents
-						.map((agent: { id: string; name: string; }) => {
+						.map((agent: { id: string; name: string }) => {
 							const filename = join(agentdir, agent.name, 'index.ts');
 							if (existsSync(filename)) {
 								return {
@@ -125,9 +129,14 @@ export async function run(config: AutostartConfig) {
 		environment: config.devmode ? 'development' : config.environment,
 	};
 	const otel = registerOtel(otelConfig);
-	let userLoggerProvider: { provider: LoggerProvider; exporter: OTLPLogExporter; processor: LogRecordProcessor; } | undefined;
+	let userLoggerProvider:
+		| {
+				provider: LoggerProvider;
+				exporter: OTLPLogExporter;
+				processor: LogRecordProcessor;
+		  }
+		| undefined;
 	if (config.userOtelConf) {
-
 		const resource = new Resource({
 			...createResource(otelConfig).attributes,
 			...config.userOtelConf.resourceAttributes,
@@ -141,7 +150,9 @@ export async function run(config: AutostartConfig) {
 		if (otel.logger instanceof OtelLogger) {
 			otel.logger.addDelegate(userLoggerProvider.provider.getLogger('default'));
 		} else {
-			console.warn('[WARN] user OTEL logger not attached: logger does not support addDelegate');
+			console.warn(
+				'[WARN] user OTEL logger not attached: logger does not support addDelegate'
+			);
 		}
 	}
 
