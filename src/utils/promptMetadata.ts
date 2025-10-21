@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import PatchPortal from '../apis/patchportal.js';
 import { internal } from '../logger/internal';
+import { hashSync } from './hash.js';
 
 export interface PromptAttributesParams {
 	slug: string;
@@ -34,17 +35,10 @@ export async function processPromptMetadata(
 	internal.debug('✅ PatchPortal instance obtained');
 
 	// Generate hash
-	const templateHash = crypto
-		.createHash('sha256')
-		.update(attributes.template)
-		.digest('hex');
-
+	const templateHash = hashSync(attributes.template);
 	internal.debug('🔑 Template hash:', templateHash);
 
-	const compiledHash = crypto
-		.createHash('sha256')
-		.update(attributes.compiled)
-		.digest('hex');
+	const compiledHash = hashSync(attributes.compiled);
 
 	internal.debug('🔑 Compiled hash:', compiledHash);
 

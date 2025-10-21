@@ -2,6 +2,7 @@ export * from './apis/eval';
 export * from './logger';
 export * from './server';
 export * from './types';
+export { hash, hashSync } from './utils/hash';
 export * from './utils/interpolate';
 export {
 	type PromptAttributes,

@@ -8,6 +8,7 @@ import EvalAPI from '../apis/eval';
 import EvalJobScheduler from '../apis/evaljobscheduler';
 import { markSessionCompleted } from '../apis/session';
 import type { Logger } from '../logger';
+import type { PromptAttributes } from '../utils/promptMetadata';
 
 let running = 0;
 export function isIdle(): boolean {
@@ -178,7 +179,7 @@ export default class AgentContextWaitUntilHandler {
 		job: {
 			spanId: string;
 			sessionId: string;
-			promptMetadata: Array<{ evals?: string[] }>;
+			promptMetadata: PromptAttributes[];
 			input?: string;
 			output?: string;
 		},
@@ -207,12 +208,16 @@ export default class AgentContextWaitUntilHandler {
 						`🚀 Running eval '${evalSlug}' for session ${job.sessionId}`
 					);
 
+					logger.info(`🔑 Template hash: ${promptMeta.templateHash}`);
+					logger.info(`🔑 Compiled hash: ${promptMeta.compiledHash}`);
+
 					const result = await evalAPI.runEval(
 						evalSlug,
 						job.input || '',
 						job.output || '',
 						job.sessionId,
-						job.spanId
+						job.spanId,
+						promptMeta.templateHash
 					);
 
 					if (result.success) {
