@@ -9,7 +9,6 @@ import EvalJobScheduler from '../apis/evaljobscheduler';
 import type { Logger } from '../logger';
 import { isIdle } from '../router/context';
 import type { AgentResponseData, AgentWelcomeResult } from '../types';
-import { InternalRoutesHandler } from './internal-routes';
 import {
 	extractTraceContextFromNodeRequest,
 	injectTraceContextToHeaders,
@@ -110,7 +109,6 @@ export class NodeServer implements Server {
 		// Initialize EvalJobScheduler globally for patches
 		await EvalJobScheduler.getInstance();
 
-		const internalRoutes = new InternalRoutesHandler(this.logger);
 		this.server = createHttpServer(async (req, res) => {
 			if (req.method === 'GET' && req.url === '/_health') {
 				res.writeHead(200, {
@@ -138,28 +136,6 @@ export class NodeServer implements Server {
 				});
 				res.end();
 				return;
-			}
-
-			// Handle internal routes first
-			if (req.url?.startsWith('/_agentuity/')) {
-				const body = await this.getBufferAsStream(req);
-				const internalResponse = await internalRoutes.handleInternalRoute({
-					method: req.method || 'GET',
-					url: req.url,
-					headers: this.getHeaders(req),
-					body,
-					request: getRequestFromHeaders(this.getHeaders(req), ''),
-					setTimeout: (_val: number) => void 0,
-				});
-				if (internalResponse) {
-					const responseBody = await internalResponse.text();
-					res.writeHead(internalResponse.status, {
-						'Content-Type': 'application/json',
-						'Access-Control-Allow-Origin': '*',
-					});
-					res.end(responseBody);
-					return;
-				}
 			}
 
 			if (req.method === 'GET' && req.url === '/welcome') {

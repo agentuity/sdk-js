@@ -7,7 +7,6 @@ import type {
 	AgentWelcomeResult,
 	ReadableDataType,
 } from '../types';
-import { InternalRoutesHandler } from './internal-routes';
 import {
 	extractTraceContextFromBunRequest,
 	injectTraceContextToHeaders,
@@ -65,7 +64,6 @@ export class BunServer implements Server {
 		// Initialize EvalJobScheduler globally for patches
 		await EvalJobScheduler.getInstance();
 
-		const internalRoutes = new InternalRoutesHandler(logger);
 		const hostname =
 			process.env.AGENTUITY_ENV === 'development' ? '127.0.0.1' : '0.0.0.0';
 
@@ -171,21 +169,6 @@ export class BunServer implements Server {
 				theserver?.timeout(req, 0);
 
 				const url = new URL(req.url);
-
-				// Handle internal routes first
-				if (url.pathname.startsWith('/_agentuity/')) {
-					const internalResponse = await internalRoutes.handleInternalRoute({
-						method,
-						url: url.pathname,
-						headers: req.headers.toJSON(),
-						body: req.body as unknown as ReadableStream<ReadableDataType>,
-						request: getRequestFromHeaders(req.headers.toJSON(), ''),
-						setTimeout: (_val: number) => void 0,
-					});
-					if (internalResponse) {
-						return internalResponse;
-					}
-				}
 
 				// Extract trace context from headers
 				const extractedContext = extractTraceContextFromBunRequest(req);
