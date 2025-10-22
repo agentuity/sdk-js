@@ -8,6 +8,7 @@ import EvalAPI from '../apis/eval';
 import EvalJobScheduler from '../apis/evaljobscheduler';
 import { markSessionCompleted } from '../apis/session';
 import type { Logger } from '../logger';
+import { internal } from '../logger/internal';
 import type { PromptAttributes } from '../utils/promptMetadata';
 
 let running = 0;
@@ -71,7 +72,7 @@ export default class AgentContextWaitUntilHandler {
 	}
 
 	public async waitUntilAll(logger: Logger, sessionId: string): Promise<void> {
-		logger.info(`🔍 waitUntilAll() called for session ${sessionId}`);
+		internal.debug(`🔍 waitUntilAll() called for session ${sessionId}`);
 
 		if (this.hasCalledWaitUntilAll) {
 			throw new Error('waitUntilAll can only be called once per instance');
@@ -79,24 +80,23 @@ export default class AgentContextWaitUntilHandler {
 		this.hasCalledWaitUntilAll = true;
 
 		if (this.promises.length === 0) {
-			logger.info('📭 No promises to wait for, executing evals directly');
-			// Execute evals even if no promises
+			internal.debug('No promises to wait for, executing evals directly');
 			await this.executeEvalsForSession(logger, sessionId);
 			return;
 		}
 
-		logger.info(
+		internal.debug(
 			`⏳ Waiting for ${this.promises.length} promises to complete...`
 		);
 		try {
 			// Promises are already executing, just wait for them to complete
 			await Promise.all(this.promises);
 			const duration = Date.now() - (this.started as number);
-			logger.info('✅ All promises completed, marking session completed');
+			internal.debug('✅ All promises completed, marking session completed');
 			await markSessionCompleted(sessionId, duration);
 
 			// Execute evals after session completion
-			logger.info('🚀 Starting eval execution after session completion');
+			internal.debug('🚀 Starting eval execution after session completion');
 			await this.executeEvalsForSession(logger, sessionId);
 		} catch (ex) {
 			logger.error('error sending session completed', ex);
@@ -114,34 +114,36 @@ export default class AgentContextWaitUntilHandler {
 		sessionId: string
 	): Promise<void> {
 		try {
-			logger.info(`🔍 Starting eval execution for session ${sessionId}`);
+			internal.debug(`🔍 Starting eval execution for session ${sessionId}`);
 
 			// Get pending eval jobs for this session
-			logger.info('🔍 Getting EvalJobScheduler instance...');
+			internal.debug('🔍 Getting EvalJobScheduler instance...');
 			const evalJobScheduler = await EvalJobScheduler.getInstance();
-			logger.info('✅ EvalJobScheduler instance obtained');
+			internal.debug('✅ EvalJobScheduler instance obtained');
 
-			logger.info(`🔍 Querying jobs for session ${sessionId}...`);
+			internal.debug(`🔍 Querying jobs for session ${sessionId}...`);
 			const jobs = evalJobScheduler.getJobs({ sessionId });
 
 			if (jobs.length === 0) {
-				logger.info(`📭 No eval jobs found for session ${sessionId}`);
+				internal.debug(`📭 No eval jobs found for session ${sessionId}`);
 				return;
 			}
 
-			logger.info(`📋 Found ${jobs.length} eval jobs for session ${sessionId}`);
+			internal.debug(
+				`📋 Found ${jobs.length} eval jobs for session ${sessionId}`
+			);
 
 			// Load eval metadata map
-			logger.info('🔧 Loading eval metadata map...');
+			internal.debug('🔧 Loading eval metadata map...');
 			const evalAPI = new EvalAPI();
 			const evalMetadataMap = await evalAPI.loadEvalMetadataMap();
-			logger.info(`📚 Loaded ${evalMetadataMap.size} eval mappings`);
+			internal.debug(`📚 Loaded ${evalMetadataMap.size} eval mappings`);
 
 			// Execute evals for each job
 			let totalEvalsExecuted = 0;
 			for (let i = 0; i < jobs.length; i++) {
 				const job = jobs[i];
-				logger.info(
+				internal.debug(
 					`🎯 Processing job ${i + 1}/${jobs.length} (spanId: ${job.spanId})`
 				);
 				const evalsInJob = await this.executeEvalsForJob(
@@ -151,21 +153,21 @@ export default class AgentContextWaitUntilHandler {
 					evalMetadataMap
 				);
 				totalEvalsExecuted += evalsInJob;
-				logger.info(
+				internal.debug(
 					`✅ Completed job ${i + 1}/${jobs.length}: ${evalsInJob} evals executed`
 				);
 			}
 
-			logger.info(
+			internal.debug(
 				`✅ Completed eval execution for session ${sessionId}: ${totalEvalsExecuted} evals executed`
 			);
 
 			// Clean up completed jobs
-			logger.info(`🧹 Cleaning up ${jobs.length} completed jobs...`);
+			internal.debug(`🧹 Cleaning up ${jobs.length} completed jobs...`);
 			for (const job of jobs) {
 				evalJobScheduler.removeJob(job.spanId);
 			}
-			logger.info(`✅ Cleaned up ${jobs.length} completed jobs`);
+			internal.debug(`✅ Cleaned up ${jobs.length} completed jobs`);
 		} catch (error) {
 			logger.error('❌ Error executing evals for session:', error);
 		}
@@ -188,7 +190,7 @@ export default class AgentContextWaitUntilHandler {
 	): Promise<number> {
 		let evalsExecuted = 0;
 
-		logger.info(
+		internal.debug(
 			`🎯 Processing job ${job.spanId} with ${job.promptMetadata.length} prompt metadata entries`
 		);
 
@@ -198,18 +200,18 @@ export default class AgentContextWaitUntilHandler {
 				continue;
 			}
 
-			logger.info(
+			internal.debug(
 				`📝 Found ${promptMeta.evals.length} evals for prompt: ${promptMeta.evals.join(', ')}`
 			);
 
 			for (const evalSlug of promptMeta.evals) {
 				try {
-					logger.info(
+					internal.debug(
 						`🚀 Running eval '${evalSlug}' for session ${job.sessionId}`
 					);
 
-					logger.info(`🔑 Template hash: ${promptMeta.templateHash}`);
-					logger.info(`🔑 Compiled hash: ${promptMeta.compiledHash}`);
+					internal.debug(`🔑 Template hash: ${promptMeta.templateHash}`);
+					internal.debug(`🔑 Compiled hash: ${promptMeta.compiledHash}`);
 
 					const result = await evalAPI.runEval(
 						evalSlug,
@@ -221,7 +223,7 @@ export default class AgentContextWaitUntilHandler {
 					);
 
 					if (result.success) {
-						logger.info(`✅ Successfully executed eval '${evalSlug}'`);
+						internal.debug(`✅ Successfully executed eval '${evalSlug}'`);
 						evalsExecuted++;
 					} else {
 						logger.warn(
@@ -235,7 +237,7 @@ export default class AgentContextWaitUntilHandler {
 			}
 		}
 
-		logger.info(
+		internal.debug(
 			`📊 Job ${job.spanId} completed: ${evalsExecuted} evals executed`
 		);
 		return evalsExecuted;

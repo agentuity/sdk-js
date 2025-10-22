@@ -297,8 +297,7 @@ export default class EvalAPI {
 
 			const r = createEvalRunRequest as CreateEvalRunRequest;
 
-			// Just return the result directly - no need to POST to API since we're executing locally
-			internal.info(`✅ Eval '${evalName}' completed successfully: %j`, {
+			internal.debug(`✅ Eval '${evalName}' completed successfully: %j`, {
 				resultType: r.result.success ? 'success' : 'error',
 				passed: 'passed' in r.result ? r.result.passed : undefined,
 				score: 'score' in r.result ? r.result.score : undefined,
@@ -309,18 +308,19 @@ export default class EvalAPI {
 				JSON.stringify(createEvalRunRequest),
 				{
 					'Content-Type': 'application/json',
-				}
+				},
+				'eval'
 			);
 
 			if (!resp.status) {
-				internal.info('Failed to update the database with the eval run', {
+				internal.debug('Failed to update the database with the eval run', {
 					status: resp.status,
 					evalName,
 					evalId: r.evalId,
 					sessionId: r.sessionId,
 				});
 			} else {
-				internal.info('Eval run updated in the database', {
+				internal.debug('Eval run updated in the database', {
 					status: resp.status,
 					evalName,
 					evalId: r.evalId,
@@ -348,11 +348,11 @@ export default class EvalAPI {
 	 * Scans through all eval files to find metadata and build mapping
 	 */
 	async loadEvalMetadataMap(): Promise<Map<string, string>> {
-		internal.info(`🔍 Loading eval metadata map from: ${this.evalsDir}`);
+		internal.debug(`🔍 Loading eval metadata map from: ${this.evalsDir}`);
 
 		// Check if evals directory exists
 		if (!fs.existsSync(this.evalsDir)) {
-			internal.info(`📁 Evals directory not found: ${this.evalsDir}`);
+			internal.debug(`📁 Evals directory not found: ${this.evalsDir}`);
 			return new Map();
 		}
 
@@ -360,7 +360,7 @@ export default class EvalAPI {
 		const slugToIDMap = new Map<string, string>();
 		let processedFiles = 0;
 
-		internal.info(`📂 Scanning ${files.length} files in evals directory`);
+		internal.debug(`📂 Scanning ${files.length} files in evals directory`);
 
 		for (const file of files) {
 			const ext = path.extname(file);
@@ -382,7 +382,7 @@ export default class EvalAPI {
 
 				if (metadata && metadata.slug && metadata.id) {
 					slugToIDMap.set(metadata.slug, metadata.id);
-					internal.info(
+					internal.debug(
 						`✅ Mapped eval slug '${metadata.slug}' to ID '${metadata.id}' from ${file}`
 					);
 				} else {
@@ -393,7 +393,7 @@ export default class EvalAPI {
 			}
 		}
 
-		internal.info(
+		internal.debug(
 			`📚 Loaded ${slugToIDMap.size} eval mappings from ${processedFiles} files`
 		);
 		return slugToIDMap;

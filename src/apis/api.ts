@@ -176,7 +176,6 @@ export async function send<K>(
 		init.keepalive = true;
 	}
 
-	console.log('BOBBY!! url', url);
 	const resp = await apiFetch(url, init);
 	let json: K | null = null;
 	switch (resp.status) {

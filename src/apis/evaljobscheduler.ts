@@ -85,7 +85,7 @@ export default class EvalJobScheduler {
 			(count, meta) => count + (meta.evals?.length || 0),
 			0
 		);
-		internal.info(
+		internal.debug(
 			`📦 Creating eval job ${spanId} for session ${sessionId} with ${totalEvals} evals`
 		);
 
@@ -117,23 +117,26 @@ export default class EvalJobScheduler {
 	 * Get jobs with optional filtering
 	 */
 	public getJobs(filter?: JobFilter): PendingEvalJob[] {
-		internal.info('🔍 EvalJobScheduler.getJobs() called with filter:', filter);
-		internal.info('📊 Total pending jobs in scheduler:', this.pendingJobs.size);
+		internal.debug('🔍 EvalJobScheduler.getJobs() called with filter:', filter);
+		internal.debug(
+			'📊 Total pending jobs in scheduler:',
+			this.pendingJobs.size
+		);
 
 		let jobs = Array.from(this.pendingJobs.values());
 
 		if (filter?.sessionId) {
 			jobs = jobs.filter((job) => job.sessionId === filter.sessionId);
-			internal.info(
+			internal.debug(
 				`🔍 Filtered jobs for session ${filter.sessionId}:`,
 				jobs.length
 			);
 		}
 
-		internal.info('📋 Returning jobs:', jobs.length);
+		internal.debug('📋 Returning jobs:', jobs.length);
 		if (jobs.length > 0) {
 			jobs.forEach((job, index) => {
-				internal.info(`📦 Job ${index + 1}:`, {
+				internal.debug(`📦 Job ${index + 1}:`, {
 					spanId: job.spanId,
 					sessionId: job.sessionId,
 					promptMetadataCount: job.promptMetadata?.length || 0,
