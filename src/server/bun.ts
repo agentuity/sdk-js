@@ -1,5 +1,7 @@
 import type { ReadableStream } from 'node:stream/web';
 import { context, SpanKind, SpanStatusCode, trace } from '@opentelemetry/api';
+import EvalJobScheduler from '../apis/evaljobscheduler';
+import { isIdle } from '../router/context';
 import type {
 	AgentResponseData,
 	AgentWelcomeResult,
@@ -17,7 +19,6 @@ import {
 	shouldIgnoreStaticFile,
 	toWelcomePrompt,
 } from './util';
-import { isIdle } from '../router/context';
 
 const idleTimeout = 255; // expressed in seconds
 
@@ -59,6 +60,10 @@ export class BunServer implements Server {
 
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		const { sdkVersion, logger } = this.config;
+
+		// Initialize EvalJobScheduler globally for patches
+		await EvalJobScheduler.getInstance();
+
 		const hostname =
 			process.env.AGENTUITY_ENV === 'development' ? '127.0.0.1' : '0.0.0.0';
 

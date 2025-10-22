@@ -29,7 +29,12 @@ interface ApiRequestWithUrl {
 
 type ApiRequestOptions = ApiRequestWithPath | ApiRequestWithUrl;
 
-export type ServiceName = 'vector' | 'keyvalue' | 'stream' | 'objectstore';
+export type ServiceName =
+	| 'vector'
+	| 'keyvalue'
+	| 'stream'
+	| 'objectstore'
+	| 'eval';
 
 interface ApiRequestBase {
 	method: 'POST' | 'GET' | 'PUT' | 'DELETE';
@@ -101,6 +106,10 @@ export const getBaseUrlForService = (service?: ServiceName) => {
 			value =
 				process.env.AGENTUITY_OBJECTSTORE_URL ||
 				process.env.AGENTUITY_TRANSPORT_URL;
+			break;
+		case 'eval':
+			value =
+				process.env.AGENTUITY_EVAL_URL || process.env.AGENTUITY_TRANSPORT_URL;
 			break;
 		default:
 			break;

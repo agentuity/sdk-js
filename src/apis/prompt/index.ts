@@ -88,7 +88,6 @@ export default class PromptAPI {
 
 	// Method to load prompts dynamically (called by context)
 	public async loadPrompts(): Promise<void> {
-		internal.debug('loadPrompts() called');
 		try {
 			// Try multiple possible paths for the generated prompts
 			let generatedModule: unknown;
@@ -97,10 +96,13 @@ export default class PromptAPI {
 			const possiblePaths = await this.resolveGeneratedPaths();
 
 			internal.debug('Trying absolute paths:', possiblePaths);
+			const attemptErrors: string[] = [];
 			for (const possiblePath of possiblePaths) {
 				internal.debug('  Checking:', possiblePath);
 				try {
 					await fs.access(possiblePath);
+					internal.debug('  ✓ File exists:', possiblePath);
+
 					// Get file stats for cache-busting
 					const stats = await fs.stat(possiblePath);
 					const mtime = stats.mtime.getTime();
@@ -110,13 +112,20 @@ export default class PromptAPI {
 
 					// Use ESM dynamic import instead of require
 					generatedModule = await import(fileUrl);
-					internal.debug('  Successfully loaded from:', possiblePath);
+					internal.debug('  ✓ Successfully loaded from:', possiblePath);
 					break;
-				} catch {}
+				} catch (error) {
+					const errorMsg =
+						error instanceof Error ? error.message : String(error);
+					internal.debug(`  ✗ Failed to load ${possiblePath}: ${errorMsg}`);
+					attemptErrors.push(`${possiblePath}: ${errorMsg}`);
+				}
 			}
 
 			if (!generatedModule) {
-				throw new Error('Generated prompts file not found');
+				throw new Error(
+					`Generated prompts file not found. Tried:\n${attemptErrors.join('\n')}`
+				);
 			}
 
 			// Type guard to ensure generatedModule has expected shape

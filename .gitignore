@@ -4,3 +4,4 @@ node_modules
 /testagent
 .vscode
 .opencode
+.DS_Store

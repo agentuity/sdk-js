@@ -1,6 +1,8 @@
+export * from './apis/eval';
 export * from './logger';
 export * from './server';
 export * from './types';
+export { hash, hashSync } from './utils/hash';
 export * from './utils/interpolate';
 export {
 	type PromptAttributes,
@@ -11,10 +13,20 @@ export {
 import DiscordAPI from './apis/discord';
 // Export APIs
 import EmailAPI from './apis/email';
+import EvalAPI from './apis/eval';
+import EvalJobScheduler from './apis/evaljobscheduler';
 import PatchPortal from './apis/patchportal';
 import PromptAPI from './apis/prompt';
 import StreamAPIImpl from './apis/stream';
-export { EmailAPI, DiscordAPI, PatchPortal, PromptAPI, StreamAPIImpl };
+export {
+	EmailAPI,
+	DiscordAPI,
+	EvalAPI,
+	EvalJobScheduler,
+	PatchPortal,
+	PromptAPI,
+	StreamAPIImpl,
+};
 
 import { TeamsActivityHandler } from 'botbuilder';
 import { run, type UserOpenTelemetryConfig } from './autostart';

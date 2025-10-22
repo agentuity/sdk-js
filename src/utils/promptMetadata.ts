@@ -1,12 +1,14 @@
 import crypto from 'node:crypto';
 import PatchPortal from '../apis/patchportal.js';
 import { internal } from '../logger/internal';
+import { hashSync } from './hash.js';
 
 export interface PromptAttributesParams {
 	slug: string;
 	compiled: string;
 	template: string;
 	variables?: Record<string, string>;
+	evals?: string[];
 }
 
 export interface PromptAttributes extends PromptAttributesParams {
@@ -26,23 +28,17 @@ export async function processPromptMetadata(
 		template: `${attributes.template?.substring(0, 50)}...`,
 		compiled: `${attributes.compiled?.substring(0, 50)}...`,
 		variables: attributes.variables,
+		evals: attributes.evals,
 	});
 
 	const patchPortal = await PatchPortal.getInstance();
 	internal.debug('✅ PatchPortal instance obtained');
 
 	// Generate hash
-	const templateHash = crypto
-		.createHash('sha256')
-		.update(attributes.template)
-		.digest('hex');
-
+	const templateHash = hashSync(attributes.template);
 	internal.debug('🔑 Template hash:', templateHash);
 
-	const compiledHash = crypto
-		.createHash('sha256')
-		.update(attributes.compiled)
-		.digest('hex');
+	const compiledHash = hashSync(attributes.compiled);
 
 	internal.debug('🔑 Compiled hash:', compiledHash);
 
@@ -57,6 +53,7 @@ export async function processPromptMetadata(
 		slug: metadata.slug,
 		templateHash: metadata.templateHash,
 		compiledHash: metadata.compiledHash,
+		evals: metadata.evals,
 		timestamp: new Date().toISOString(),
 	});
 
