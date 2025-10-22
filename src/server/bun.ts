@@ -62,9 +62,6 @@ export class BunServer implements Server {
 		const devmode = process.env.AGENTUITY_SDK_DEV_MODE === 'true';
 		const { sdkVersion, logger } = this.config;
 
-		// Make internal logger available globally for patches
-		(globalThis as any).__agentuityInternalLogger = logger;
-
 		// Initialize EvalJobScheduler globally for patches
 		await EvalJobScheduler.getInstance();
 
