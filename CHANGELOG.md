@@ -1,10 +1,16 @@
 # @agentuity/sdk Changelog
 
-## 0.0.157
+## [0.0.157] - 2025-10-22
 
-### Patch Changes
+### Added
 
-- Add support for eval running
+- Evaluation system with run/record capabilities and background eval job scheduler ([#194](https://github.com/agentuity/sdk-js/pull/194))
+- SHA-256 hash utilities (async and sync) exposed in the public API ([#194](https://github.com/agentuity/sdk-js/pull/194))
+- Eval references in prompt metadata for end-to-end eval tracking ([#194](https://github.com/agentuity/sdk-js/pull/194))
+
+### Changed
+
+- Improved error reporting and diagnostics when loading prompts ([#194](https://github.com/agentuity/sdk-js/pull/194))
 
 ## [0.0.156] - 2025-10-15
 
@@ -832,6 +838,7 @@ All notable changes to this project will be documented in this file.
 
 - Refactor the JS SDK to better support new workflow
 
+[0.0.157]: https://github.com/agentuity/sdk-js/compare/v0.0.156...v0.0.157
 [0.0.156]: https://github.com/agentuity/sdk-js/compare/v0.0.155...v0.0.156
 [0.0.155]: https://github.com/agentuity/sdk-js/compare/v0.0.154...v0.0.155
 [0.0.154]: https://github.com/agentuity/sdk-js/compare/v0.0.153...v0.0.154
