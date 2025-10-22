@@ -14,7 +14,7 @@ export default class PatchPortal {
 
 	private constructor() {
 		// Private constructor to prevent direct instantiation
-		this.instanceId = `PatchPortal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+		this.instanceId = `PatchPortal-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 		internal.debug(
 			'🏗️ PatchPortal constructor called, instanceId:',
 			this.instanceId

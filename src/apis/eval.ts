@@ -309,6 +309,8 @@ export default class EvalAPI {
 				{
 					'Content-Type': 'application/json',
 				},
+				undefined,
+				undefined,
 				'eval'
 			);
 
@@ -331,7 +333,7 @@ export default class EvalAPI {
 			return {
 				success: true,
 				data: {
-					id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+					id: `local-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
 				},
 			};
 		} catch (error) {
