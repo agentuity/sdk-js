@@ -414,11 +414,11 @@ export function createRouter(config: RouterConfig): ServerRoute['handler'] {
 							}
 						}
 					).then(async (r) => {
-						logger.info(
+						internal.info(
 							`🔍 Router calling waitUntilAll for session ${sessionId}`
 						);
 						await contextHandler.waitUntilAll(logger, sessionId);
-						logger.info(
+						internal.info(
 							`✅ Router completed waitUntilAll for session ${sessionId}`
 						);
 						return r;

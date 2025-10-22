@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.157
+
+### Patch Changes
+
+- Add support for eval running
+
 ## [0.0.156] - 2025-10-15
 
 ### Added
