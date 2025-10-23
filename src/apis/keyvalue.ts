@@ -224,4 +224,50 @@ export default class KeyValueAPI implements KeyValueStorage {
 			span.end();
 		}
 	}
+
+	/**
+	 * get all keys from the key value storage
+	 *
+	 * @param name - the name of the key value storage
+	 * @returns an array of all keys in the storage
+	 */
+	async all(name: string): Promise<string[]> {
+		const tracer = getTracer();
+		const currentContext = context.active();
+
+		// Create a child span using the current context
+		const span = tracer.startSpan('agentuity.keyvalue.all', {}, currentContext);
+
+		try {
+			span.setAttribute('name', name);
+
+			// Create a new context with the child span
+			const spanContext = trace.setSpan(currentContext, span);
+
+			// Execute the operation within the new context
+			return await context.with(spanContext, async () => {
+				const resp = await GET(
+					`/kv/2025-03-17/keys/${encodeURIComponent(name)}`,
+					false,
+					undefined,
+					undefined,
+					undefined,
+					'keyvalue'
+				);
+				if (resp.status === 200) {
+					const keys = await resp.response.json();
+					span.setStatus({ code: SpanStatusCode.OK });
+					return keys as string[];
+				}
+				throw new Error(
+					`error getting all keys: ${resp.response.statusText} (${resp.response.status})`
+				);
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
+	}
 }

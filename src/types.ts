@@ -329,6 +329,14 @@ export interface KeyValueStorage {
 	 * @param key - the key to delete
 	 */
 	delete(name: string, key: string): Promise<void>;
+
+	/**
+	 * get all keys from the key value storage
+	 *
+	 * @param name - the name of the key value storage
+	 * @returns an array of all keys in the storage
+	 */
+	all(name: string): Promise<string[]>;
 }
 
 /**

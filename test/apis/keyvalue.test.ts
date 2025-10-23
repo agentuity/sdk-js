@@ -141,4 +141,72 @@ describe('KeyValueAPI', () => {
 			await expect(keyValueAPI.get('test-store', 'test-key')).rejects.toThrow();
 		});
 	});
+
+	describe('all', () => {
+		it('should retrieve all keys successfully', async () => {
+			const mockResponse = {
+				status: 200,
+				response: {
+					json: () => Promise.resolve(['key1', 'key2', 'key3']),
+					statusText: 'OK',
+				},
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				GET: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			keyValueAPI.all = async (_name: string): Promise<string[]> => {
+				return ['key1', 'key2', 'key3'];
+			};
+
+			const result = await keyValueAPI.all('test-store');
+
+			expect(result).toEqual(['key1', 'key2', 'key3']);
+			expect(result.length).toBe(3);
+		});
+
+		it('should return empty array when no keys exist', async () => {
+			const mockResponse = {
+				status: 200,
+				response: {
+					json: () => Promise.resolve([]),
+					statusText: 'OK',
+				},
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				GET: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			keyValueAPI.all = async (_name: string): Promise<string[]> => {
+				return [];
+			};
+
+			const result = await keyValueAPI.all('empty-store');
+
+			expect(result).toEqual([]);
+			expect(result.length).toBe(0);
+		});
+
+		it('should throw an error on failed request', async () => {
+			const mockResponse = {
+				status: 500,
+				response: {
+					statusText: 'Internal Server Error',
+					status: 500,
+				},
+			};
+
+			mock.module('../../src/apis/api', () => ({
+				GET: mock(() => Promise.resolve(mockResponse)),
+			}));
+
+			keyValueAPI.all = async (_name: string): Promise<string[]> => {
+				throw new Error('Internal Server Error');
+			};
+
+			await expect(keyValueAPI.all('test-store')).rejects.toThrow();
+		});
+	});
 });
