@@ -673,31 +673,29 @@ export interface EmailService {
 	 * Send a new email to the specified recipients.
 	 */
 	send(
-		agentId: string,
-		email: string,
-		authToken: string,
-		messageId: string
-	): Promise<void>;
-
-	/**
-	 * send an email reply to an incoming email
-	 *
-	 * @param agentId - the id of the agent to send the reply to
-	 * @param email - the email to send the reply to in RFC822 format
-	 * @param authToken - the authorization token to use to send the reply
-	 * @param messageId - the message id of the email
-	 * @param from - the email address to send the reply from (NOTE: you can only override the email address if you have configured custom email sending)
-	 */
-	sendReply(
-		agentId: string,
-		email: string,
-		authToken: string,
-		messageId: string,
+		req: AgentRequest,
+		context: AgentContext,
+		to: string[],
+		email: import('./io/email').EmailReply,
 		from?: {
 			name?: string;
 			email?: string;
 		}
-	): Promise<void>;
+	): Promise<string>;
+
+	/**
+	 * send an email reply to an incoming email
+	 */
+	sendReply(
+		req: AgentRequest,
+		context: AgentContext,
+		inReplyTo: string,
+		reply: import('./io/email').EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
+	): Promise<string>;
 }
 
 /**
@@ -723,6 +721,17 @@ export interface DiscordService {
 export interface SMSService {
 	/**
 	 * send an SMS to a phone number
+	 */
+	send(
+		req: AgentRequest,
+		context: AgentContext,
+		to: string[],
+		message: import('./io/sms').SmsReply,
+		from?: string
+	): Promise<void>;
+
+	/**
+	 * send an SMS reply to an incoming SMS message
 	 */
 	sendReply(
 		agentId: string,
@@ -1058,6 +1067,11 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
+
+	/**
+	 * the sms service
+	 */
+	sms: SMSService;
 
 	/**
 	 * EXPERIMENTAL: prompts API for accessing and compiling prompts

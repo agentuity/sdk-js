@@ -54,6 +54,60 @@ export class Sms {
 		return this._message.Body;
 	}
 
+	async send(
+		req: AgentRequest,
+		ctx: AgentContext,
+		to: string[],
+		message: SmsReply,
+		from?: string
+	) {
+		const tracer = getTracer();
+		const currentContext = context.active();
+
+		const authToken = req.metadata?.['twilio-auth-token'] as string;
+		if (!authToken) {
+			throw new Error(
+				'twilio authorization token is required but not found in metadata'
+			);
+		}
+
+		const span = tracer.startSpan('agentuity.twilio.send', {}, currentContext);
+
+		try {
+			const spanContext = trace.setSpan(currentContext, span);
+
+			return await context.with(spanContext, async () => {
+				span.setAttribute('@agentuity/agentId', ctx.agent.id);
+				const resp = await POST(
+					'/sms/send',
+					safeStringify({
+						agentId: ctx.agent.id,
+						from: from,
+						to: to,
+						message: message.text,
+					}),
+					{
+						'Content-Type': 'application/json',
+					},
+					undefined,
+					authToken
+				);
+				if (resp.status === 200) {
+					span.setStatus({ code: SpanStatusCode.OK });
+					return;
+				}
+				throw new Error(
+					`error sending sms: ${resp.response.statusText} (${resp.response.status})`
+				);
+			});
+		} catch (ex) {
+			recordException(span, ex);
+			throw ex;
+		} finally {
+			span.end();
+		}
+	}
+
 	async sendReply(req: AgentRequest, ctx: AgentContext, reply: string) {
 		const tracer = getTracer();
 		const currentContext = context.active();
