@@ -673,29 +673,31 @@ export interface EmailService {
 	 * Send a new email to the specified recipients.
 	 */
 	send(
-		req: AgentRequest,
-		context: AgentContext,
-		to: string[],
-		email: import('./io/email').EmailReply,
-		from?: {
-			name?: string;
-			email?: string;
-		}
-	): Promise<string>;
+		agentId: string,
+		email: string,
+		authToken: string,
+		messageId: string
+	): Promise<void>;
 
 	/**
 	 * send an email reply to an incoming email
+	 *
+	 * @param agentId - the id of the agent to send the reply to
+	 * @param email - the email to send the reply to in RFC822 format
+	 * @param authToken - the authorization token to use to send the reply
+	 * @param messageId - the message id of the email
+	 * @param from - the email address to send the reply from (NOTE: you can only override the email address if you have configured custom email sending)
 	 */
 	sendReply(
-		req: AgentRequest,
-		context: AgentContext,
-		inReplyTo: string,
-		reply: import('./io/email').EmailReply,
+		agentId: string,
+		email: string,
+		authToken: string,
+		messageId: string,
 		from?: {
 			name?: string;
 			email?: string;
 		}
-	): Promise<string>;
+	): Promise<void>;
 }
 
 /**
