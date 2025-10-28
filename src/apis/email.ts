@@ -86,14 +86,14 @@ export default class EmailApi implements EmailService {
 								span.setAttribute('@agentuity/emailMessageId', messageId);
 
 								const resp = await POST(
-								'/email/send',
-								message,
-								{
-								'Content-Type': 'message/rfc822',
-								'X-Agentuity-Message-Id': messageId,
-								},
-								undefined,
-								authToken
+									'/email/send',
+									message.toString(),
+									{
+										'Content-Type': 'message/rfc822',
+										'X-Agentuity-Message-Id': messageId,
+									},
+									undefined,
+									authToken
 								);
 								if (resp.status === 200) {
 									span.setStatus({ code: SpanStatusCode.OK });
@@ -196,14 +196,14 @@ export default class EmailApi implements EmailService {
 								span.setAttribute('@agentuity/emailMessageId', messageId);
 
 								const resp = await POST(
-								`/email/2025-03-17/${ctx.agent.id}/reply`,
-								message,
-								{
-								'Content-Type': 'message/rfc822',
-								'X-Agentuity-Message-Id': messageId,
-								},
-								undefined,
-								authToken
+									`/email/2025-03-17/${ctx.agent.id}/reply`,
+									message.toString(),
+									{
+										'Content-Type': 'message/rfc822',
+										'X-Agentuity-Message-Id': messageId,
+									},
+									undefined,
+									authToken
 								);
 								if (resp.status === 200) {
 									span.setStatus({ code: SpanStatusCode.OK });
