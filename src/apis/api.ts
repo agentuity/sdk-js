@@ -49,7 +49,7 @@ type BaseApiRequest = ApiRequestOptions & ApiRequestBase;
 /**
  * Represents the body of an API request
  */
-export type Body = string | ArrayBuffer | ReadableStream | Blob | FormData;
+export type Body = string | ArrayBuffer | ReadableStream | Blob | FormData | Buffer | Uint8Array;
 
 type GetApiRequest = BaseApiRequest & {
 	method: 'GET';
