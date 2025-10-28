@@ -13,7 +13,7 @@ type TwilioResponse = {
 };
 
 /**
- * A reply to an email
+ * A reply to an SMS
  */
 export interface SmsReply {
 	/**
@@ -61,6 +61,7 @@ export class Sms {
 		message: SmsReply,
 		from?: string
 	) {
+		const timeout = 15_000;
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -89,7 +90,7 @@ export class Sms {
 					{
 						'Content-Type': 'application/json',
 					},
-					undefined,
+					timeout,
 					authToken
 				);
 				if (resp.status === 200) {
@@ -109,6 +110,7 @@ export class Sms {
 	}
 
 	async sendReply(req: AgentRequest, ctx: AgentContext, reply: string) {
+		const timeout = 15_000;
 		const tracer = getTracer();
 		const currentContext = context.active();
 
@@ -141,7 +143,7 @@ export class Sms {
 						'Content-Type': 'application/json',
 						'X-Agentuity-Message-Id': this.messageId,
 					},
-					undefined,
+					timeout,
 					authToken
 				);
 				if (resp.status === 200) {
@@ -174,3 +176,4 @@ export async function parseSms(data: Buffer): Promise<Sms> {
 		);
 	}
 }
+
