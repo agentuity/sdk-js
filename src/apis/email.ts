@@ -12,7 +12,7 @@ export default class EmailApi implements EmailService {
 	 * send an email
 	 */
 	async send(
-		req: AgentRequest,
+		_req: AgentRequest,
 		ctx: AgentContext,
 		to: string[],
 		email: EmailReply,
@@ -21,13 +21,6 @@ export default class EmailApi implements EmailService {
 			email?: string;
 		}
 	): Promise<string> {
-		const authToken = req.metadata?.['email-auth-token'] as string;
-		if (!authToken) {
-			throw new Error(
-				'email authorization token is required but not found in metadata'
-			);
-		}
-
 		const tracer = getTracer();
 		const currentContext = context.active();
 		const span = tracer.startSpan('agentuity.email.send', {}, currentContext);
@@ -85,16 +78,10 @@ export default class EmailApi implements EmailService {
 								span.setAttribute('@agentuity/agentId', ctx.agent.id);
 								span.setAttribute('@agentuity/emailMessageId', messageId);
 
-								const resp = await POST(
-									'/email/send',
-									message.toString(),
-									{
-										'Content-Type': 'message/rfc822',
-										'X-Agentuity-Message-Id': messageId,
-									},
-									undefined,
-									authToken
-								);
+								const resp = await POST('/email/send', message.toString(), {
+									'Content-Type': 'message/rfc822',
+									'X-Agentuity-Message-Id': messageId,
+								});
 								if (resp.status === 200) {
 									span.setStatus({ code: SpanStatusCode.OK });
 									resolve(messageId);
@@ -126,7 +113,7 @@ export default class EmailApi implements EmailService {
 	 * send an email reply to an incoming email
 	 */
 	async sendReply(
-		req: AgentRequest,
+		_req: AgentRequest,
 		ctx: AgentContext,
 		inReplyTo: string,
 		reply: EmailReply,
@@ -135,13 +122,6 @@ export default class EmailApi implements EmailService {
 			email?: string;
 		}
 	): Promise<string> {
-		const authToken = req.metadata?.['email-auth-token'] as string;
-		if (!authToken) {
-			throw new Error(
-				'email authorization token is required but not found in metadata'
-			);
-		}
-
 		const tracer = getTracer();
 		const currentContext = context.active();
 		const span = tracer.startSpan('agentuity.email.reply', {}, currentContext);
@@ -201,9 +181,7 @@ export default class EmailApi implements EmailService {
 									{
 										'Content-Type': 'message/rfc822',
 										'X-Agentuity-Message-Id': messageId,
-									},
-									undefined,
-									authToken
+									}
 								);
 								if (resp.status === 200) {
 									span.setStatus({ code: SpanStatusCode.OK });
