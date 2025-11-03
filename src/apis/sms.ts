@@ -55,7 +55,7 @@ export default class SmsApi implements SMSService {
 	}
 
 	/**
-	 * @deprecated Use reply on data.email
+	 * @deprecated Use reply on data.email.sms()
 	 */
 	async sendReply(
 		_agentId: string,
