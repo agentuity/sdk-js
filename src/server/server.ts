@@ -7,6 +7,7 @@ import KeyValueAPI from '../apis/keyvalue';
 import ObjectStoreAPI from '../apis/objectstore';
 import PatchPortal from '../apis/patchportal';
 import PromptAPI from '../apis/prompt/index.js';
+import SmsAPI from '../apis/sms';
 import StreamAPIImpl from '../apis/stream';
 import VectorAPI from '../apis/vector';
 import type { Logger } from '../logger';
@@ -182,6 +183,7 @@ const email = new EmailAPI();
 const discord = new DiscordAPI();
 const objectstore = new ObjectStoreAPI();
 const prompts = new PromptAPI();
+const sms = new SmsAPI();
 
 // PatchPortal will be initialized lazily since it's async
 let patchportal: PatchPortal | null = null;
@@ -222,6 +224,7 @@ export async function createServerContext(
 		discord,
 		objectstore,
 		patchportal,
+		sms,
 		sdkVersion: req.sdkVersion,
 		agents: req.agents,
 		scope: 'local',

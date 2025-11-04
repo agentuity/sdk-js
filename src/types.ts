@@ -724,6 +724,17 @@ export interface SMSService {
 	/**
 	 * send an SMS to a phone number
 	 */
+	send(
+		req: AgentRequest,
+		context: AgentContext,
+		to: string[],
+		message: import('./io/sms').SmsReply,
+		from?: string
+	): Promise<void>;
+
+	/**
+	 * send an SMS reply to an incoming SMS message
+	 */
 	sendReply(
 		agentId: string,
 		phoneNumber: string,
@@ -1058,6 +1069,11 @@ export interface AgentContext {
 	 * the slack service
 	 */
 	slack: SlackService;
+
+	/**
+	 * the sms service
+	 */
+	sms: SMSService;
 
 	/**
 	 * EXPERIMENTAL: prompts API for accessing and compiling prompts
