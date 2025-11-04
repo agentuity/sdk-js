@@ -4,12 +4,9 @@ import type { ReadableStream } from 'node:stream/web';
 import { inspect } from 'node:util';
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
 import { type Headers, type ParsedMail, simpleParser } from 'mailparser';
-import MailComposer from 'nodemailer/lib/mail-composer/index.js';
-import type { Address, Attachment } from 'nodemailer/lib/mailer/index.js';
 import { send } from '../apis/api';
 import { DataHandler } from '../router/data';
 import { getTracer, recordException } from '../router/router';
-import { fromDataType } from '../server/util';
 import type {
 	AgentContext,
 	AgentRequest,
@@ -480,74 +477,15 @@ export class Email {
 			email?: string;
 		}
 	): Promise<string> {
-		const authToken = req.metadata?.['email-auth-token'] as string;
-		if (!authToken) {
-			throw new Error(
-				'email authorization token is required but not found in metadata'
-			);
+		const fromAddress = from?.email ?? this.toEmail();
+		if (!fromAddress) {
+			throw new Error('a valid from email address is required');
 		}
 
-		return (async () => {
-			let attachments: Attachment[] = [];
-			if (email.attachments) {
-				attachments = await Promise.all(
-					email.attachments.map(async (attachment) => {
-						const resp = await fromDataType(attachment.data);
-						return {
-							filename: attachment.filename,
-							content: await resp.data.buffer(),
-							contentType: resp.data.contentType,
-							contentDisposition:
-								attachment.contentDisposition ?? ('attachment' as const),
-						};
-					})
-				);
-			}
-
-			const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
-			if (normalizedTo.length === 0) {
-				throw new Error('at least one recipient email is required');
-			}
-
-			const fromAddress = from?.email ?? this.toEmail();
-			if (!fromAddress) {
-				throw new Error('a valid from email address is required');
-			}
-
-			const mail = new MailComposer({
-				date: new Date(),
-				from: {
-					name: from?.name ?? context.agent.name,
-					address: fromAddress,
-				},
-				to: normalizedTo.join(', '),
-				subject: email.subject ?? '',
-				text: email.text,
-				html: email.html,
-				attachments,
-			});
-			const newemail = mail.compile();
-
-			return new Promise<string>((resolve, reject) => {
-				newemail.build(async (err, message) => {
-					if (err) {
-						reject(err);
-					} else {
-						try {
-							await context.email.send(
-								context.agent.id,
-								message.toString(),
-								authToken,
-								newemail.messageId()
-							);
-							resolve(newemail.messageId());
-						} catch (ex) {
-							reject(ex);
-						}
-					}
-				});
-			});
-		})();
+		return context.email.send(req, context, to, email, {
+			name: from?.name,
+			email: fromAddress,
+		});
 	}
 
 	/**
@@ -562,69 +500,36 @@ export class Email {
 			email?: string;
 		}
 	): Promise<string> {
-		const authToken = req.metadata?.['email-auth-token'] as string;
-		if (!authToken) {
-			throw new Error(
-				'email authorization token is required but not found in metadata'
-			);
+		const messageId = this.messageId();
+		if (!messageId) {
+			throw new Error('cannot reply to an email without a message ID');
 		}
-		// biome-ignore lint/suspicious/noAsyncPromiseExecutor: needed for complex async email operations
-		return new Promise<string>(async (resolve, reject) => {
-			try {
-				let attachments: Attachment[] = [];
-				if (reply.attachments) {
-					attachments = await Promise.all(
-						reply.attachments.map(async (attachment) => {
-							const resp = await fromDataType(attachment.data);
-							return {
-								filename: attachment.filename,
-								content: await resp.data.buffer(),
-								contentType: resp.data.contentType,
-								contentDisposition:
-									attachment.contentDisposition ?? ('attachment' as const),
-							};
-						})
-					);
-				}
-				const mail = new MailComposer({
-					inReplyTo: this.messageId() ?? undefined,
-					references: this.messageId() ?? undefined,
-					date: new Date(),
-					from: {
-						name: from?.name ?? context.agent.name,
-						address: from?.email ?? this.toEmail() ?? '',
-					},
-					to: {
-						name: this.fromName() ?? undefined,
-						address: this.fromEmail() ?? undefined,
-					} as Address,
-					subject: this.makeReplySubject(reply.subject),
-					text: reply.text,
-					html: reply.html,
-					attachments,
-				});
-				const newemail = mail.compile();
-				newemail.build(async (err, message) => {
-					if (err) {
-						reject(err);
-					} else {
-						try {
-							await context.email.sendReply(
-								context.agent.id,
-								message.toString(),
-								authToken,
-								newemail.messageId()
-							);
-							resolve(newemail.messageId());
-						} catch (ex) {
-							reject(ex);
-						}
-					}
-				});
-			} catch (ex) {
-				reject(ex);
+
+		const fromAddress = from?.email ?? this.toEmail();
+		if (!fromAddress) {
+			throw new Error('a valid from email address is required');
+		}
+
+		const toAddress = this.fromEmail();
+		if (!toAddress) {
+			throw new Error('cannot reply to an email without a sender address');
+		}
+
+		return context.email.sendReply(
+			req,
+			context,
+			messageId,
+			{
+				subject: this.makeReplySubject(reply.subject),
+				text: reply.text,
+				html: reply.html,
+				attachments: reply.attachments,
+			},
+			{
+				name: from?.name,
+				email: fromAddress,
 			}
-		});
+		);
 	}
 }
 

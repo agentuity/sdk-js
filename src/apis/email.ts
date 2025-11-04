@@ -1,6 +1,10 @@
 import { context, SpanStatusCode, trace } from '@opentelemetry/api';
+import MailComposer from 'nodemailer/lib/mail-composer/index.js';
+import type { Attachment } from 'nodemailer/lib/mailer/index.js';
+import type { EmailReply } from '../io/email';
 import { getTracer, recordException } from '../router/router';
-import type { EmailService } from '../types';
+import { fromDataType } from '../server/util';
+import type { AgentContext, AgentRequest, EmailService } from '../types';
 import { POST } from './api';
 
 export default class EmailApi implements EmailService {
@@ -8,45 +12,94 @@ export default class EmailApi implements EmailService {
 	 * send an email
 	 */
 	async send(
-		agentId: string,
-		email: string,
-		authToken: string,
-		messageId: string
-	): Promise<void> {
+		_req: AgentRequest,
+		ctx: AgentContext,
+		to: string[],
+		email: EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
+	): Promise<string> {
 		const tracer = getTracer();
 		const currentContext = context.active();
-
-		// Create a child span using the current context
 		const span = tracer.startSpan('agentuity.email.send', {}, currentContext);
 
 		try {
-			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
 
-			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
-				span.setAttribute('@agentuity/agentId', agentId);
-				span.setAttribute('@agentuity/emailMessageId', messageId);
-
-				const resp = await POST(
-					'/email/send',
-					email,
-					{
-						'Content-Type': 'message/rfc822',
-						'X-Agentuity-Message-Id': messageId,
-					},
-					undefined,
-					authToken
-				);
-				if (resp.status === 200) {
-					span.setStatus({ code: SpanStatusCode.OK });
-					return;
+				let attachments: Attachment[] = [];
+				if (email.attachments) {
+					attachments = await Promise.all(
+						email.attachments.map(async (attachment) => {
+							const resp = await fromDataType(attachment.data);
+							return {
+								filename: attachment.filename,
+								content: await resp.data.buffer(),
+								contentType: resp.data.contentType,
+								contentDisposition:
+									attachment.contentDisposition ?? ('attachment' as const),
+							};
+						})
+					);
 				}
-				const body = await resp.response.text();
-				span.setStatus({ code: SpanStatusCode.ERROR, message: body });
-				throw new Error(
-					`error sending email: ${resp.response.statusText} (${resp.response.status})${body}`
-				);
+
+				const normalizedTo = to.map((addr) => addr.trim()).filter(Boolean);
+				if (normalizedTo.length === 0) {
+					throw new Error('at least one recipient email is required');
+				}
+
+				if (!from?.email) {
+					throw new Error('a valid from email address is required');
+				}
+
+				const mail = new MailComposer({
+					date: new Date(),
+					from: {
+						name: from?.name ?? ctx.agent.name,
+						address: from.email,
+					},
+					to: normalizedTo.join(', '),
+					subject: email.subject ?? '',
+					text: email.text,
+					html: email.html,
+					attachments,
+				});
+				const newemail = mail.compile();
+
+				return new Promise<string>((resolve, reject) => {
+					newemail.build(async (err, message) => {
+						if (err) {
+							reject(err);
+						} else {
+							try {
+								const messageId = newemail.messageId();
+								span.setAttribute('@agentuity/agentId', ctx.agent.id);
+								span.setAttribute('@agentuity/emailMessageId', messageId);
+
+								const resp = await POST('/email/send', message.toString(), {
+									'Content-Type': 'message/rfc822',
+									'X-Agentuity-Message-Id': messageId,
+								});
+								if (resp.status === 200) {
+									span.setStatus({ code: SpanStatusCode.OK });
+									resolve(messageId);
+								} else {
+									const body = await resp.response.text();
+									span.setStatus({ code: SpanStatusCode.ERROR, message: body });
+									reject(
+										new Error(
+											`error sending email: ${resp.response.statusText} (${resp.response.status})${body}`
+										)
+									);
+								}
+							} catch (ex) {
+								reject(ex);
+							}
+						}
+					});
+				});
 			});
 		} catch (ex) {
 			recordException(span, ex);
@@ -60,45 +113,94 @@ export default class EmailApi implements EmailService {
 	 * send an email reply to an incoming email
 	 */
 	async sendReply(
-		agentId: string,
-		email: string,
-		authToken: string,
-		messageId: string
-	): Promise<void> {
+		_req: AgentRequest,
+		ctx: AgentContext,
+		inReplyTo: string,
+		reply: EmailReply,
+		from?: {
+			name?: string;
+			email?: string;
+		}
+	): Promise<string> {
 		const tracer = getTracer();
 		const currentContext = context.active();
-
-		// Create a child span using the current context
 		const span = tracer.startSpan('agentuity.email.reply', {}, currentContext);
 
 		try {
-			// Create a new context with the child span
 			const spanContext = trace.setSpan(currentContext, span);
 
-			// Execute the operation within the new context
 			return await context.with(spanContext, async () => {
-				span.setAttribute('@agentuity/agentId', agentId);
-				span.setAttribute('@agentuity/emailMessageId', messageId);
-
-				const resp = await POST(
-					`/email/2025-03-17/${agentId}/reply`,
-					email,
-					{
-						'Content-Type': 'message/rfc822',
-						'X-Agentuity-Message-Id': messageId,
-					},
-					undefined,
-					authToken
-				);
-				if (resp.status === 200) {
-					span.setStatus({ code: SpanStatusCode.OK });
-					return;
+				let attachments: Attachment[] = [];
+				if (reply.attachments) {
+					attachments = await Promise.all(
+						reply.attachments.map(async (attachment) => {
+							const resp = await fromDataType(attachment.data);
+							return {
+								filename: attachment.filename,
+								content: await resp.data.buffer(),
+								contentType: resp.data.contentType,
+								contentDisposition:
+									attachment.contentDisposition ?? ('attachment' as const),
+							};
+						})
+					);
 				}
-				const body = await resp.response.text();
-				span.setStatus({ code: SpanStatusCode.ERROR, message: body });
-				throw new Error(
-					`error sending email reply: ${resp.response.statusText} (${resp.response.status})${body}`
-				);
+
+				if (!from?.email) {
+					throw new Error('a valid from email address is required');
+				}
+
+				const mail = new MailComposer({
+					inReplyTo: inReplyTo,
+					references: inReplyTo,
+					date: new Date(),
+					from: {
+						name: from?.name ?? ctx.agent.name,
+						address: from.email,
+					},
+					subject: reply.subject ?? '',
+					text: reply.text,
+					html: reply.html,
+					attachments,
+				});
+				const newemail = mail.compile();
+
+				return new Promise<string>((resolve, reject) => {
+					newemail.build(async (err, message) => {
+						if (err) {
+							reject(err);
+						} else {
+							try {
+								const messageId = newemail.messageId();
+								span.setAttribute('@agentuity/agentId', ctx.agent.id);
+								span.setAttribute('@agentuity/emailMessageId', messageId);
+
+								const resp = await POST(
+									`/email/2025-03-17/${ctx.agent.id}/reply`,
+									message.toString(),
+									{
+										'Content-Type': 'message/rfc822',
+										'X-Agentuity-Message-Id': messageId,
+									}
+								);
+								if (resp.status === 200) {
+									span.setStatus({ code: SpanStatusCode.OK });
+									resolve(messageId);
+								} else {
+									const body = await resp.response.text();
+									span.setStatus({ code: SpanStatusCode.ERROR, message: body });
+									reject(
+										new Error(
+											`error sending email reply: ${resp.response.statusText} (${resp.response.status})${body}`
+										)
+									);
+								}
+							} catch (ex) {
+								reject(ex);
+							}
+						}
+					});
+				});
 			});
 		} catch (ex) {
 			recordException(span, ex);
