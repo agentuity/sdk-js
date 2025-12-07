@@ -76,12 +76,9 @@ export function instrumentFetch() {
 			if (init?.headers) {
 				// Clone existing headers to avoid mutation
 				const headers = new Headers(init.headers);
-				// Add trace context headers
+				// Add trace context headers (always overwrite to update stale trace headers)
 				for (const [key, value] of Object.entries(carrier)) {
-					// Only add if not already present to avoid overwriting
-					if (!headers.has(key)) {
-						headers.set(key, value);
-					}
+					headers.set(key, value);
 				}
 				newInit = {
 					...init,
