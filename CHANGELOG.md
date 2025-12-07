@@ -1,5 +1,11 @@
 # @agentuity/sdk Changelog
 
+## 0.0.158
+
+### Patch Changes
+
+- Add fix for otel headers not correctly preserving original outgoing headers on fetch
+
 ## 0.0.157
 
 ### Patch Changes
