@@ -1,10 +1,18 @@
 # @agentuity/sdk Changelog
 
-## 0.0.158
+## [0.0.158] - 2025-12-07
 
-### Patch Changes
+### Fixed
 
-- Add fix for otel headers not correctly preserving original outgoing headers on fetch
+- Preserve Authorization headers in fetch instrumentation - OpenTelemetry fetch instrumentation was overwriting existing headers when adding trace context, causing issues with third-party SDKs that set Authorization headers ([#208](https://github.com/agentuity/sdk-js/pull/208))
+
+### Added
+
+- SMS sending endpoint via `context.sms.send()` with Twilio-based SMS sending, OpenTelemetry tracing, and improved error handling ([#207](https://github.com/agentuity/sdk-js/pull/207))
+
+### Changed
+
+- Moved email send functionality to context - Email APIs now use request/context-based async signatures returning `Promise<string>`, with centralized MIME construction and OpenTelemetry spans ([#206](https://github.com/agentuity/sdk-js/pull/206))
 
 ## 0.0.157
 
