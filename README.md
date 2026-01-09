@@ -10,11 +10,10 @@
 
 # Agentuity TypeScript SDK
 
+> [!WARNING]
+> This repo has now been deprecated in favor of the new opensource [SDK mono repo](https://github.com/agentuity/sdk) and will be archived soon.
 
 **Visit [https://agentuity.com](https://agentuity.com) to get started with Agentuity.**
-
-
-
 
 The Agentuity TypeScript SDK is a powerful toolkit for building, deploying, and managing AI agents in Node.js and Bun environments. This SDK provides developers with a comprehensive set of tools to create intelligent, event-driven agents that can process various types of content, communicate with each other, and integrate with external systems.
 
@@ -54,7 +53,6 @@ Once installed, you can create a new project with the following command:
 ```bash
 agentuity new
 ```
-
 
 ## Development Setup
 
@@ -130,7 +128,7 @@ Then commit all files in the PR. When you merge the PR it will release the SDK.
 
 See the [LICENSE](LICENSE.md) file for details.
 
-
 ## More detailed docs
+
 - [Creating new IO](./docs/adding-new-io.md)
 - [Local SDK testing](./docs/testing-local-sdk.md)
